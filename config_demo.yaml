@@ -1,0 +1,15 @@
+PostgresHost: # Postgres地址
+PostgresPort: # Postgres端口
+PostgresUsername: # Postgres用户名
+PostgresPassword: # Postgres密码
+PostgresDatabase: # Postgres数据库
+
+RedisHost: # Redis地址
+RedisPort: # Redis端口
+RedisPassword: # Redis密码
+
+MiniProgramAppID: # 小程序AppID
+MiniProgramAppSecret: # 小程序AppSecret
+
+LogPath: # 日志路径
+DocsPath: # 文档路径
