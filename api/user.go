@@ -32,7 +32,7 @@ func GetUserInfo(c *gin.Context) {
 		return
 	}
 	userInfo := UserInfoResponse{
-		UserId:     c.GetInt("user_id"),
+		UserId:     c.GetInt("UserId"),
 		UserName:   user.Name,
 		Email:      *user.Email,
 		Phone:      *user.Phone,
