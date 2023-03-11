@@ -5,7 +5,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/re
 RUN apk update && apk add git
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN go install github.com/swaggo/swag/cmd/swag@latest
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN swag init --exclude ./test
