@@ -94,7 +94,7 @@ func main() {
 	global.Router.GET("/swagger/*any",
 		ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("doc.json")))
 	api.InitRoute()
-	err := global.Router.Run("127.0.0.1:9000")
+	err := global.Router.Run("0.0.0.0:9000")
 	if err != nil {
 		return
 	}

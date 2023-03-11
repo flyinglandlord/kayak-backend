@@ -15,7 +15,7 @@ FROM alpine:3.15
 RUN mkdir /app
 WORKDIR /app
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
-RUN apk update && apk add git openssh-client
+RUN apk update
 COPY --from=builder /build/kayak /app/kayak
 COPY ./config.yaml /app/config.yaml
 EXPOSE 9000
