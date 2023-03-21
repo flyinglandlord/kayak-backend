@@ -12,7 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"io"
 	"kayak-backend/api"
-	docs "kayak-backend/docs"
+	"kayak-backend/docs"
 	"kayak-backend/global"
 	"log"
 	"os"

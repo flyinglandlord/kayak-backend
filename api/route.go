@@ -12,7 +12,7 @@ func InitRoute() {
 	user := global.Router.Group("/user")
 	user.Use(global.CheckAuth)
 	user.GET("/info", GetUserInfo)
-
+	user.PUT("/update", UpdateUserInfo)
 	/*
 		TODO: 以下路由需要添加
 		problem := global.Router.Group("/problem")
