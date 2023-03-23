@@ -33,9 +33,9 @@ jobs:
           password: ${{ secrets.HOST_PASSWORD }}
           port: ${{ secrets.HOST_PORT }}
           script: |
-            bash -c "docker stop $(docker ps --filter ancestor=${{ secrets.DOCKER_REPOSITORY }} -q)"
-            bash -c "docker rm -f $(docker ps -a --filter ancestor=${{ secrets.DOCKER_REPOSITORY }}:latest -q)"
-            bash -c "docker rmi -f $(docker images ${{ secrets.DOCKER_REPOSITORY }}:latest -q)"
+            bash -c "docker stop (docker ps --filter ancestor=${{ secrets.DOCKER_REPOSITORY }} -q)"
+            bash -c "docker rm -f (docker ps -a --filter ancestor=${{ secrets.DOCKER_REPOSITORY }}:latest -q)"
+            bash -c "docker rmi -f (docker images ${{ secrets.DOCKER_REPOSITORY }}:latest -q)"
             bash -c "docker login --username=${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }} registry.cn-hangzhou.aliyuncs.com"
             bash -c "docker pull ${{ secrets.DOCKER_REPOSITORY }}:latest"
             bash -c "docker run -d -p 9000:9000 ${{ secrets.DOCKER_REPOSITORY }}:latest"
