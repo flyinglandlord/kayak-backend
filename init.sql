@@ -31,10 +31,11 @@ CREATE TABLE problem_type
 
 CREATE TABLE problem_choice
 (
-    "id"          serial       NOT NULL,
+    "id"          integer      NOT NULL,
     "choice"      varchar(255) NOT NULL,
     "description" text         NOT NULL,
     "is_correct"  boolean      NOT NULL,
+    PRIMARY KEY ("id", "choice"),
     FOREIGN KEY ("id") REFERENCES problem_type ("id")
 );
 

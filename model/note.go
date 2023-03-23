@@ -9,4 +9,5 @@ type Note struct {
 	Content   string    `json:"content" db:"content"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	IsPublic  bool      `json:"is_public" db:"is_public"`
 }

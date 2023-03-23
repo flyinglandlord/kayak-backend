@@ -1,4 +1,33 @@
 definitions:
+  api.Choice:
+    properties:
+      choice:
+        type: string
+      description:
+        type: string
+      is_correct:
+        type: boolean
+    type: object
+  api.ChoiceProblemRequest:
+    properties:
+      choices:
+        items:
+          $ref: '#/definitions/api.Choice'
+        type: array
+      description:
+        type: string
+    type: object
+  api.ChoiceProblemResponse:
+    properties:
+      choices:
+        items:
+          $ref: '#/definitions/api.Choice'
+        type: array
+      description:
+        type: string
+      id:
+        type: integer
+    type: object
   api.LoginInfo:
     properties:
       password:
@@ -27,6 +56,15 @@ definitions:
       new_password:
         type: string
       old_password:
+        type: string
+    type: object
+  api.UserInfo:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone:
         type: string
     type: object
   api.UserInfoResponse:
@@ -98,6 +136,100 @@ paths:
           description: 服务器错误
           schema:
             type: string
+  /problem/choice:
+    get:
+      description: 获取所有的选择题
+      responses:
+        "200":
+          description: 选择题列表
+          schema:
+            items:
+              $ref: '#/definitions/api.ChoiceProblemResponse'
+            type: array
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+  /problem/choice/create:
+    post:
+      description: 创建选择题
+      parameters:
+      - description: 选择题信息
+        in: body
+        name: problem
+        required: true
+        schema:
+          $ref: '#/definitions/api.ChoiceProblemRequest'
+      - description: 是否公开
+        in: query
+        name: is_public
+        type: boolean
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            type: string
+        "400":
+          description: 请求解析失败
+          schema:
+            type: string
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+  /problem/choice/delete/{id}:
+    delete:
+      description: 删除选择题
+      parameters:
+      - description: 选择题ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            type: string
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+  /problem/choice/update:
+    put:
+      description: 更新选择题
+      parameters:
+      - description: 选择题信息
+        in: body
+        name: problem
+        required: true
+        schema:
+          $ref: '#/definitions/api.ChoiceProblemResponse'
+      - description: 是否公开
+        in: query
+        name: is_public
+        type: boolean
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            type: string
+        "400":
+          description: 请求解析失败
+          schema:
+            type: string
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
   /register:
     post:
       description: 用户注册
@@ -162,6 +294,31 @@ paths:
           description: 用户信息
           schema:
             $ref: '#/definitions/api.UserInfoResponse'
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+  /user/update:
+    put:
+      description: 更新用户信息
+      parameters:
+      - description: 用户信息
+        in: body
+        name: info
+        required: true
+        schema:
+          $ref: '#/definitions/api.UserInfo'
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            type: string
+        "400":
+          description: 请求解析失败
+          schema:
+            type: string
         default:
           description: 服务器错误
           schema:
