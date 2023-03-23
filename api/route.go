@@ -13,6 +13,15 @@ func InitRoute() {
 	user.Use(global.CheckAuth)
 	user.GET("/info", GetUserInfo)
 	user.PUT("/update", UpdateUserInfo)
+
+	problem := global.Router.Group("/problem")
+	problem.Use(global.CheckAuth)
+
+	choiceProblem := problem.Group("/choice")
+	choiceProblem.GET("", GetChoiceProblems)
+	choiceProblem.POST("/create", CreateChoiceProblem)
+	choiceProblem.PUT("/update", UpdateChoiceProblem)
+	choiceProblem.DELETE("/delete/:id", DeleteChoiceProblem)
 	/*
 		TODO: 以下路由需要添加
 		problem := global.Router.Group("/problem")
@@ -20,23 +29,18 @@ func InitRoute() {
 		problem.GET("/all", GetAllProblems)
 		problem.GET("/my", GetMyProblems)
 
-		choiceProblem := problem.Group("/choice")
 		fillProblem := problem.Group("/fill")
 		judgeProblem := problem.Group("/judge")
 
-		choiceProblem.GET("", GetChoiceProblems)
 		fillProblem.GET("", GetFillProblems)
 		judgeProblem.GET("", GetJudgeProblems)
 
-		choiceProblem.POST("/create", CreateChoiceProblem)
 		fillProblem.POST("/create", CreateFillProblem)
 		judgeProblem.POST("/create", CreateJudgeProblem)
 
-		choiceProblem.POST("/update", UpdateChoiceProblem)
 		fillProblem.POST("/update", UpdateFillProblem)
 		judgeProblem.POST("/update", UpdateJudgeProblem)
 
-		choiceProblem.POST("/delete", DeleteChoiceProblem)
 		fillProblem.POST("/delete", DeleteFillProblem)
 		judgeProblem.POST("/delete", DeleteJudgeProblem)
 
