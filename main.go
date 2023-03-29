@@ -7,6 +7,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/minio/minio-go/v6"
 	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -57,6 +58,21 @@ func InitLog(Path string) {
 	gin.DefaultWriter = io.MultiWriter(ginLog, os.Stdout)
 }
 
+func InitMinio(Addr string, Port int, AccessKey string, SecretKey string, UseSSL bool) {
+	client, err := minio.New(fmt.Sprintf("%s:%d", Addr, Port), AccessKey, SecretKey, UseSSL)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err != nil {
+		log.Fatalln("创建 MinIO 客户端失败", err)
+		return
+	}
+	global.MinioClient = client
+	log.Printf("创建 MinIO 客户端成功")
+
+}
+
 func LoadConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -71,6 +87,9 @@ func LoadConfig() {
 	InitRedis(viper.GetString("RedisHost"), viper.GetInt("RedisPort"),
 		viper.GetString("RedisPassword"))
 	InitLog(viper.GetString("LogPath"))
+	InitMinio(viper.GetString("MinioHost"), viper.GetInt("MinioPort"),
+		viper.GetString("MinioAccessKey"), viper.GetString("MinioSecretKey"),
+		false)
 	docs.SwaggerInfo.BasePath = viper.GetString("DocsPath")
 }
 

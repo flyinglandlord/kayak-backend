@@ -22,6 +22,11 @@ func InitRoute() {
 	choiceProblem.POST("/create", CreateChoiceProblem)
 	choiceProblem.PUT("/update", UpdateChoiceProblem)
 	choiceProblem.DELETE("/delete/:id", DeleteChoiceProblem)
+
+	upload := global.Router.Group("/upload")
+	upload.Use(global.CheckAuth)
+	upload.POST("/public", UploadPublicFile)
+	upload.POST("/avatar", UploadAvatar)
 	/*
 		TODO: 以下路由需要添加
 		problem := global.Router.Group("/problem")
