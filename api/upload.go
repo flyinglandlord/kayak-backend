@@ -74,5 +74,5 @@ func UploadPublicFile(c *gin.Context) {
 }
 
 func UploadAvatar(c *gin.Context) {
-	// TODO: 上传头像
+	// TODO
 }
