@@ -203,7 +203,7 @@ paths:
       - ApiKeyAuth: []
   /problem/choice/update:
     put:
-      description: 更新选择题
+      description: 更新选择题(description为空或不传则维持原description,choices只需传需要更新的)
       parameters:
       - description: 选择题信息
         in: body
@@ -278,6 +278,34 @@ paths:
             type: string
         "409":
           description: 用户不存在
+          schema:
+            type: string
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+  /upload/public:
+    post:
+      description: 上传公开文件
+      parameters:
+      - description: 文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: 文件 URL
+          schema:
+            type: string
+        "400":
+          description: 请求解析失败
+          schema:
+            type: string
+        "403":
+          description: 请求被禁止
           schema:
             type: string
         default:

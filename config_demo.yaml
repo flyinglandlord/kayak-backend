@@ -8,6 +8,9 @@ RedisHost: # Redis地址
 RedisPort: # Redis端口
 RedisPassword: # Redis密码
 
+MinioAccessKey: # MinioAccessKey
+MinioSecretKey: # MinioSecretKey
+
 MiniProgramAppID: # 小程序AppID
 MiniProgramAppSecret: # 小程序AppSecret
 

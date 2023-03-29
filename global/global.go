@@ -4,8 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
+	"github.com/minio/minio-go/v6"
 )
 
 var Database *sqlx.DB
 var Redis *redis.Client
 var Router *gin.Engine
+var MinioClient *minio.Client
