@@ -69,11 +69,32 @@ func DoUploadPublic(c *gin.Context) (int, string) {
 func UploadPublicFile(c *gin.Context) {
 	status, url := DoUploadPublic(c)
 	c.JSON(status, gin.H{
-		"url": "/public/" + url,
+		"url": "/public" + url,
 	})
 }
 
+// UploadAvatar godoc
+// @Schemes http
+// @Description 上传用户头像
+// @Param file formData file true "头像"
+// @Success 200 {string} string
+// @Failure 400 {string} string "请求解析失败"
+// @Failure 403 {string} string "请求被禁止"
+// @Failure default {string} string "服务器错误"
+// @Router /upload/avatar [post]
+// @Security ApiKeyAuth
 func UploadAvatar(c *gin.Context) {
-	// TODO: 上传头像
-	// 尝试触发Github Action
+	status, url := DoUploadPublic(c)
+	UserId := c.GetInt("UserId")
+	if status == http.StatusOK {
+		// 更新数据库
+		sqlString := `UPDATE "user" SET avatar_url = $1 WHERE id = $2`
+		if _, err := global.Database.Exec(sqlString, url, UserId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.String(http.StatusOK, "头像设置成功")
+		return
+	}
+	c.String(status, "头像设置失败")
 }

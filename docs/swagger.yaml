@@ -286,6 +286,34 @@ paths:
             type: string
       security:
       - ApiKeyAuth: []
+  /upload/avatar:
+    post:
+      description: 上传用户头像
+      parameters:
+      - description: 头像
+        in: formData
+        name: file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: 请求解析失败
+          schema:
+            type: string
+        "403":
+          description: 请求被禁止
+          schema:
+            type: string
+        default:
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
   /upload/public:
     post:
       description: 上传公开文件
