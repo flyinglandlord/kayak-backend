@@ -47,7 +47,7 @@ func GetChoiceProblems(c *gin.Context) {
 			return
 		}
 	}
-	c.JSON(200, choiceProblems)
+	c.JSON(http.StatusOK, choiceProblems)
 }
 
 // CreateChoiceProblem godoc
@@ -99,6 +99,7 @@ func CreateChoiceProblem(c *gin.Context) {
 // @Param is_public query bool false "是否公开"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
+// @Failure 403 {string} string "没有权限"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/choice/update [put]
 // @Security ApiKeyAuth

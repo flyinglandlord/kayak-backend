@@ -14,6 +14,11 @@ func InitRoute() {
 	user.GET("/info", GetUserInfo)
 	user.PUT("/update", UpdateUserInfo)
 
+	upload := global.Router.Group("/upload")
+	upload.Use(global.CheckAuth)
+	upload.POST("/public", UploadPublicFile)
+	upload.POST("/avatar", UploadAvatar)
+
 	problem := global.Router.Group("/problem")
 	problem.Use(global.CheckAuth)
 
@@ -23,10 +28,12 @@ func InitRoute() {
 	choiceProblem.PUT("/update", UpdateChoiceProblem)
 	choiceProblem.DELETE("/delete/:id", DeleteChoiceProblem)
 
-	upload := global.Router.Group("/upload")
-	upload.Use(global.CheckAuth)
-	upload.POST("/public", UploadPublicFile)
-	upload.POST("/avatar", UploadAvatar)
+	note := global.Router.Group("/note")
+	note.Use(global.CheckAuth)
+	note.GET("", GetNotes)
+	note.POST("/create", CreateNote)
+	note.PUT("/update", UpdateNote)
+	note.DELETE("/delete/:id", DeleteNote)
 	/*
 		TODO: 以下路由需要添加
 		problem := global.Router.Group("/problem")
