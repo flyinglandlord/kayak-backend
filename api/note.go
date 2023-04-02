@@ -17,17 +17,45 @@ type NoteRequest struct {
 	Content string `json:"content"`
 }
 
-// GetNotes godoc
+// GetUserNotes godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有笔记
 // @Success 200 {object} []NoteResponse "笔记列表"
 // @Failure default {string} string "服务器错误"
-// @Router /note [get]
+// @Router /user/note [get]
 // @Security ApiKeyAuth
-func GetNotes(c *gin.Context) {
+func GetUserNotes(c *gin.Context) {
 	var notes []NoteResponse
 	sqlString := `SELECT id, title, content FROM note WHERE user_id = $1`
 	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, notes)
+}
+
+// GetNotes godoc
+// @Schemes http
+// @Description 获取当前用户视角下的所有笔记
+// @Success 200 {object} []NoteResponse "笔记列表"
+// @Failure default {string} string "服务器错误"
+// @Router /note/all [get]
+func GetNotes(c *gin.Context) {
+	var notes []NoteResponse
+	var sqlString string
+	var err error
+	role, _ := c.Get("Role")
+	if role == global.GUEST {
+		sqlString = `SELECT id, title, content FROM note WHERE is_public = true`
+		err = global.Database.Select(&notes, sqlString)
+	} else if role == global.USER {
+		sqlString = `SELECT id, title, content FROM note WHERE is_public = true OR user_id = $1`
+		err = global.Database.Select(&notes, sqlString, c.GetInt("UserId"))
+	} else {
+		sqlString = `SELECT id, title, content FROM note`
+		err = global.Database.Select(&notes, sqlString)
+	}
+	if err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -38,7 +66,7 @@ func GetNotes(c *gin.Context) {
 // @Schemes http
 // @Description 创建笔记
 // @Param note body NoteRequest true "笔记信息"
-// @Param is_public query bool false "是否公开"
+// @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "创建成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
@@ -63,7 +91,7 @@ func CreateNote(c *gin.Context) {
 // @Schemes http
 // @Description 更新笔当前登录用户的笔记
 // @Param note body NoteResponse true "笔记信息"
-// @Param is_public query bool false "是否公开"
+// @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
@@ -100,7 +128,6 @@ func UpdateNote(c *gin.Context) {
 // @Description 删除当前登录用户的笔记
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "删除成功"
-// @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
 // @Failure default {string} string "服务器错误"
 // @Router /note/delete/{id} [delete]
