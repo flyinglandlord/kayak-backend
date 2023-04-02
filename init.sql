@@ -39,13 +39,6 @@ CREATE TABLE problem_choice
     FOREIGN KEY ("id") REFERENCES problem_type ("id")
 );
 
-CREATE TABLE problem_judge
-(
-    "id"         serial  NOT NULL,
-    "is_correct" boolean NOT NULL,
-    FOREIGN KEY ("id") REFERENCES problem_type ("id")
-);
-
 CREATE TABLE problem_answer
 (
     "id"     serial       NOT NULL,
