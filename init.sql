@@ -1,3 +1,8 @@
+-- ###############################
+--            [警告]
+-- 运行此脚本会清楚数据库所有内容，请三思
+-- ###############################
+
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA IF NOT EXISTS public;
 COMMENT ON SCHEMA public IS 'standard public schema';
@@ -12,7 +17,7 @@ CREATE TABLE "user"
     phone      varchar(255),
     password   varchar(255)  NOT NULL,
     created_at timestamp     NOT NULL,
-    avatar_url VARCHAR(1024) NOT NULL DEFAULT '/test/public/user.svg',
+    avatar_url VARCHAR(1024) NOT NULL DEFAULT '/public/user.png',
     PRIMARY KEY ("id")
 );
 
@@ -110,5 +115,49 @@ CREATE TABLE note
     "user_id"    integer      NOT NULL,
     "is_public"  boolean      NOT NULL,
     PRIMARY KEY ("id"),
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+);
+
+CREATE TABLE note_review
+(
+    "id"         serial       NOT NULL,
+    "title"      varchar(255) NOT NULL,
+    "content"    text         NOT NULL,
+    "created_at" timestamp    NOT NULL,
+    "updated_at" timestamp    NOT NULL,
+    "user_id"    integer      NOT NULL,
+    "note_id"    integer      NOT NULL,
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id"),
+    FOREIGN KEY ("note_id") REFERENCES note ("id")
+);
+
+CREATE TABLE user_like_note_review
+(
+    "id"        serial       NOT NULL,
+    "note_review_id" integer NOT NULL,
+    "user_id"        integer NOT NULL,
+    PRIMARY KEY ("note_review_id", "user_id"),
+    FOREIGN KEY ("note_review_id") REFERENCES note_review ("id"),
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+);
+
+CREATE TABLE user_like_note
+(
+    "id"        serial       NOT NULL,
+    "note_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    PRIMARY KEY ("note_id", "user_id"),
+    FOREIGN KEY ("note_id") REFERENCES note ("id"),
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+);
+
+CREATE TABLE user_favorite_note
+(
+    "id"       serial       NOT NULL,
+    "note_id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    PRIMARY KEY ("note_id", "user_id"),
+    FOREIGN KEY ("note_id") REFERENCES note ("id"),
     FOREIGN KEY ("user_id") REFERENCES "user" ("id")
 );

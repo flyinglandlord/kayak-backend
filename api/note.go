@@ -3,15 +3,19 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
+	"kayak-backend/model"
 	"net/http"
 	"time"
 )
 
 type NoteResponse struct {
-	ID      int    `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	ID         int    `json:"id" db:"id"`
+	Title      string `json:"title" db:"title"`
+	Content    string `json:"content" db:"content"`
+	IsLiked    bool   `json:"is_liked"`
+	IsFavorite bool   `json:"is_favorite"`
 }
+
 type NoteRequest struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -23,8 +27,9 @@ type NoteRequest struct {
 // @Success 200 {object} []NoteResponse "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /note/all [get]
+// @Security ApiKeyAuth
 func GetNotes(c *gin.Context) {
-	var notes []NoteResponse
+	var notes []model.Note
 	var sqlString string
 	var err error
 	role, _ := c.Get("Role")
@@ -42,7 +47,37 @@ func GetNotes(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, notes)
+	var noteResponses []NoteResponse
+	for _, note := range notes {
+		var noteResponse NoteResponse
+		noteResponse.ID = note.ID
+		noteResponse.Title = note.Title
+		noteResponse.Content = note.Content
+
+		// 查询是否点赞
+		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if count > 0 {
+			noteResponse.IsLiked = true
+		}
+
+		// 查询是否收藏
+		sqlString = `SELECT COUNT(*) FROM user_favorite_note WHERE note_id = $1 AND user_id = $2`
+		if err := global.Database.Get(&count, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if count > 0 {
+			noteResponse.IsFavorite = true
+		}
+
+		noteResponses = append(noteResponses, noteResponse)
+	}
+	c.JSON(http.StatusOK, noteResponses)
 }
 
 // CreateNote godoc
@@ -135,4 +170,138 @@ func DeleteNote(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "删除成功")
+}
+
+// LikeNote godoc
+// @Schemes http
+// @Description 点赞笔记
+// @Param id path int true "笔记ID"
+// @Success 200 {string} string "点赞成功"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/like/{id} [post]
+// @Security ApiKeyAuth
+func LikeNote(c *gin.Context) {
+	userId := c.GetInt("UserId")
+	noteId := c.Param("id")
+	sqlString := `SELECT id FROM note WHERE id = $1`
+	var noteIdInt int
+	if err := global.Database.Get(&noteIdInt, sqlString, noteId); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	sqlString = `SELECT id FROM user_like_note WHERE user_id = $1 AND note_id = $2`
+	var userLikeNoteId int
+	if err := global.Database.Get(&userLikeNoteId, sqlString, userId, noteId); err == nil {
+		c.String(http.StatusOK, "点赞成功")
+		return
+	}
+	sqlString = `INSERT INTO user_like_note (user_id, note_id) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, userId, noteId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "点赞成功")
+}
+
+// UnlikeNote godoc
+// @Schemes http
+// @Description 取消点赞笔记
+// @Param id path int true "笔记ID"
+// @Success 200 {string} string "取消点赞成功"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/unlike/{id} [post]
+// @Security ApiKeyAuth
+func UnlikeNote(c *gin.Context) {
+	userId := c.GetInt("UserId")
+	noteId := c.Param("id")
+	// 判断笔记是否存在
+	sqlString := `SELECT id FROM note WHERE id = $1`
+	var noteIdInt int
+	if err := global.Database.Get(&noteIdInt, sqlString, noteId); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	// 判断是否已经点赞
+	sqlString = `SELECT id FROM user_like_note WHERE user_id = $1 AND note_id = $2`
+	var userLikeNoteId int
+	if err := global.Database.Get(&userLikeNoteId, sqlString, userId, noteId); err != nil {
+		c.String(http.StatusOK, "取消点赞成功")
+		return
+	}
+	// 取消点赞
+	sqlString = `DELETE FROM user_like_note WHERE user_id = $1 AND note_id = $2`
+	if _, err := global.Database.Exec(sqlString, userId, noteId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "取消点赞成功")
+}
+
+// FavoriteNote godoc
+// @Schemes http
+// @Description 收藏笔记
+// @Param id path int true "笔记ID"
+// @Success 200 {string} string "收藏成功"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/favorite/{id} [post]
+// @Security ApiKeyAuth
+func FavoriteNote(c *gin.Context) {
+	userId := c.GetInt("UserId")
+	noteId := c.Param("id")
+	sqlString := `SELECT id FROM note WHERE id = $1`
+	var noteIdInt int
+	if err := global.Database.Get(&noteIdInt, sqlString, noteId); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	sqlString = `SELECT id FROM user_favorite_note WHERE user_id = $1 AND note_id = $2`
+	var userFavoriteNoteId int
+	if err := global.Database.Get(&userFavoriteNoteId, sqlString, userId, noteId); err == nil {
+		c.String(http.StatusOK, "收藏成功")
+		return
+	}
+	sqlString = `INSERT INTO user_favorite_note (user_id, note_id) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, userId, noteId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "收藏成功")
+}
+
+// UnfavoriteNote godoc
+// @Schemes http
+// @Description 取消收藏笔记
+// @Param id path int true "笔记ID"
+// @Success 200 {string} string "取消收藏成功"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/unfavorite/{id} [post]
+// @Security ApiKeyAuth
+func UnfavoriteNote(c *gin.Context) {
+	userId := c.GetInt("UserId")
+	noteId := c.Param("id")
+	// 判断笔记是否存在
+	sqlString := `SELECT id FROM note WHERE id = $1`
+	var noteIdInt int
+	if err := global.Database.Get(&noteIdInt, sqlString, noteId); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	// 判断是否已经收藏
+	sqlString = `SELECT id FROM user_favorite_note WHERE user_id = $1 AND note_id = $2`
+	var userFavoriteNoteId int
+	if err := global.Database.Get(&userFavoriteNoteId, sqlString, userId, noteId); err != nil {
+		c.String(http.StatusOK, "取消收藏成功")
+		return
+	}
+	// 取消收藏
+	sqlString = `DELETE FROM user_favorite_note WHERE user_id = $1 AND note_id = $2`
+	if _, err := global.Database.Exec(sqlString, userId, noteId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "取消收藏成功")
 }

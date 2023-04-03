@@ -54,6 +54,7 @@ type Choice struct {
 // @Success 200 {object} []ChoiceProblemResponse "选择题列表"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/choice/all [get]
+// @Security ApiKeyAuth
 func GetChoiceProblems(c *gin.Context) {
 	var choiceProblems []ChoiceProblemResponse
 	var sqlString string
@@ -266,6 +267,7 @@ type BlankProblemRequest struct {
 // @Success 200 {object} BlankProblemResponse "填空题信息"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/blank/all [get]
+// @Security ApiKeyAuth
 func GetBlankProblems(c *gin.Context) {
 	var blankProblems []BlankProblemResponse
 	var sqlString string

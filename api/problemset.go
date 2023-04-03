@@ -23,6 +23,7 @@ type ProblemsetRequest struct {
 // @Success 200 {object} []ProblemsetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/all [get]
+// @Security ApiKeyAuth
 func GetProblemsets(c *gin.Context) {
 	var problemsets []ProblemsetResponse
 	var sqlString string
@@ -83,6 +84,7 @@ type ProblemResponse struct {
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/{id}/all [get]
+// @Security ApiKeyAuth
 func GetProblemsInProblemset(c *gin.Context) {
 	var problems []ProblemResponse
 	userId := c.GetInt("UserId")

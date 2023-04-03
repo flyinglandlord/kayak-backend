@@ -6,6 +6,142 @@
         "version": "0.0.1"
     },
     "paths": {
+        "/favorite/add/problem/{id}": {
+            "post": {
+                "description": "添加题目到收藏夹（只有管理员和题目创建者能添加私有题目）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题目ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "添加成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题目不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/favorite/add/problemset/{id}": {
+            "post": {
+                "description": "添加题集到收藏夹（只有管理员和题集创建者能添加私有题集）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题集ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "添加成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题集不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/favorite/remove/problem/{id}": {
+            "post": {
+                "description": "从收藏夹移除题目",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题目ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "移除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/favorite/remove/problemset/{id}": {
+            "post": {
+                "description": "从收藏夹移除题集",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题集ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "移除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "description": "用户登录",
@@ -66,6 +202,447 @@
                 }
             }
         },
+        "/note/all": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前用户视角下的所有笔记",
+                "responses": {
+                    "200": {
+                        "description": "笔记列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.NoteResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/create": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "创建笔记",
+                "parameters": [
+                    {
+                        "description": "笔记信息",
+                        "name": "note",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.NoteRequest"
+                        }
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否公开",
+                        "name": "is_public",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求解析失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除笔记（只有管理员和笔记作者可以删除）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "笔记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "笔记不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/favorite/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "收藏笔记",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "笔记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "收藏成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "笔记不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/like/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "点赞笔记",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "笔记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "点赞成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "笔记不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/unfavorite/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "取消收藏笔记",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "笔记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "取消收藏成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "笔记不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/unlike/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "取消点赞笔记",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "笔记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "取消点赞成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "笔记不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note/update": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "更新笔记（只有管理员和笔记作者可以更新）",
+                "parameters": [
+                    {
+                        "description": "笔记信息",
+                        "name": "note",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.NoteResponse"
+                        }
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否公开",
+                        "name": "is_public",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求解析失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note_review/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "添加评论",
+                "parameters": [
+                    {
+                        "description": "评论信息",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.AddReviewRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求解析失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note_review/get": {
+            "get": {
+                "description": "获取笔记的评论",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "笔记id",
+                        "name": "note_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "评论列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.NoteReviewResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/note_review/remove": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除评论",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论id",
+                        "name": "review_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "评论不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "description": "测试服务器是否正常运行",
@@ -85,14 +662,265 @@
                 }
             }
         },
-        "/problem/choice": {
+        "/problem/blank/:id": {
+            "get": {
+                "description": "获取单个填空题信息（只有管理员和题目创建者可以查看私有题目）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "填空题ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "填空题信息",
+                        "schema": {
+                            "$ref": "#/definitions/api.BlankProblemResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "选择题不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problem/blank/all": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "获取所有的选择题",
+                "description": "获取当前用户视角下的所有填空题",
+                "responses": {
+                    "200": {
+                        "description": "填空题信息",
+                        "schema": {
+                            "$ref": "#/definitions/api.BlankProblemResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problem/blank/create": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "创建填空题",
+                "parameters": [
+                    {
+                        "description": "填空题信息",
+                        "name": "problem",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.BlankProblemRequest"
+                        }
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否公开",
+                        "name": "is_public",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求解析失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problem/blank/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除填空题（只有管理员和题目创建者可以删除题目）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "填空题ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题目不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problem/blank/update": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "更新填空题（只有管理员和题目创建者可以更新题目）",
+                "parameters": [
+                    {
+                        "description": "填空题信息",
+                        "name": "problem",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.BlankProblemResponse"
+                        }
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否公开",
+                        "name": "is_public",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求解析失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problem/choice/:id": {
+            "get": {
+                "description": "获取单个选择题信息（只有管理员和题目创建者可以获取私有题目）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "选择题ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "选择题信息",
+                        "schema": {
+                            "$ref": "#/definitions/api.ChoiceProblemResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "选择题不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problem/choice/all": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前用户视角下的所有选择题",
                 "responses": {
                     "200": {
                         "description": "选择题列表",
@@ -134,7 +962,8 @@
                         "type": "boolean",
                         "description": "是否公开",
                         "name": "is_public",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -166,7 +995,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "删除选择题",
+                "description": "删除选择题（只有管理员和题目创建者可以删除题目）",
                 "parameters": [
                     {
                         "type": "integer",
@@ -179,6 +1008,18 @@
                 "responses": {
                     "200": {
                         "description": "删除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题目不存在",
                         "schema": {
                             "type": "string"
                         }
@@ -199,7 +1040,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "更新选择题(description为空或不传则维持原description,choices只需传需要更新的)",
+                "description": "更新选择题（description为空或不传则维持原description,choices只需传需要更新的）(只有管理员和题目创建者可以更新题目)",
                 "parameters": [
                     {
                         "description": "选择题信息",
@@ -214,7 +1055,8 @@
                         "type": "boolean",
                         "description": "是否公开",
                         "name": "is_public",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -226,6 +1068,278 @@
                     },
                     "400": {
                         "description": "请求解析失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problemset/all": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前用户视角下的所有题集",
+                "responses": {
+                    "200": {
+                        "description": "题集列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ProblemsetResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problemset/create": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "创建题集",
+                "parameters": [
+                    {
+                        "description": "题集信息",
+                        "name": "problemset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ProblemsetRequest"
+                        }
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否公开",
+                        "name": "is_public",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problemset/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除题集（只有管理员或者题集的创建者可以删除题集）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题集ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题集不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problemset/{id}/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "添加题目到题集（只有同时为题集的创建者和题目的创建者可以添加题目）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题集ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "题目ID",
+                        "name": "problem_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "添加成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题集不存在\"/\"题目不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problemset/{id}/all": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取题集中的所有题目信息（只有管理员和题集创建者能获取所有信息，否则只能获取公开题集的所有公开题目信息）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题集ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "题目列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ProblemResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题集不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/problemset/{id}/remove": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "从题集中移除题目（只有管理员或者同时为题集的创建者和题目的创建者可以移除题目）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "题集ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "题目ID",
+                        "name": "problem_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "移除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题集不存在\"/\"题目不存在",
                         "schema": {
                             "type": "string"
                         }
@@ -418,6 +1532,50 @@
                 }
             }
         },
+        "/user/favorite/problem": {
+            "get": {
+                "description": "获取当前登录用户收藏的题目",
+                "responses": {
+                    "200": {
+                        "description": "收藏的题目列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.FavoriteProblemResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/favorite/problemset": {
+            "get": {
+                "description": "获取当前登录用户收藏的题集",
+                "responses": {
+                    "200": {
+                        "description": "收藏的题集列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.FavoriteProblemsetResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/user/info": {
             "get": {
                 "security": [
@@ -431,6 +1589,111 @@
                         "description": "用户信息",
                         "schema": {
                             "$ref": "#/definitions/api.UserInfoResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/note": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前登录用户的所有笔记",
+                "responses": {
+                    "200": {
+                        "description": "笔记列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.NoteResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/problem/blank": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前登录用户的所有填空题",
+                "responses": {
+                    "200": {
+                        "description": "填空题信息",
+                        "schema": {
+                            "$ref": "#/definitions/api.BlankProblemResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/problem/choice": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前登录用户的所有选择题",
+                "responses": {
+                    "200": {
+                        "description": "选择题列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ChoiceProblemResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/problemset": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前登录用户的所有题集",
+                "responses": {
+                    "200": {
+                        "description": "题集列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ProblemsetResponse"
+                            }
                         }
                     },
                     "default": {
@@ -482,9 +1745,180 @@
                     }
                 }
             }
+        },
+        "/user/wrong_record": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取当前登录用户的所有错题记录",
+                "responses": {
+                    "200": {
+                        "description": "错题记录列表",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.WrongRecordResponse"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/wrong_record/create/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "创建错题记录（只有管理员和题目创建者能将私有题目加入到错题记录中）",
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "没有权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "题目不存在",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/wrong_record/decrease/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "减少做错次数",
+                "responses": {
+                    "200": {
+                        "description": "减少成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/wrong_record/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "删除错题记录",
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/wrong_record/increase/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "增加做错次数",
+                "responses": {
+                    "200": {
+                        "description": "增加成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "default": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "api.AddReviewRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "note_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.BlankProblemRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.BlankProblemResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.Choice": {
             "type": "object",
             "properties": {
@@ -493,9 +1927,6 @@
                 },
                 "description": {
                     "type": "string"
-                },
-                "is_correct": {
-                    "type": "boolean"
                 }
             }
         },
@@ -530,6 +1961,22 @@
                 }
             }
         },
+        "api.FavoriteProblemResponse": {
+            "type": "object",
+            "properties": {
+                "problem_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.FavoriteProblemsetResponse": {
+            "type": "object",
+            "properties": {
+                "problemset_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.LoginInfo": {
             "type": "object",
             "properties": {
@@ -545,6 +1992,99 @@
             "type": "object",
             "properties": {
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.NoteRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.NoteResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_favorite": {
+                    "type": "boolean"
+                },
+                "is_liked": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.NoteReviewResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "note_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ProblemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "problem_type_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ProblemsetRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ProblemsetResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -611,6 +2151,23 @@
                 },
                 "user_name": {
                     "type": "string"
+                }
+            }
+        },
+        "api.WrongRecordResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "integer"
+                },
+                "problem_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "integer"
                 }
             }
         }

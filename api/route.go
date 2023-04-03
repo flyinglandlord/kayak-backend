@@ -32,6 +32,10 @@ func InitRoute() {
 	note.POST("/create", CreateNote)
 	note.PUT("/update", UpdateNote)
 	note.DELETE("/delete/:id", DeleteNote)
+	note.POST("/like/:id", LikeNote)
+	note.POST("/unlike/:id", UnlikeNote)
+	note.POST("/favorite/:id", FavoriteNote)
+	note.POST("/unfavorite/:id", UnfavoriteNote)
 
 	wrongRecord := global.Router.Group("/wrong_record")
 	wrongRecord.Use(global.CheckAuth)
@@ -72,4 +76,10 @@ func InitRoute() {
 	problemset.GET("/:id/all", GetProblemsInProblemset)
 	problemset.PUT("/:id/add", AddProblemToProblemset)
 	problemset.PUT("/:id/remove", RemoveProblemFromProblemset)
+
+	noteReview := global.Router.Group("/note_review")
+	noteReview.Use(global.CheckAuth)
+	noteReview.POST("/add", AddNoteReview)
+	noteReview.POST("/remove", RemoveNoteReview)
+	noteReview.GET("/get", GetNoteReviews)
 }
