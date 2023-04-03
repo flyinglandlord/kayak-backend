@@ -129,16 +129,17 @@ func UpdateNote(c *gin.Context) {
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "笔记不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /note/delete/{id} [delete]
 // @Security ApiKeyAuth
 func DeleteNote(c *gin.Context) {
 	userId := c.GetInt("UserId")
 	noteId := c.Param("id")
-	sqlString := `SELECT user_id FROM problem_type WHERE id = $1`
+	sqlString := `SELECT user_id FROM note WHERE id = $1`
 	var noteUserId int
 	if err := global.Database.Get(&noteUserId, sqlString, noteId); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusNotFound, "笔记不存在")
 		return
 	}
 	if userId != noteUserId {

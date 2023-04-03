@@ -107,6 +107,58 @@ func GetChoiceProblems(c *gin.Context) {
 	c.JSON(http.StatusOK, choiceProblems)
 }
 
+// GetChoiceProblem godoc
+// @Schemes http
+// @Description 获取单个选择题信息
+// @Param id path int true "选择题ID"
+// @Success 200 {object} ChoiceProblemResponse "选择题信息"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "选择题不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/choice/:id [get]
+func GetChoiceProblem(c *gin.Context) {
+	var choiceProblem ChoiceProblemResponse
+	role, _ := c.Get("Role")
+	if role == global.GUEST {
+		sqlString := `SELECT is_public FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+		var isPublic bool
+		if err := global.Database.Get(&isPublic, sqlString, ChoiceProblemType, c.Param("id")); err != nil {
+			c.String(http.StatusNotFound, "选择题不存在")
+			return
+		}
+		if !isPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else if role == global.USER {
+		sqlString := `SELECT is_public, user_id FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+		var isPublic bool
+		var userId int
+		if err := global.Database.Get(&struct {
+			IsPublic bool `db:"is_public"`
+			UserId   int  `db:"user_id"`
+		}{IsPublic: isPublic, UserId: userId}, sqlString, ChoiceProblemType, c.Param("id")); err != nil {
+			c.String(http.StatusNotFound, "选择题不存在")
+			return
+		}
+		if !isPublic && userId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	}
+	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+	if err := global.Database.Get(&choiceProblem, sqlString, ChoiceProblemType, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "选择题不存在")
+		return
+	}
+	sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
+	if err := global.Database.Select(&choiceProblem.Choices, sqlString, choiceProblem.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, choiceProblem)
+}
+
 // CreateChoiceProblem godoc
 // @Schemes http
 // @Description 创建选择题
@@ -274,6 +326,53 @@ func GetBlankProblems(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, blankProblems)
+}
+
+// GetBlankProblem godoc
+// @Schemes http
+// @Description 获取单个填空题信息
+// @Param id path int true "填空题ID"
+// @Success 200 {object} BlankProblemResponse "填空题信息"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "选择题不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/blank/:id [get]
+func GetBlankProblem(c *gin.Context) {
+	var blankProblem BlankProblemResponse
+	role, _ := c.Get("Role")
+	if role == global.GUEST {
+		sqlString := `SELECT is_public FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+		var isPublic bool
+		if err := global.Database.Get(&isPublic, sqlString, BlankProblemType, c.Param("id")); err != nil {
+			c.String(http.StatusNotFound, "填空题不存在")
+			return
+		}
+		if !isPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else if role == global.USER {
+		sqlString := `SELECT is_public, user_id FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+		var isPublic bool
+		var userId int
+		if err := global.Database.Get(&struct {
+			IsPublic bool `db:"is_public"`
+			UserId   int  `db:"user_id"`
+		}{IsPublic: isPublic, UserId: userId}, sqlString, BlankProblemType, c.Param("id")); err != nil {
+			c.String(http.StatusNotFound, "填空题不存在")
+			return
+		}
+		if !isPublic && userId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	}
+	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+	if err := global.Database.Get(&blankProblem, sqlString, BlankProblemType, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "填空题不存在")
+		return
+	}
+	c.JSON(http.StatusOK, blankProblem)
 }
 
 // CreateBlankProblem godoc

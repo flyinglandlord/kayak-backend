@@ -28,12 +28,14 @@ func InitRoute() {
 
 	choiceProblem := problem.Group("/choice")
 	global.Router.GET("/problem/choice/all", GetChoiceProblems)
+	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
 	choiceProblem.POST("/create", CreateChoiceProblem)
 	choiceProblem.PUT("/update", UpdateChoiceProblem)
 	choiceProblem.DELETE("/delete/:id", DeleteChoiceProblem)
 
 	blankProblem := problem.Group("/blank")
 	global.Router.GET("/problem/blank/all", GetBlankProblems)
+	global.Router.GET("/problem/blank/:id", GetBlankProblem)
 	blankProblem.POST("/create", CreateBlankProblem)
 	blankProblem.PUT("/update", UpdateBlankProblem)
 	blankProblem.DELETE("/delete/:id", DeleteBlankProblem)
@@ -43,6 +45,7 @@ func InitRoute() {
 	global.Router.GET("/problemset/all", GetProblemsets)
 	problemset.POST("/create", CreateProblemset)
 	problemset.DELETE("/delete/:id", DeleteProblemset)
+
 	problemset.PUT("/:id/add", AddProblemToProblemset)
 	problemset.PUT("/:id/remove", RemoveProblemFromProblemset)
 
