@@ -12,6 +12,7 @@ type NoteResponse struct {
 	ID         int    `json:"id" db:"id"`
 	Title      string `json:"title" db:"title"`
 	Content    string `json:"content" db:"content"`
+	CreatedAt  string `json:"created_at" db:"created_at"`
 	IsLiked    bool   `json:"is_liked"`
 	IsFavorite bool   `json:"is_favorite"`
 }
@@ -34,13 +35,13 @@ func GetNotes(c *gin.Context) {
 	var err error
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString = `SELECT id, title, content FROM note WHERE is_public = true`
+		sqlString = `SELECT id, title, content, created_at FROM note WHERE is_public = true`
 		err = global.Database.Select(&notes, sqlString)
 	} else if role == global.USER {
-		sqlString = `SELECT id, title, content FROM note WHERE is_public = true OR user_id = $1`
+		sqlString = `SELECT id, title, content, created_at FROM note WHERE is_public = true OR user_id = $1`
 		err = global.Database.Select(&notes, sqlString, c.GetInt("UserId"))
 	} else {
-		sqlString = `SELECT id, title, content FROM note`
+		sqlString = `SELECT id, title, content, created_at FROM note`
 		err = global.Database.Select(&notes, sqlString)
 	}
 	if err != nil {
@@ -53,6 +54,7 @@ func GetNotes(c *gin.Context) {
 		noteResponse.ID = note.ID
 		noteResponse.Title = note.Title
 		noteResponse.Content = note.Content
+		noteResponse.CreatedAt = note.CreatedAt.Format(time.RFC3339)
 
 		// 查询是否点赞
 		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1 AND user_id = $2`
