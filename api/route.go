@@ -13,6 +13,10 @@ func InitRoute() {
 	user.Use(global.CheckAuth)
 	user.GET("/info", GetUserInfo)
 	user.PUT("/update", UpdateUserInfo)
+	user.GET("/problem/choice", GetUserChoiceProblems)
+	user.GET("/problem/blank", GetUserBlankProblems)
+	user.GET("problemset", GetUserProblemsets)
+	user.GET("/note", GetUserNotes)
 
 	upload := global.Router.Group("/upload")
 	upload.Use(global.CheckAuth)
@@ -23,50 +27,32 @@ func InitRoute() {
 	problem.Use(global.CheckAuth)
 
 	choiceProblem := problem.Group("/choice")
-	choiceProblem.GET("", GetChoiceProblems)
+	global.Router.GET("/problem/choice/all", GetChoiceProblems)
+	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
 	choiceProblem.POST("/create", CreateChoiceProblem)
 	choiceProblem.PUT("/update", UpdateChoiceProblem)
 	choiceProblem.DELETE("/delete/:id", DeleteChoiceProblem)
 
+	blankProblem := problem.Group("/blank")
+	global.Router.GET("/problem/blank/all", GetBlankProblems)
+	global.Router.GET("/problem/blank/:id", GetBlankProblem)
+	blankProblem.POST("/create", CreateBlankProblem)
+	blankProblem.PUT("/update", UpdateBlankProblem)
+	blankProblem.DELETE("/delete/:id", DeleteBlankProblem)
+
+	problemset := global.Router.Group("/problemset")
+	problemset.Use(global.CheckAuth)
+	global.Router.GET("/problemset/all", GetProblemsets)
+	problemset.POST("/create", CreateProblemset)
+	problemset.DELETE("/delete/:id", DeleteProblemset)
+
+	problemset.PUT("/:id/add", AddProblemToProblemset)
+	problemset.PUT("/:id/remove", RemoveProblemFromProblemset)
+
 	note := global.Router.Group("/note")
 	note.Use(global.CheckAuth)
-	note.GET("", GetNotes)
+	global.Router.GET("/note/all", GetNotes)
 	note.POST("/create", CreateNote)
 	note.PUT("/update", UpdateNote)
 	note.DELETE("/delete/:id", DeleteNote)
-	/*
-		TODO: 以下路由需要添加
-		problem := global.Router.Group("/problem")
-		problem.Use(global.CheckAuth)
-		problem.GET("/all", GetAllProblems)
-		problem.GET("/my", GetMyProblems)
-
-		fillProblem := problem.Group("/fill")
-		judgeProblem := problem.Group("/judge")
-
-		fillProblem.GET("", GetFillProblems)
-		judgeProblem.GET("", GetJudgeProblems)
-
-		fillProblem.POST("/create", CreateFillProblem)
-		judgeProblem.POST("/create", CreateJudgeProblem)
-
-		fillProblem.POST("/update", UpdateFillProblem)
-		judgeProblem.POST("/update", UpdateJudgeProblem)
-
-		fillProblem.POST("/delete", DeleteFillProblem)
-		judgeProblem.POST("/delete", DeleteJudgeProblem)
-
-		problemset := global.Router.Group("/problemset")
-		problemset.Use(global.CheckAuth)
-		problemset.GET("/all", GetAllProblemsets)
-		problemset.GET("/my", GetMyProblemsets)
-
-		problemset.POST("/add-problem", AddProblem)
-		problemset.POST("/remove-problem", RemoveProblem)
-
-		problemset.POST("/create", CreateProblemset)
-		problemset.POST("/update", UpdateProblemset)
-		problemset.POST("/delete", DeleteProblemset)
-		problemset.POST("/favorite", FavoriteProblemset)
-	*/
 }

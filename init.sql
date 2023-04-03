@@ -36,14 +36,14 @@ CREATE TABLE problem_choice
     "description" text         NOT NULL,
     "is_correct"  boolean      NOT NULL,
     PRIMARY KEY ("id", "choice"),
-    FOREIGN KEY ("id") REFERENCES problem_type ("id")
+    FOREIGN KEY ("id") REFERENCES problem_type ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE problem_answer
 (
-    "id"     serial       NOT NULL,
+    "id"     integer      NOT NULL,
     "answer" varchar(255) NOT NULL,
-    FOREIGN KEY ("id") REFERENCES "problem_type" ("id")
+    FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE problemset
@@ -64,8 +64,8 @@ CREATE TABLE problem_in_problemset
     "problemset_id" integer NOT NULL,
     "problem_id"    integer NOT NULL,
     PRIMARY KEY ("problemset_id", "problem_id"),
-    FOREIGN KEY ("problemset_id") REFERENCES problemset ("id"),
-    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id")
+    FOREIGN KEY ("problemset_id") REFERENCES problemset ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE user_favorite_problemset
