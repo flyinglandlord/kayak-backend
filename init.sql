@@ -68,13 +68,36 @@ CREATE TABLE problem_in_problemset
     FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE
 );
 
+CREATE TABLE user_favorite_problem
+(
+    "problem_id" integer   NOT NULL,
+    "user_id"    integer   NOT NULL,
+    "created_at" timestamp NOT NULL,
+    PRIMARY KEY ("problem_id", "user_id"),
+    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+);
+
 CREATE TABLE user_favorite_problemset
 (
-    "problemset_id" integer NOT NULL,
-    "user_id"       integer NOT NULL,
+    "problemset_id" integer   NOT NULL,
+    "user_id"       integer   NOT NULL,
+    "created_at"    timestamp NOT NULL,
     PRIMARY KEY ("problemset_id", "user_id"),
-    FOREIGN KEY ("problemset_id") REFERENCES problemset ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    FOREIGN KEY ("problemset_id") REFERENCES problemset ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+);
+
+CREATE TABLE user_wrong_record
+(
+    "problem_id" integer   NOT NULL,
+    "user_id"    integer   NOT NULL,
+    "count"      integer   NOT NULL,
+    "created_at" timestamp NOT NULL,
+    "updated_at" timestamp NOT NULL,
+    PRIMARY KEY ("problem_id", "user_id"),
+    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE note

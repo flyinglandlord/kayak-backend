@@ -18,10 +18,10 @@ func DeleteProblem(c *gin.Context) {
 	sqlString := `SELECT user_id FROM problem_type WHERE id = $1`
 	var problemUserId int
 	if err := global.Database.Get(&problemUserId, sqlString, choiceProblemId); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if userId != problemUserId {
+	if role, _ := c.Get("Role"); userId != problemUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -46,30 +46,6 @@ type Choice struct {
 	Choice      string `json:"choice"`
 	Description string `json:"description"`
 	IsCorrect   bool   `json:"-" db:"is_correct"`
-}
-
-// GetUserChoiceProblems godoc
-// @Schemes http
-// @Description 获取当前登录用户的所有选择题
-// @Success 200 {object} []ChoiceProblemResponse "选择题列表"
-// @Failure default {string} string "服务器错误"
-// @Router /user/problem/choice [get]
-// @Security ApiKeyAuth
-func GetUserChoiceProblems(c *gin.Context) {
-	var choiceProblems []ChoiceProblemResponse
-	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND user_id = $2`
-	if err := global.Database.Select(&choiceProblems, sqlString, ChoiceProblemType, c.GetInt("UserId")); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	for i := range choiceProblems {
-		sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
-		if err := global.Database.Select(&choiceProblems[i].Choices, sqlString, choiceProblems[i].ID); err != nil {
-			c.String(http.StatusInternalServerError, "服务器错误")
-			return
-		}
-	}
-	c.JSON(http.StatusOK, choiceProblems)
 }
 
 // GetChoiceProblems godoc
@@ -109,7 +85,7 @@ func GetChoiceProblems(c *gin.Context) {
 
 // GetChoiceProblem godoc
 // @Schemes http
-// @Description 获取单个选择题信息
+// @Description 获取单个选择题信息（只有管理员和题目创建者可以获取私有题目）
 // @Param id path int true "选择题ID"
 // @Success 200 {object} ChoiceProblemResponse "选择题信息"
 // @Failure 403 {string} string "没有权限"
@@ -203,7 +179,7 @@ func CreateChoiceProblem(c *gin.Context) {
 
 // UpdateChoiceProblem godoc
 // @Schemes http
-// @Description 更新选择题(description为空或不传则维持原description,choices只需传需要更新的)
+// @Description 更新选择题（description为空或不传则维持原description,choices只需传需要更新的）(只有管理员和题目创建者可以更新题目)
 // @Param problem body ChoiceProblemResponse true "选择题信息"
 // @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "更新成功"
@@ -225,7 +201,7 @@ func UpdateChoiceProblem(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	if userId != problemUserId {
+	if role, _ := c.Get("Role"); userId != problemUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -264,9 +240,11 @@ func UpdateChoiceProblem(c *gin.Context) {
 
 // DeleteChoiceProblem godoc
 // @Schemes http
-// @Description 删除选择题
+// @Description 删除选择题（只有管理员和题目创建者可以删除题目）
 // @Param id path int true "选择题ID"
 // @Success 200 {string} string "删除成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "题目不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/choice/delete/{id} [delete]
 // @Security ApiKeyAuth
@@ -280,24 +258,6 @@ type BlankProblemResponse struct {
 }
 type BlankProblemRequest struct {
 	Description string `json:"description"`
-}
-
-// GetUserBlankProblems godoc
-// @Schemes http
-// @Description 获取当前登录用户的所有填空题
-// @Success 200 {object} BlankProblemResponse "填空题信息"
-// @Failure default {string} string "服务器错误"
-// @Router /user/problem/blank [get]
-// @Security ApiKeyAuth
-func GetUserBlankProblems(c *gin.Context) {
-	userId := c.GetInt("UserId")
-	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND user_id = $2`
-	var blankProblems []BlankProblemResponse
-	if err := global.Database.Select(&blankProblems, sqlString, BlankProblemType, userId); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	c.JSON(http.StatusOK, blankProblems)
 }
 
 // GetBlankProblems godoc
@@ -330,7 +290,7 @@ func GetBlankProblems(c *gin.Context) {
 
 // GetBlankProblem godoc
 // @Schemes http
-// @Description 获取单个填空题信息
+// @Description 获取单个填空题信息（只有管理员和题目创建者可以查看私有题目）
 // @Param id path int true "填空题ID"
 // @Success 200 {object} BlankProblemResponse "填空题信息"
 // @Failure 403 {string} string "没有权限"
@@ -403,7 +363,7 @@ func CreateBlankProblem(c *gin.Context) {
 
 // UpdateBlankProblem godoc
 // @Schemes http
-// @Description 更新填空题
+// @Description 更新填空题（只有管理员和题目创建者可以更新题目）
 // @Param problem body BlankProblemResponse true "填空题信息"
 // @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "更新成功"
@@ -425,7 +385,7 @@ func UpdateBlankProblem(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	if userId != problemUserId {
+	if role, _ := c.Get("Role"); userId != problemUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -440,9 +400,11 @@ func UpdateBlankProblem(c *gin.Context) {
 
 // DeleteBlankProblem godoc
 // @Schemes http
-// @Description 删除填空题
+// @Description 删除填空题（只有管理员和题目创建者可以删除题目）
 // @Param id path int true "填空题ID"
 // @Success 200 {string} string "删除成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "题目不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/blank/delete/{id} [delete]
 // @Security ApiKeyAuth

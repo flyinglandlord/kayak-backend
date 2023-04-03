@@ -70,3 +70,130 @@ func UpdateUserInfo(c *gin.Context) {
 	}
 	c.String(200, "更新成功")
 }
+
+// GetUserNotes godoc
+// @Schemes http
+// @Description 获取当前登录用户的所有笔记
+// @Success 200 {object} []NoteResponse "笔记列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/note [get]
+// @Security ApiKeyAuth
+func GetUserNotes(c *gin.Context) {
+	var notes []NoteResponse
+	sqlString := `SELECT id, title, content FROM note WHERE user_id = $1`
+	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, notes)
+}
+
+// GetUserWrongRecords godoc
+// @Schemes http
+// @Description 获取当前登录用户的所有错题记录
+// @Success 200 {object} []WrongRecordResponse "错题记录列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/wrong_record [get]
+// @Security ApiKeyAuth
+func GetUserWrongRecords(c *gin.Context) {
+	var wrongRecords []WrongRecordResponse
+	sqlString := `SELECT problem_id, count, created_at, updated_at FROM user_wrong_record WHERE user_id = $1`
+	if err := global.Database.Select(&wrongRecords, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, wrongRecords)
+}
+
+// GetUserFavoriteProblems godoc
+// @Schemes http
+// @Description 获取当前登录用户收藏的题目
+// @Success 200 {object} []FavoriteProblemResponse "收藏的题目列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/favorite/problem [get]
+func GetUserFavoriteProblems(c *gin.Context) {
+	var problems []FavoriteProblemResponse
+	userId := c.GetInt("UserId")
+	sqlString := "SELECT problem_id FROM user_favorite_problem WHERE user_id = $1"
+	if err := global.Database.Get(&problems, sqlString, userId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, problems)
+}
+
+// GetUserFavoriteProblemsets godoc
+// @Schemes http
+// @Description 获取当前登录用户收藏的题集
+// @Success 200 {object} []FavoriteProblemsetResponse "收藏的题集列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/favorite/problemset [get]
+func GetUserFavoriteProblemsets(c *gin.Context) {
+	var problemsets []FavoriteProblemsetResponse
+	userId := c.GetInt("UserId")
+	sqlString := "SELECT problemset_id FROM user_favorite_problemset WHERE user_id = $1"
+	if err := global.Database.Get(&problemsets, sqlString, userId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, problemsets)
+}
+
+// GetUserProblemsets godoc
+// @Schemes http
+// @Description 获取当前登录用户的所有题集
+// @Success 200 {object} []ProblemsetResponse "题集列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/problemset [get]
+// @Security ApiKeyAuth
+func GetUserProblemsets(c *gin.Context) {
+	var problemsets []ProblemsetResponse
+	sqlString := `SELECT id, name, description FROM problemset WHERE user_id = $1`
+	if err := global.Database.Select(&problemsets, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, problemsets)
+}
+
+// GetUserChoiceProblems godoc
+// @Schemes http
+// @Description 获取当前登录用户的所有选择题
+// @Success 200 {object} []ChoiceProblemResponse "选择题列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/problem/choice [get]
+// @Security ApiKeyAuth
+func GetUserChoiceProblems(c *gin.Context) {
+	var choiceProblems []ChoiceProblemResponse
+	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND user_id = $2`
+	if err := global.Database.Select(&choiceProblems, sqlString, ChoiceProblemType, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	for i := range choiceProblems {
+		sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
+		if err := global.Database.Select(&choiceProblems[i].Choices, sqlString, choiceProblems[i].ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+	}
+	c.JSON(http.StatusOK, choiceProblems)
+}
+
+// GetUserBlankProblems godoc
+// @Schemes http
+// @Description 获取当前登录用户的所有填空题
+// @Success 200 {object} BlankProblemResponse "填空题信息"
+// @Failure default {string} string "服务器错误"
+// @Router /user/problem/blank [get]
+// @Security ApiKeyAuth
+func GetUserBlankProblems(c *gin.Context) {
+	userId := c.GetInt("UserId")
+	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND user_id = $2`
+	var blankProblems []BlankProblemResponse
+	if err := global.Database.Select(&blankProblems, sqlString, BlankProblemType, userId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, blankProblems)
+}

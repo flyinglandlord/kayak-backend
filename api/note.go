@@ -17,23 +17,6 @@ type NoteRequest struct {
 	Content string `json:"content"`
 }
 
-// GetUserNotes godoc
-// @Schemes http
-// @Description 获取当前登录用户的所有笔记
-// @Success 200 {object} []NoteResponse "笔记列表"
-// @Failure default {string} string "服务器错误"
-// @Router /user/note [get]
-// @Security ApiKeyAuth
-func GetUserNotes(c *gin.Context) {
-	var notes []NoteResponse
-	sqlString := `SELECT id, title, content FROM note WHERE user_id = $1`
-	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	c.JSON(http.StatusOK, notes)
-}
-
 // GetNotes godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有笔记
@@ -89,7 +72,7 @@ func CreateNote(c *gin.Context) {
 
 // UpdateNote godoc
 // @Schemes http
-// @Description 更新笔当前登录用户的笔记
+// @Description 更新笔记（只有管理员和笔记作者可以更新）
 // @Param note body NoteResponse true "笔记信息"
 // @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "更新成功"
@@ -110,7 +93,7 @@ func UpdateNote(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	if userId != c.GetInt("UserId") {
+	if role, _ := c.Get("Role"); userId != c.GetInt("UserId") && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -125,7 +108,7 @@ func UpdateNote(c *gin.Context) {
 
 // DeleteNote godoc
 // @Schemes http
-// @Description 删除当前登录用户的笔记
+// @Description 删除笔记（只有管理员和笔记作者可以删除）
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -142,7 +125,7 @@ func DeleteNote(c *gin.Context) {
 		c.String(http.StatusNotFound, "笔记不存在")
 		return
 	}
-	if userId != noteUserId {
+	if role, _ := c.Get("Role"); userId != noteUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
