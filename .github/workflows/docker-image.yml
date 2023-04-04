@@ -11,7 +11,7 @@ jobs:
     - name: Test
       run:
         echo "${{ secrets.TEST_CONFIG }}" > ./config_test.yaml && 
-        go test kayak-backend/test
+        go test -v kayak-backend/test
   build:
     needs: [test]
     runs-on: ubuntu-latest
