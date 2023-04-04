@@ -2,10 +2,18 @@ name: Docker Image CI
 
 on: 
   - push
-  - pull_request
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Test
+      run:
+        echo "${{ secrets.TEST_CONFIG }}" > ./config.yaml && 
+        go test kayak-backend/test
   build:
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
