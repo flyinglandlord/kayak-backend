@@ -11,8 +11,8 @@ import (
 type UserInfoResponse struct {
 	UserId     int       `json:"user_id"`
 	UserName   string    `json:"user_name"`
-	Email      string    `json:"email"`
-	Phone      string    `json:"phone"`
+	Email      *string   `json:"email"`
+	Phone      *string   `json:"phone"`
 	AvatarPath string    `json:"avatar_path"`
 	CreateAt   time.Time `json:"create_at"`
 }
@@ -34,8 +34,8 @@ func GetUserInfo(c *gin.Context) {
 	userInfo := UserInfoResponse{
 		UserId:     c.GetInt("UserId"),
 		UserName:   user.Name,
-		Email:      *user.Email,
-		Phone:      *user.Phone,
+		Email:      user.Email,
+		Phone:      user.Phone,
 		AvatarPath: user.AvatarURL,
 		CreateAt:   user.CreatedAt,
 	}

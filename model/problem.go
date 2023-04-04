@@ -11,9 +11,15 @@ type ProblemType struct {
 	ProblemTypeID int       `json:"problem_type_id" db:"problem_type_id"`
 	IsPublic      bool      `json:"is_public" db:"is_public"`
 }
+
 type ProblemChoice struct {
 	ID          int    `json:"id" db:"id"`
 	Choice      string `json:"choice" db:"choice"`
 	Description string `json:"description" db:"description"`
 	IsCorrect   bool   `json:"is_correct" db:"is_correct"`
+}
+
+type ProblemAnswer struct {
+	ID     int    `json:"id" db:"id"`
+	Answer string `json:"answer" db:"answer"`
 }

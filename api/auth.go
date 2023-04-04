@@ -19,10 +19,10 @@ type LoginResponse struct {
 }
 
 type RegisterInfo struct {
-	Name     string `json:"name" bind:"required,max=20"`
-	Password string `json:"password" bind:"required,min=6,max=20"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
+	Name     string  `json:"name" bind:"required,max=20"`
+	Password string  `json:"password" bind:"required,min=6,max=20"`
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
 }
 
 type RegisterResponse struct {
@@ -97,11 +97,11 @@ func Register(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	userInfo.Email = &registerRequest.Email
-	userInfo.Phone = &registerRequest.Phone
+	userInfo.Email = registerRequest.Email
+	userInfo.Phone = registerRequest.Phone
 	sqlString = `INSERT INTO "user" (name, password, email, phone, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	if err := global.Database.Get(&userInfo.ID, sqlString, userInfo.Name, userInfo.Password,
-		userInfo.Email, userInfo.Phone, time.Now()); err != nil {
+		userInfo.Email, userInfo.Phone, time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

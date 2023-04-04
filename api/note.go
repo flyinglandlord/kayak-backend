@@ -99,8 +99,8 @@ func CreateNote(c *gin.Context) {
 		return
 	}
 	sqlString := `INSERT INTO note (title, content, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, $4, $5, $6)`
-	if _, err := global.Database.Exec(sqlString, note.Title, note.Content, time.Now(),
-		time.Now(), c.GetInt("UserId"), c.Query("is_public")); err != nil {
+	if _, err := global.Database.Exec(sqlString, note.Title, note.Content, time.Now().Local(),
+		time.Now().Local(), c.GetInt("UserId"), c.Query("is_public")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -135,7 +135,7 @@ func UpdateNote(c *gin.Context) {
 		return
 	}
 	sqlString = `UPDATE note SET title = $1, content = $2, updated_at = $3, is_public = $4 WHERE id = $5`
-	if _, err := global.Database.Exec(sqlString, note.Title, note.Content, time.Now(),
+	if _, err := global.Database.Exec(sqlString, note.Title, note.Content, time.Now().Local(),
 		c.Query("is_public"), note.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return

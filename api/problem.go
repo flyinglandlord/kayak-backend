@@ -157,7 +157,7 @@ func CreateChoiceProblem(c *gin.Context) {
 	sqlString := `INSERT INTO problem_type (description, user_id, problem_type_id, is_public, created_at, updated_at) 
 		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	if err := global.Database.Get(&choiceProblem.ID, sqlString, choiceProblem.Description, userId,
-		ChoiceProblemType, c.Query("is_public"), time.Now(), time.Now()); err != nil {
+		ChoiceProblemType, c.Query("is_public"), time.Now().Local(), time.Now().Local()); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -217,7 +217,7 @@ func UpdateChoiceProblem(c *gin.Context) {
 	}
 	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
 	if _, err := global.Database.Exec(sqlString, choiceProblem.Description,
-		c.Query("is_public"), time.Now(), choiceProblem.ID); err != nil {
+		c.Query("is_public"), time.Now().Local(), choiceProblem.ID); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -356,7 +356,7 @@ func CreateBlankProblem(c *gin.Context) {
 	}
 	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
 	if _, err := global.Database.Exec(sqlString, BlankProblemType, blankProblem.Description,
-		c.Query("is_public"), userId, time.Now(), time.Now()); err != nil {
+		c.Query("is_public"), userId, time.Now().Local(), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -393,7 +393,7 @@ func UpdateBlankProblem(c *gin.Context) {
 	}
 	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
 	if _, err := global.Database.Exec(sqlString, blankProblem.Description, c.Query("is_public"),
-		time.Now(), blankProblem.ID); err != nil {
+		time.Now().Local(), blankProblem.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

@@ -63,7 +63,7 @@ func CreateProblemset(c *gin.Context) {
 	}
 	sqlString := `INSERT INTO problemset (name, description, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, $4, $5, $6)`
 	if _, err := global.Database.Exec(sqlString, problemset.Name, problemset.Description,
-		time.Now(), time.Now(), c.GetInt("UserId"), c.Query("is_public")); err != nil {
+		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), c.Query("is_public")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

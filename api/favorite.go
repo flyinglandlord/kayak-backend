@@ -38,7 +38,7 @@ func AddProblemToFavorite(c *gin.Context) {
 		return
 	}
 	sqlString = "INSERT INTO user_favorite_problem (user_id, problem_id, created_at) VALUES ($1, $2, $3)"
-	if _, err := global.Database.Exec(sqlString, userId, problemId, time.Now()); err != nil {
+	if _, err := global.Database.Exec(sqlString, userId, problemId, time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -94,7 +94,7 @@ func AddProblemsetToFavorite(c *gin.Context) {
 		return
 	}
 	sqlString = "INSERT INTO user_favorite_problemset (user_id, problemset_id, created_at) VALUES ($1, $2, $3)"
-	if _, err := global.Database.Exec(sqlString, userId, problemsetId, time.Now()); err != nil {
+	if _, err := global.Database.Exec(sqlString, userId, problemsetId, time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

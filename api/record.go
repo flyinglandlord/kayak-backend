@@ -40,7 +40,7 @@ func CreateWrongRecord(c *gin.Context) {
 		return
 	}
 	sqlString = `INSERT INTO user_wrong_record (user_id, problem_id, count, created_at, updated_at) VALUES ($1, $2, 1, $3, $4)`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), problemID, time.Now(), time.Now()); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), problemID, time.Now().Local(), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -57,7 +57,7 @@ func CreateWrongRecord(c *gin.Context) {
 func IncreaseWrongRecord(c *gin.Context) {
 	problemID := c.Param("id")
 	sqlString := `UPDATE user_wrong_record SET count = count + 1, updated_at = $1 WHERE user_id = $2 AND problem_id = $3`
-	if _, err := global.Database.Exec(sqlString, time.Now(), c.GetInt("UserId"), problemID); err != nil {
+	if _, err := global.Database.Exec(sqlString, time.Now().Local(), c.GetInt("UserId"), problemID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -74,7 +74,7 @@ func IncreaseWrongRecord(c *gin.Context) {
 func DecreaseWrongRecord(c *gin.Context) {
 	problemID := c.Param("id")
 	sqlString := `UPDATE user_wrong_record SET count = count - 1, updated_at = $1 WHERE user_id = $2 AND problem_id = $3`
-	if _, err := global.Database.Exec(sqlString, time.Now(), c.GetInt("UserId"), problemID); err != nil {
+	if _, err := global.Database.Exec(sqlString, time.Now().Local(), c.GetInt("UserId"), problemID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

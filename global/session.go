@@ -64,7 +64,7 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 	var session Session
-	fmt.Println(string(sessionInfo))
+	// fmt.Println(string(sessionInfo))
 	err := json.Unmarshal(sessionInfo, &session)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")

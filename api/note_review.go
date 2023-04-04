@@ -40,7 +40,7 @@ func AddNoteReview(c *gin.Context) {
 		return
 	}
 	sqlString := `INSERT INTO note_review (title, content, note_id, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := global.Database.Exec(sqlString, review.Title, review.Content, review.NoteId, review.UserId, time.Now(), time.Now())
+	_, err := global.Database.Exec(sqlString, review.Title, review.Content, review.NoteId, review.UserId, time.Now().Local(), time.Now().Local())
 	if err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return

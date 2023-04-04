@@ -1,12 +1,13 @@
 -- ###############################
---            [警告]
--- 运行此脚本会清楚数据库所有内容，请三思
+--            [Warning]
+-- Running this script will delete all data in database.
 -- ###############################
 
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA IF NOT EXISTS public;
 COMMENT ON SCHEMA public IS 'standard public schema';
 SET search_path = "public";
+SET TIME ZONE 'PRC';
 
 CREATE TABLE "user"
 (
