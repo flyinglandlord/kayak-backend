@@ -11,6 +11,8 @@ type ProblemsetResponse struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Count       int    `json:"count"`
+	CreatedAt   string `json:"created_at"`
 }
 type ProblemsetRequest struct {
 	Name        string `json:"name"`
@@ -30,7 +32,8 @@ func GetProblemsets(c *gin.Context) {
 	var err error
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString = `SELECT id, name, description FROM problemset WHERE is_public = true`
+		sqlString = `SELECT ps.id, ps.name, ps.description, count(*) Count, ps.created_at FROM problemset ps 
+    		JOIN problem_in_problemset pip on ps.id = pip.problemset_id WHERE ps.is_public = true GROUP BY ps.id`
 		err = global.Database.Select(&problemsets, sqlString)
 	} else if role == global.USER {
 		sqlString = `SELECT id, name, description FROM problemset WHERE is_public = true OR user_id = $1`

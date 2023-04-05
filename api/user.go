@@ -16,6 +16,11 @@ type UserInfoResponse struct {
 	AvatarPath string    `json:"avatar_path"`
 	CreateAt   time.Time `json:"create_at"`
 }
+type UserInfoRequest struct {
+	Name  string  `json:"name"`
+	Email *string `json:"email"`
+	Phone *string `json:"phone"`
+}
 
 // GetUserInfo godoc
 // @Schemes http
@@ -39,26 +44,20 @@ func GetUserInfo(c *gin.Context) {
 		AvatarPath: user.AvatarURL,
 		CreateAt:   user.CreatedAt,
 	}
-	c.JSON(200, userInfo)
-}
-
-type UserInfo struct {
-	Name  string  `json:"name"`
-	Email *string `json:"email"`
-	Phone *string `json:"phone"`
+	c.JSON(http.StatusOK, userInfo)
 }
 
 // UpdateUserInfo godoc
 // @Schemes http
 // @Description 更新用户信息
-// @Param info body UserInfo true "用户信息"
+// @Param info body UserInfoRequest true "用户信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
 // @Router /user/update [put]
 // @Security ApiKeyAuth
 func UpdateUserInfo(c *gin.Context) {
-	user := UserInfo{}
+	user := UserInfoRequest{}
 	sqlString := `UPDATE "user" SET name = $1, email = $2, phone = $3 WHERE id = $4`
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.String(http.StatusBadRequest, "请求格式错误")
@@ -68,7 +67,7 @@ func UpdateUserInfo(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.String(200, "更新成功")
+	c.String(http.StatusOK, "更新成功")
 }
 
 // GetUserNotes godoc
@@ -114,7 +113,7 @@ func GetUserWrongRecords(c *gin.Context) {
 func GetUserFavoriteProblems(c *gin.Context) {
 	var problems []FavoriteProblemResponse
 	userId := c.GetInt("UserId")
-	sqlString := "SELECT problem_id FROM user_favorite_problem WHERE user_id = $1"
+	sqlString := `SELECT problem_id, problem_type_id FROM user_favorite_problem ufp JOIN problem_type pt on ufp.problem_id = pt.id WHERE ufp.user_id = $1`
 	if err := global.Database.Get(&problems, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -125,13 +124,13 @@ func GetUserFavoriteProblems(c *gin.Context) {
 // GetUserFavoriteProblemsets godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题集
-// @Success 200 {object} []FavoriteProblemsetResponse "收藏的题集列表"
+// @Success 200 {object} []ProblemsetResponse "收藏的题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/problemset [get]
 func GetUserFavoriteProblemsets(c *gin.Context) {
-	var problemsets []FavoriteProblemsetResponse
+	var problemsets []ProblemsetResponse
 	userId := c.GetInt("UserId")
-	sqlString := "SELECT problemset_id FROM user_favorite_problemset WHERE user_id = $1"
+	sqlString := `SELECT ufp.problemset_id, p.name, p.description, p.created_at, COUNT(*) count FROM user_favorite_problemset ufp JOIN problemset p ON ufp.problemset_id = p.id JOIN problem_in_problemset pip on p.id = pip.problemset_id WHERE ufp.user_id = $1 GROUP BY ufp.problemset_id`
 	if err := global.Database.Get(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return

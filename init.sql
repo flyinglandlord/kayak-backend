@@ -116,7 +116,7 @@ CREATE TABLE note
     "user_id"    integer      NOT NULL,
     "is_public"  boolean      NOT NULL,
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE note_review
@@ -129,36 +129,36 @@ CREATE TABLE note_review
     "user_id"    integer      NOT NULL,
     "note_id"    integer      NOT NULL,
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id"),
-    FOREIGN KEY ("note_id") REFERENCES note ("id")
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE user_like_note_review
 (
-    "id"        serial       NOT NULL,
-    "note_review_id" integer NOT NULL,
-    "user_id"        integer NOT NULL,
+    "note_review_id" integer   NOT NULL,
+    "user_id"        integer   NOT NULL,
+    "created_at"     timestamp NOT NULL,
     PRIMARY KEY ("note_review_id", "user_id"),
-    FOREIGN KEY ("note_review_id") REFERENCES note_review ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    FOREIGN KEY ("note_review_id") REFERENCES note_review ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE user_like_note
 (
-    "id"        serial       NOT NULL,
-    "note_id" integer NOT NULL,
-    "user_id" integer NOT NULL,
+    "note_id"    integer   NOT NULL,
+    "user_id"    integer   NOT NULL,
+    "created_at" timestamp NOT NULL,
     PRIMARY KEY ("note_id", "user_id"),
-    FOREIGN KEY ("note_id") REFERENCES note ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE user_favorite_note
 (
-    "id"       serial       NOT NULL,
-    "note_id" integer NOT NULL,
-    "user_id" integer NOT NULL,
+    "note_id"    integer   NOT NULL,
+    "user_id"    integer   NOT NULL,
+    "created_at" timestamp NOT NULL,
     PRIMARY KEY ("note_id", "user_id"),
-    FOREIGN KEY ("note_id") REFERENCES note ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );

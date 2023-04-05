@@ -8,7 +8,8 @@ import (
 )
 
 type FavoriteProblemResponse struct {
-	ProblemID int `json:"problem_id"`
+	ProblemID     int `json:"problem_id"`
+	ProblemTypeID int `json:"problem_type_id"`
 }
 
 // AddProblemToFavorite godoc
@@ -61,10 +62,6 @@ func RemoveProblemFromFavorite(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "移除成功")
-}
-
-type FavoriteProblemsetResponse struct {
-	ProblemsetID int `json:"problemset_id"`
 }
 
 // AddProblemsetToFavorite godoc
