@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type AddReviewRequest struct {
+type NoteReviewCreateRequest struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	NoteId  int    `json:"note_id"`
@@ -34,7 +34,7 @@ type NoteReviewResponse struct {
 // @Router /note_review/add [post]
 // @Security ApiKeyAuth
 func AddNoteReview(c *gin.Context) {
-	var review AddReviewRequest
+	var review NoteReviewCreateRequest
 	if err := c.ShouldBindJSON(&review); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
