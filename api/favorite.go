@@ -20,7 +20,7 @@ type FavoriteProblemResponse struct {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /favorite/add/problem/{id} [post]
+// @Router /problem/favorite/{id} [post]
 func AddProblemToFavorite(c *gin.Context) {
 	problemId := c.Param("id")
 	userId := c.GetInt("UserId")
@@ -52,7 +52,7 @@ func AddProblemToFavorite(c *gin.Context) {
 // @Param id path int true "题目ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
-// @Router /favorite/remove/problem/{id} [post]
+// @Router /problem/unfavorite/{id} [post]
 func RemoveProblemFromFavorite(c *gin.Context) {
 	problemId := c.Param("id")
 	userId := c.GetInt("UserId")
@@ -72,7 +72,7 @@ func RemoveProblemFromFavorite(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /favorite/add/problemset/{id} [post]
+// @Router /problemset/favorite/{id} [post]
 func AddProblemsetToFavorite(c *gin.Context) {
 	problemsetId := c.Param("id")
 	userId := c.GetInt("UserId")
@@ -104,7 +104,7 @@ func AddProblemsetToFavorite(c *gin.Context) {
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
-// @Router /favorite/remove/problemset/{id} [post]
+// @Router /problemset/unfavorite/{id} [post]
 func RemoveProblemsetFromFavorite(c *gin.Context) {
 	problemsetId := c.Param("id")
 	userId := c.GetInt("UserId")
