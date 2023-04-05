@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
@@ -31,7 +32,8 @@ type NoteResponse struct {
 
 // GetNotes godoc
 // @Schemes http
-// @Description 获取当前用户视角下的所有笔记
+// @Description 获取当前用户视角下符合条件的所有笔记
+// @Param id query int false "笔记ID"
 // @Success 200 {object} []NoteItem "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /note/all [get]
@@ -43,12 +45,21 @@ func GetNotes(c *gin.Context) {
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
 		sqlString = `SELECT id, title, content, created_at FROM note WHERE is_public = true`
+		if c.Query("id") != "" {
+			sqlString += fmt.Sprintf(` AND id = %s`, c.Query("id"))
+		}
 		err = global.Database.Select(&notes, sqlString)
 	} else if role == global.USER {
 		sqlString = `SELECT id, title, content, created_at FROM note WHERE (is_public = true OR user_id = $1)`
+		if c.Query("id") != "" {
+			sqlString += fmt.Sprintf(` AND id = %s`, c.Query("id"))
+		}
 		err = global.Database.Select(&notes, sqlString, c.GetInt("UserId"))
 	} else {
 		sqlString = `SELECT id, title, content, created_at FROM note`
+		if c.Query("id") != "" {
+			sqlString += fmt.Sprintf(` WHERE id = %s`, c.Query("id"))
+		}
 		err = global.Database.Select(&notes, sqlString)
 	}
 	if err != nil {

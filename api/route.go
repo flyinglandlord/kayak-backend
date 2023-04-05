@@ -69,7 +69,7 @@ func InitRoute() {
 	global.Router.GET("/problemset/all", GetProblemsets)
 	problemset.POST("/create", CreateProblemset)
 	problemset.DELETE("/delete/:id", DeleteProblemset)
-	problemset.GET("/:id/all", GetProblemsInProblemset)
+	problemset.GET("/:id/all_problem", GetProblemsInProblemset)
 	problemset.PUT("/:id/add", AddProblemToProblemset)
 	problemset.PUT("/:id/remove", RemoveProblemFromProblemset)
 	problemset.POST("/favorite/:id", AddProblemsetToFavorite)
