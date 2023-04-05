@@ -92,7 +92,7 @@ func GetChoiceProblems(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "选择题不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem/choice/:id [get]
+// @Router /problem/choice/{id} [get]
 func GetChoiceProblem(c *gin.Context) {
 	var choiceProblem ChoiceProblemResponse
 	role, _ := c.Get("Role")
@@ -298,7 +298,7 @@ func GetBlankProblems(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "选择题不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem/blank/:id [get]
+// @Router /problem/blank/{id} [get]
 func GetBlankProblem(c *gin.Context) {
 	var blankProblem BlankProblemResponse
 	role, _ := c.Get("Role")
