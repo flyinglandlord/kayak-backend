@@ -15,6 +15,7 @@ type ProblemSetResponse struct {
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 	ProblemCount int       `json:"problem_count" db:"problem_count"`
+	IsFavorite   bool      `json:"is_favorite" db:"is_favorite"`
 }
 type ProblemSetRequest struct {
 	Name        string `json:"name"`
@@ -70,6 +71,14 @@ func GetProblemsets(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problemset WHERE problemset_id = $1 AND user_id = $2`
+		var isFavorite int
+		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+
 		problemsetResponses = append(problemsetResponses, ProblemSetResponse{
 			ID:           problemset.ID,
 			Name:         problemset.Name,
@@ -77,6 +86,7 @@ func GetProblemsets(c *gin.Context) {
 			CreatedAt:    problemset.CreatedAt,
 			UpdatedAt:    problemset.UpdatedAt,
 			ProblemCount: problemCount,
+			IsFavorite:   isFavorite != 0,
 		})
 	}
 	c.JSON(http.StatusOK, AllProblemSetResponse{
