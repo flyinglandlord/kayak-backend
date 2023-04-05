@@ -44,15 +44,10 @@ func InitRoute() {
 	wrongRecord.PUT("/decrease/:id", DecreaseWrongRecord)
 	wrongRecord.DELETE("/delete/:id", DeleteWrongRecord)
 
-	favorite := global.Router.Group("/favorite")
-	favorite.Use(global.CheckAuth)
-	favorite.POST("/add/problem/:id", AddProblemToFavorite)
-	favorite.POST("/add/problemset/:id", AddProblemsetToFavorite)
-	favorite.DELETE("/remove/problem/:id", RemoveProblemFromFavorite)
-	favorite.DELETE("/remove/problemset/:id", RemoveProblemsetFromFavorite)
-
 	problem := global.Router.Group("/problem")
 	problem.Use(global.CheckAuth)
+	problem.DELETE("/unfavorite/:id", RemoveProblemFromFavorite)
+	problem.POST("/favorite/:id", AddProblemToFavorite)
 
 	choiceProblem := problem.Group("/choice")
 	global.Router.GET("/problem/choice/all", GetChoiceProblems)
@@ -76,6 +71,8 @@ func InitRoute() {
 	problemset.GET("/:id/all", GetProblemsInProblemset)
 	problemset.PUT("/:id/add", AddProblemToProblemset)
 	problemset.PUT("/:id/remove", RemoveProblemFromProblemset)
+	problemset.POST("/favorite/:id", AddProblemsetToFavorite)
+	problemset.DELETE("/unfavorite/:id", RemoveProblemsetFromFavorite)
 
 	noteReview := global.Router.Group("/note_review")
 	noteReview.Use(global.CheckAuth)
