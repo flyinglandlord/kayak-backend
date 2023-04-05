@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
+	"kayak-backend/model"
 	"net/http"
 	"time"
 )
@@ -11,43 +12,87 @@ type ProblemSetResponse struct {
 	ID           int       `json:"id" db:"id"`
 	Name         string    `json:"name" db:"name"`
 	Description  string    `json:"description" db:"description"`
-	CreatedAt    string    `json:"created_at" db:"created_at"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 	ProblemCount int       `json:"problem_count" db:"problem_count"`
+	IsFavorite   bool      `json:"is_favorite" db:"is_favorite"`
 }
 type ProblemSetRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
+type AllProblemSetResponse struct {
+	TotalCount int                  `json:"total_count"`
+	ProblemSet []ProblemSetResponse `json:"problemset"`
+}
+
 // GetProblemsets godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有题集
-// @Success 200 {object} []ProblemSetResponse "题集列表"
+// @Param id query int false "题集ID"
+// @Success 200 {object} AllProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/all [get]
 // @Security ApiKeyAuth
 func GetProblemsets(c *gin.Context) {
-	var problemsets []ProblemSetResponse
+	var problemsets []model.ProblemSet
 	var sqlString string
 	var err error
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString = `SELECT ps.id, ps.name, ps.description, count(*) Count, ps.created_at FROM problemset ps 
-    		JOIN problem_in_problemset pip on ps.id = pip.problemset_id WHERE ps.is_public = true GROUP BY ps.id`
+		sqlString = `SELECT id, name, description, created_at, updated_at, user_id, is_public FROM problemset WHERE is_public = true`
+		if c.Query("id") != "" {
+			sqlString += ` AND id = ` + c.Query("id")
+		}
 		err = global.Database.Select(&problemsets, sqlString)
 	} else if role == global.USER {
-		sqlString = `SELECT id, name, description FROM problemset WHERE is_public = true OR user_id = $1`
+		sqlString = `SELECT id, name, description, created_at, updated_at, user_id, is_public FROM problemset WHERE (is_public = true OR user_id = $1)`
+		if c.Query("id") != "" {
+			sqlString += ` AND id = ` + c.Query("id")
+		}
 		err = global.Database.Select(&problemsets, sqlString, c.GetInt("UserId"))
 	} else {
-		sqlString = `SELECT id, name, description FROM problemset`
+		sqlString = `SELECT id, name, description, created_at, updated_at, user_id, is_public FROM problemset`
+		if c.Query("id") != "" {
+			sqlString += ` WHERE id = ` + c.Query("id")
+		}
 		err = global.Database.Select(&problemsets, sqlString)
 	}
 	if err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, problemsets)
+	var problemsetResponses []ProblemSetResponse
+	for _, problemset := range problemsets {
+		var problemCount int
+		sqlString = `SELECT COUNT(*) FROM problem_in_problemset WHERE problemset_id = $1`
+		if err := global.Database.Get(&problemCount, sqlString, problemset.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problemset WHERE problemset_id = $1 AND user_id = $2`
+		var isFavorite int
+		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+
+		problemsetResponses = append(problemsetResponses, ProblemSetResponse{
+			ID:           problemset.ID,
+			Name:         problemset.Name,
+			Description:  problemset.Description,
+			CreatedAt:    problemset.CreatedAt,
+			UpdatedAt:    problemset.UpdatedAt,
+			ProblemCount: problemCount,
+			IsFavorite:   isFavorite != 0,
+		})
+	}
+	c.JSON(http.StatusOK, AllProblemSetResponse{
+		TotalCount: len(problemsetResponses),
+		ProblemSet: problemsetResponses,
+	})
 }
 
 // CreateProblemset godoc
@@ -87,7 +132,7 @@ type ProblemResponse struct {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/{id}/all [get]
+// @Router /problemset/{id}/all_problem [get]
 // @Security ApiKeyAuth
 func GetProblemsInProblemset(c *gin.Context) {
 	var problems []ProblemResponse
