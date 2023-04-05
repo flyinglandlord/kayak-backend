@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-type FavoriteProblemResponse struct {
-	ProblemID     int `json:"problem_id"`
-	ProblemTypeID int `json:"problem_type_id"`
-}
-
 // AddProblemToFavorite godoc
 // @Schemes http
 // @Description 添加题目到收藏夹（只有管理员和题目创建者能添加私有题目）
@@ -21,6 +16,7 @@ type FavoriteProblemResponse struct {
 // @Failure 404 {string} string "题目不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/favorite/{id} [post]
+// @Security ApiKeyAuth
 func AddProblemToFavorite(c *gin.Context) {
 	problemId := c.Param("id")
 	userId := c.GetInt("UserId")
@@ -53,6 +49,7 @@ func AddProblemToFavorite(c *gin.Context) {
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/unfavorite/{id} [post]
+// @Security ApiKeyAuth
 func RemoveProblemFromFavorite(c *gin.Context) {
 	problemId := c.Param("id")
 	userId := c.GetInt("UserId")
@@ -73,6 +70,7 @@ func RemoveProblemFromFavorite(c *gin.Context) {
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/favorite/{id} [post]
+// @Security ApiKeyAuth
 func AddProblemsetToFavorite(c *gin.Context) {
 	problemsetId := c.Param("id")
 	userId := c.GetInt("UserId")
@@ -105,6 +103,7 @@ func AddProblemsetToFavorite(c *gin.Context) {
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/unfavorite/{id} [post]
+// @Security ApiKeyAuth
 func RemoveProblemsetFromFavorite(c *gin.Context) {
 	problemsetId := c.Param("id")
 	userId := c.GetInt("UserId")

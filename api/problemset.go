@@ -7,14 +7,15 @@ import (
 	"time"
 )
 
-type ProblemsetResponse struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Count       int    `json:"count"`
-	CreatedAt   string `json:"created_at"`
+type ProblemSetResponse struct {
+	ID           int       `json:"id" db:"id"`
+	Name         string    `json:"name" db:"name"`
+	Description  string    `json:"description" db:"description"`
+	CreatedAt    string    `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+	ProblemCount int       `json:"problem_count" db:"problem_count"`
 }
-type ProblemsetRequest struct {
+type ProblemSetRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
@@ -22,12 +23,12 @@ type ProblemsetRequest struct {
 // GetProblemsets godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有题集
-// @Success 200 {object} []ProblemsetResponse "题集列表"
+// @Success 200 {object} []ProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/all [get]
 // @Security ApiKeyAuth
 func GetProblemsets(c *gin.Context) {
-	var problemsets []ProblemsetResponse
+	var problemsets []ProblemSetResponse
 	var sqlString string
 	var err error
 	role, _ := c.Get("Role")
@@ -52,14 +53,14 @@ func GetProblemsets(c *gin.Context) {
 // CreateProblemset godoc
 // @Schemes http
 // @Description 创建题集
-// @Param problemset body ProblemsetRequest true "题集信息"
+// @Param problemset body ProblemSetRequest true "题集信息"
 // @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "创建成功"
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/create [post]
 // @Security ApiKeyAuth
 func CreateProblemset(c *gin.Context) {
-	var problemset ProblemsetRequest
+	var problemset ProblemSetRequest
 	if err := c.ShouldBindJSON(&problemset); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return

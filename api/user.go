@@ -16,11 +16,6 @@ type UserInfoResponse struct {
 	AvatarPath string    `json:"avatar_path"`
 	CreateAt   time.Time `json:"create_at"`
 }
-type UserInfoRequest struct {
-	Name  string  `json:"name"`
-	Email *string `json:"email"`
-	Phone *string `json:"phone"`
-}
 
 // GetUserInfo godoc
 // @Schemes http
@@ -47,6 +42,12 @@ func GetUserInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, userInfo)
 }
 
+type UserInfoRequest struct {
+	Name  string  `json:"name"`
+	Email *string `json:"email"`
+	Phone *string `json:"phone"`
+}
+
 // UpdateUserInfo godoc
 // @Schemes http
 // @Description 更新用户信息
@@ -70,21 +71,31 @@ func UpdateUserInfo(c *gin.Context) {
 	c.String(http.StatusOK, "更新成功")
 }
 
+type UserNotesResponse struct {
+	TotalCount int          `json:"total_count"`
+	Notes      []model.Note `json:"notes"`
+}
+
 // GetUserNotes godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有笔记
-// @Success 200 {object} []NoteResponse "笔记列表"
+// @Success 200 {object} UserNotesResponse "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/note [get]
 // @Security ApiKeyAuth
 func GetUserNotes(c *gin.Context) {
-	var notes []NoteResponse
-	sqlString := `SELECT id, title, content FROM note WHERE user_id = $1`
+	var notes []model.Note
+	sqlString :=
+		`SELECT id, title, content, created_at, updated_at, user_id, is_public 
+		 FROM note WHERE user_id = $1`
 	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, notes)
+	c.JSON(http.StatusOK, UserNotesResponse{
+		TotalCount: len(notes),
+		Notes:      notes,
+	})
 }
 
 // GetUserWrongRecords godoc
@@ -104,49 +115,105 @@ func GetUserWrongRecords(c *gin.Context) {
 	c.JSON(http.StatusOK, wrongRecords)
 }
 
+type FavoriteProblemResponse struct {
+	TotalCount int                 `json:"total_count"`
+	Problems   []model.ProblemType `json:"problems"`
+}
+
 // GetUserFavoriteProblems godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题目
-// @Success 200 {object} []FavoriteProblemResponse "收藏的题目列表"
+// @Success 200 {object} FavoriteProblemResponse "收藏的题目列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/problem [get]
+// @Security ApiKeyAuth
 func GetUserFavoriteProblems(c *gin.Context) {
-	var problems []FavoriteProblemResponse
+	var problems []model.ProblemType
 	userId := c.GetInt("UserId")
-	sqlString := `SELECT problem_id, problem_type_id FROM user_favorite_problem ufp JOIN problem_type pt on ufp.problem_id = pt.id WHERE ufp.user_id = $1`
-	if err := global.Database.Get(&problems, sqlString, userId); err != nil {
+	sqlString :=
+		`SELECT p.id AS id, p.description as description, p.created_at AS created_at, 
+    		p.updated_at AS updated_at, p.user_id AS user_id, p.problem_type_id AS problem_type_id, p.is_public AS is_public
+	     FROM user_favorite_problem ufp JOIN problem_type p ON ufp.problem_id = p.id 
+	     WHERE ufp.user_id = $1 GROUP BY ufp.problem_id`
+	if err := global.Database.Select(&problems, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, problems)
+	c.JSON(http.StatusOK, FavoriteProblemResponse{
+		TotalCount: len(problems),
+		Problems:   problems,
+	})
+}
+
+type FavoriteProblemSetResponse struct {
+	TotalCount  int                  `json:"total_count"`
+	ProblemSets []ProblemSetResponse `json:"problem_set"`
 }
 
 // GetUserFavoriteProblemsets godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题集
-// @Success 200 {object} []ProblemsetResponse "收藏的题集列表"
+// @Success 200 {object} FavoriteProblemSetResponse "收藏的题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/problemset [get]
+// @Security ApiKeyAuth
 func GetUserFavoriteProblemsets(c *gin.Context) {
-	var problemsets []ProblemsetResponse
+	var problemsets []ProblemSetResponse
 	userId := c.GetInt("UserId")
-	sqlString := `SELECT ufp.problemset_id, p.name, p.description, p.created_at, COUNT(*) count FROM user_favorite_problemset ufp JOIN problemset p ON ufp.problemset_id = p.id JOIN problem_in_problemset pip on p.id = pip.problemset_id WHERE ufp.user_id = $1 GROUP BY ufp.problemset_id`
-	if err := global.Database.Get(&problemsets, sqlString, userId); err != nil {
+	sqlString :=
+		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
+    		ps.updated_at AS updated_at, count(*) AS problem_count
+	 	 FROM user_favorite_problemset ufps JOIN problemset ps ON ufps.problemset_id = ps.id JOIN problem_in_problemset pip on ps.id = pip.problemset_id
+	 	 WHERE ufps.user_id = $1 GROUP BY ps.id`
+	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, problemsets)
+	c.JSON(http.StatusOK, FavoriteProblemSetResponse{
+		TotalCount:  len(problemsets),
+		ProblemSets: problemsets,
+	})
+}
+
+type FavoriteNoteResponse struct {
+	TotalCount int          `json:"total_count"`
+	Notes      []model.Note `json:"notes"`
+}
+
+// GetUserFavoriteNotes godoc
+// @Schemes http
+// @Description 获取当前登录用户收藏的笔记
+// @Success 200 {object} FavoriteNoteResponse "收藏的笔记列表"
+// @Failure default {string} string "服务器错误"
+// @Router /user/favorite/note [get]
+// @Security ApiKeyAuth
+func GetUserFavoriteNotes(c *gin.Context) {
+	var notes []model.Note
+	userId := c.GetInt("UserId")
+	sqlString :=
+		`SELECT n.id AS id, n.title AS title, n.content AS content, 
+       		n.created_at AS created_at, n.user_id AS user_id, n.updated_at AS updated_at, n.is_public AS is_public
+		 FROM user_favorite_note ufn JOIN note n ON ufn.note_id = n.id 
+		 WHERE ufn.user_id = $1`
+	if err := global.Database.Select(&notes, sqlString, userId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, FavoriteNoteResponse{
+		TotalCount: len(notes),
+		Notes:      notes,
+	})
 }
 
 // GetUserProblemsets godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有题集
-// @Success 200 {object} []ProblemsetResponse "题集列表"
+// @Success 200 {object} []ProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/problemset [get]
 // @Security ApiKeyAuth
 func GetUserProblemsets(c *gin.Context) {
-	var problemsets []ProblemsetResponse
+	var problemsets []ProblemSetResponse
 	sqlString := `SELECT id, name, description FROM problemset WHERE user_id = $1`
 	if err := global.Database.Select(&problemsets, sqlString, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")

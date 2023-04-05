@@ -17,6 +17,7 @@ func InitRoute() {
 	user.GET("/wrong_record", GetUserWrongRecords)
 	user.GET("/favorite/problem", GetUserFavoriteProblems)
 	user.GET("/favorite/problemset", GetUserFavoriteProblemsets)
+	user.GET("/favorite/note", GetUserFavoriteNotes)
 	user.GET("/problem/choice", GetUserChoiceProblems)
 	user.GET("/problem/blank", GetUserBlankProblems)
 	user.GET("/problemset", GetUserProblemsets)

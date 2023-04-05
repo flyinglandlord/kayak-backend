@@ -259,6 +259,7 @@ type BlankProblemResponse struct {
 }
 type BlankProblemRequest struct {
 	Description string `json:"description"`
+	Answer      string `json:"answer"`
 }
 
 // GetBlankProblems godoc
@@ -354,9 +355,15 @@ func CreateBlankProblem(c *gin.Context) {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
+	var blankProblemID int
 	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
-	if _, err := global.Database.Exec(sqlString, BlankProblemType, blankProblem.Description,
+	if err := global.Database.Get(&blankProblemID, sqlString, BlankProblemType, blankProblem.Description,
 		c.Query("is_public"), userId, time.Now().Local(), time.Now().Local()); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `INSERT INTO problem_answer (id, answer) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, blankProblemID, blankProblem.Answer); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
