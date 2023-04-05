@@ -8,13 +8,15 @@ import (
 	"time"
 )
 
-type NoteResponse struct {
-	ID         int    `json:"id" db:"id"`
-	Title      string `json:"title" db:"title"`
-	Content    string `json:"content" db:"content"`
-	CreatedAt  string `json:"created_at" db:"created_at"`
-	IsLiked    bool   `json:"is_liked"`
-	IsFavorite bool   `json:"is_favorite"`
+type NoteItem struct {
+	ID            int    `json:"id" db:"id"`
+	Title         string `json:"title" db:"title"`
+	Content       string `json:"content" db:"content"`
+	CreatedAt     string `json:"created_at" db:"created_at"`
+	IsLiked       bool   `json:"is_liked"`
+	IsFavorite    bool   `json:"is_favorite"`
+	LikeCount     int    `json:"like_count"`
+	FavoriteCount int    `json:"favorite_count"`
 }
 
 type NoteRequest struct {
@@ -22,10 +24,15 @@ type NoteRequest struct {
 	Content string `json:"content"`
 }
 
+type NoteResponse struct {
+	TotalCount int        `json:"total_count"`
+	Notes      []NoteItem `json:"notes"`
+}
+
 // GetNotes godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有笔记
-// @Success 200 {object} []NoteResponse "笔记列表"
+// @Success 200 {object} []NoteItem "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /note/all [get]
 // @Security ApiKeyAuth
@@ -38,7 +45,7 @@ func GetNotes(c *gin.Context) {
 		sqlString = `SELECT id, title, content, created_at FROM note WHERE is_public = true`
 		err = global.Database.Select(&notes, sqlString)
 	} else if role == global.USER {
-		sqlString = `SELECT id, title, content, created_at FROM note WHERE is_public = true OR user_id = $1`
+		sqlString = `SELECT id, title, content, created_at FROM note WHERE (is_public = true OR user_id = $1)`
 		err = global.Database.Select(&notes, sqlString, c.GetInt("UserId"))
 	} else {
 		sqlString = `SELECT id, title, content, created_at FROM note`
@@ -48,9 +55,9 @@ func GetNotes(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	var noteResponses []NoteResponse
+	var noteResponses []NoteItem
 	for _, note := range notes {
-		var noteResponse NoteResponse
+		var noteResponse NoteItem
 		noteResponse.ID = note.ID
 		noteResponse.Title = note.Title
 		noteResponse.Content = note.Content
@@ -63,6 +70,7 @@ func GetNotes(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		noteResponse.LikeCount = count
 		if count > 0 {
 			noteResponse.IsLiked = true
 		}
@@ -73,13 +81,16 @@ func GetNotes(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		noteResponse.FavoriteCount = count
 		if count > 0 {
 			noteResponse.IsFavorite = true
 		}
-
 		noteResponses = append(noteResponses, noteResponse)
 	}
-	c.JSON(http.StatusOK, noteResponses)
+	c.JSON(http.StatusOK, NoteResponse{
+		TotalCount: len(noteResponses),
+		Notes:      noteResponses,
+	})
 }
 
 // CreateNote godoc
@@ -110,7 +121,7 @@ func CreateNote(c *gin.Context) {
 // UpdateNote godoc
 // @Schemes http
 // @Description 更新笔记（只有管理员和笔记作者可以更新）
-// @Param note body NoteResponse true "笔记信息"
+// @Param note body NoteItem true "笔记信息"
 // @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -119,7 +130,7 @@ func CreateNote(c *gin.Context) {
 // @Router /note/update [put]
 // @Security ApiKeyAuth
 func UpdateNote(c *gin.Context) {
-	var note NoteResponse
+	var note NoteItem
 	if err := c.ShouldBindJSON(&note); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
