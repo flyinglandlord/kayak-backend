@@ -12,6 +12,7 @@ func InitRoute() {
 	user := global.Router.Group("/user")
 	user.Use(global.CheckAuth)
 	user.GET("/info", GetUserInfo)
+	user.GET("/info/:user_id", GetUserInfoById)
 	user.PUT("/update", UpdateUserInfo)
 	user.GET("/note", GetUserNotes)
 	user.GET("/wrong_record", GetUserWrongRecords)

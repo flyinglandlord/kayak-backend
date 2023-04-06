@@ -17,6 +17,33 @@ type UserInfoResponse struct {
 	CreateAt   time.Time `json:"create_at"`
 }
 
+// GetUserInfoById godoc
+// @Schemes http
+// @Description 根据ID获取用户信息
+// @Param user_id path int true "用户ID"
+// @Success 200 {object} UserInfoResponse "用户信息"
+// @Failure 404 {string} string "用户不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /user/info/{user_id} [get]
+// @Security ApiKeyAuth
+func GetUserInfoById(c *gin.Context) {
+	user := model.User{}
+	sqlString := `SELECT id, name, email, phone, avatar_url, created_at FROM "user" WHERE id = $1`
+	if err := global.Database.Get(&user, sqlString, c.Param("user_id")); err != nil {
+		c.String(http.StatusNotFound, "用户不存在")
+		return
+	}
+	userInfo := UserInfoResponse{
+		UserId:     user.ID,
+		UserName:   user.Name,
+		Email:      user.Email,
+		Phone:      user.Phone,
+		AvatarPath: user.AvatarURL,
+		CreateAt:   user.CreatedAt,
+	}
+	c.JSON(http.StatusOK, userInfo)
+}
+
 // GetUserInfo godoc
 // @Schemes http
 // @Description 获取用户信息
