@@ -72,8 +72,8 @@ func UpdateUserInfo(c *gin.Context) {
 }
 
 type UserNotesResponse struct {
-	TotalCount int          `json:"total_count"`
-	Notes      []model.Note `json:"notes"`
+	TotalCount int            `json:"total_count"`
+	Notes      []NoteResponse `json:"notes"`
 }
 
 // GetUserNotes godoc
@@ -85,16 +85,36 @@ type UserNotesResponse struct {
 // @Security ApiKeyAuth
 func GetUserNotes(c *gin.Context) {
 	var notes []model.Note
-	sqlString :=
-		`SELECT id, title, content, created_at, updated_at, user_id, is_public 
-		 FROM note WHERE user_id = $1`
+	sqlString := `SELECT * FROM note WHERE user_id = $1`
 	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
+	var noteResponses []NoteResponse
+	for _, note := range notes {
+		var likeCount, favoriteCount int
+		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1 AND user_id = $2`
+		if err := global.Database.Get(&likeCount, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_favorite_note WHERE note_id = $1 AND user_id = $2`
+		if err := global.Database.Get(&favoriteCount, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		noteResponses = append(noteResponses, NoteResponse{
+			ID:         note.ID,
+			Title:      note.Title,
+			Content:    note.Content,
+			CreatedAt:  note.CreatedAt,
+			IsLiked:    likeCount > 0,
+			IsFavorite: favoriteCount > 0,
+		})
+	}
 	c.JSON(http.StatusOK, UserNotesResponse{
 		TotalCount: len(notes),
-		Notes:      notes,
+		Notes:      noteResponses,
 	})
 }
 
@@ -106,13 +126,22 @@ func GetUserNotes(c *gin.Context) {
 // @Router /user/wrong_record [get]
 // @Security ApiKeyAuth
 func GetUserWrongRecords(c *gin.Context) {
-	var wrongRecords []WrongRecordResponse
-	sqlString := `SELECT problem_id, count, created_at, updated_at FROM user_wrong_record WHERE user_id = $1`
+	var wrongRecords []model.WrongRecord
+	sqlString := `SELECT * FROM user_wrong_record WHERE user_id = $1`
 	if err := global.Database.Select(&wrongRecords, sqlString, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, wrongRecords)
+	var wrongRecordResponses []WrongRecordResponse
+	for _, wrongRecord := range wrongRecords {
+		wrongRecordResponses = append(wrongRecordResponses, WrongRecordResponse{
+			ProblemId: wrongRecord.ProblemId,
+			Count:     wrongRecord.Count,
+			CreatedAt: wrongRecord.CreatedAt,
+			UpdatedAt: wrongRecord.UpdatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, wrongRecordResponses)
 }
 
 type FavoriteProblemResponse struct {
@@ -150,20 +179,20 @@ type FavoriteProblemSetResponse struct {
 	ProblemSets []ProblemSetResponse `json:"problem_set"`
 }
 
-// GetUserFavoriteProblemsets godoc
+// GetUserFavoriteProblemSets godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题集
 // @Success 200 {object} FavoriteProblemSetResponse "收藏的题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/problemset [get]
 // @Security ApiKeyAuth
-func GetUserFavoriteProblemsets(c *gin.Context) {
+func GetUserFavoriteProblemSets(c *gin.Context) {
 	var problemsets []ProblemSetResponse
 	userId := c.GetInt("UserId")
 	sqlString :=
 		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
     		ps.updated_at AS updated_at, count(*) AS problem_count
-	 	 FROM user_favorite_problemset ufps JOIN problemset ps ON ufps.problemset_id = ps.id JOIN problem_in_problemset pip on ps.id = pip.problemset_id
+	 	 FROM user_favorite_problemset ufps JOIN problemset ps ON ufps."problemSet_id" = ps.id JOIN problem_in_problemset pip on ps.id = pip."problemSet_id"
 	 	 WHERE ufps.user_id = $1 GROUP BY ps.id`
 	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -205,14 +234,14 @@ func GetUserFavoriteNotes(c *gin.Context) {
 	})
 }
 
-// GetUserProblemsets godoc
+// GetUserProblemSets godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有题集
 // @Success 200 {object} []ProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/problemset [get]
 // @Security ApiKeyAuth
-func GetUserProblemsets(c *gin.Context) {
+func GetUserProblemSets(c *gin.Context) {
 	var problemsets []ProblemSetResponse
 	sqlString := `SELECT id, name, description FROM problemset WHERE user_id = $1`
 	if err := global.Database.Select(&problemsets, sqlString, c.GetInt("UserId")); err != nil {

@@ -7,8 +7,8 @@ type ProblemType struct {
 	Description   string    `json:"description" db:"description"`
 	CreatedAt     time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
-	UserID        int       `json:"user_id" db:"user_id"`
-	ProblemTypeID int       `json:"problem_type_id" db:"problem_type_id"`
+	UserId        int       `json:"user_id" db:"user_id"`
+	ProblemTypeId int       `json:"problem_type_id" db:"problem_type_id"`
 	IsPublic      bool      `json:"is_public" db:"is_public"`
 }
 

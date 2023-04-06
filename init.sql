@@ -49,10 +49,11 @@ CREATE TABLE problem_answer
 (
     "id"     integer      NOT NULL,
     "answer" varchar(255) NOT NULL,
+    PRIMARY KEY ("id"),
     FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
 );
 
-CREATE TABLE problemset
+CREATE TABLE problemSet
 (
     "id"          serial       NOT NULL,
     "name"        varchar(255) NOT NULL,
@@ -65,12 +66,12 @@ CREATE TABLE problemset
     FOREIGN KEY ("user_id") REFERENCES "user" ("id")
 );
 
-CREATE TABLE problem_in_problemset
+CREATE TABLE problem_in_problemSet
 (
-    "problemset_id" integer NOT NULL,
+    "problemSet_id" integer NOT NULL,
     "problem_id"    integer NOT NULL,
-    PRIMARY KEY ("problemset_id", "problem_id"),
-    FOREIGN KEY ("problemset_id") REFERENCES problemset ("id") ON DELETE CASCADE,
+    PRIMARY KEY ("problemSet_id", "problem_id"),
+    FOREIGN KEY ("problemSet_id") REFERENCES problemSet ("id") ON DELETE CASCADE,
     FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE
 );
 
@@ -84,13 +85,13 @@ CREATE TABLE user_favorite_problem
     FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
-CREATE TABLE user_favorite_problemset
+CREATE TABLE user_favorite_problemSet
 (
-    "problemset_id" integer   NOT NULL,
+    "problemSet_id" integer   NOT NULL,
     "user_id"       integer   NOT NULL,
     "created_at"    timestamp NOT NULL,
-    PRIMARY KEY ("problemset_id", "user_id"),
-    FOREIGN KEY ("problemset_id") REFERENCES problemset ("id") ON DELETE CASCADE,
+    PRIMARY KEY ("problemSet_id", "user_id"),
+    FOREIGN KEY ("problemSet_id") REFERENCES problemSet ("id") ON DELETE CASCADE,
     FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
