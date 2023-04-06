@@ -72,7 +72,7 @@ func GetProblemSets(c *gin.Context) {
 			return
 		}
 
-		sqlString = `SELECT COUNT(*) FROM user_favorite_problemset WHERE problem_set_id = $1 AND user_id = $2`
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem_set WHERE problem_set_id = $1 AND user_id = $2`
 		var isFavorite int
 		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, c.GetInt("UserId")); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")

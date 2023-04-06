@@ -85,7 +85,7 @@ CREATE TABLE user_favorite_problem
     FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
 
-CREATE TABLE user_favorite_problemSet
+CREATE TABLE user_favorite_problem_set
 (
     "problem_set_id" integer   NOT NULL,
     "user_id"       integer   NOT NULL,

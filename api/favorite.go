@@ -81,7 +81,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `INSERT INTO user_favorite_problemSet (user_id, "problemSet_id", created_at) VALUES ($1, $2, $3)`
+	sqlString = `INSERT INTO user_favorite_problem_set (user_id, "problem_set_id", created_at) VALUES ($1, $2, $3)`
 	if _, err := global.Database.Exec(sqlString, userId, problemSetId, time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "已经添加")
 		return
@@ -100,7 +100,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 func RemoveProblemSetFromFavorite(c *gin.Context) {
 	problemSetId := c.Param("id")
 	userId := c.GetInt("UserId")
-	sqlString := `DELETE FROM user_favorite_problemSet WHERE user_id = $1 AND "problemSet_id" = $2`
+	sqlString := `DELETE FROM user_favorite_problem_set WHERE user_id = $1 AND "problem_set_id" = $2`
 	if _, err := global.Database.Exec(sqlString, userId, problemSetId); err != nil {
 		c.String(http.StatusInternalServerError, "已经移除")
 		return
