@@ -251,6 +251,16 @@ func GetUserProblemSets(c *gin.Context) {
 	c.JSON(http.StatusOK, problemsets)
 }
 
+type ChoiceProblemItem struct {
+	Id          int    `json:"id"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+	UserId      int    `json:"user_id"`
+	IsPublic    bool   `json:"is_public"`
+	IsMultiple  bool   `json:"is_multiple"`
+}
+
 // GetUserChoiceProblems godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有选择题
@@ -259,19 +269,33 @@ func GetUserProblemSets(c *gin.Context) {
 // @Router /user/problem/choice [get]
 // @Security ApiKeyAuth
 func GetUserChoiceProblems(c *gin.Context) {
-	var choiceProblems []ChoiceProblemResponse
-	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND user_id = $2`
-	if err := global.Database.Select(&choiceProblems, sqlString, ChoiceProblemType, c.GetInt("UserId")); err != nil {
+	var problemType []model.ProblemType
+	var choiceProblems []ChoiceProblemItem
+	userId := c.GetInt("UserId")
+	sqlString := `SELECT id, description, created_at, updated_at, user_id, is_public FROM problem_type WHERE problem_type_id = $1 AND user_id = $2`
+	if err := global.Database.Select(&problemType, sqlString, ChoiceProblemType, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	for i := range choiceProblems {
-		sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
-		if err := global.Database.Select(&choiceProblems[i].Choices, sqlString, choiceProblems[i].ID); err != nil {
+	for _, item := range problemType {
+		choiceProblem := ChoiceProblemItem{
+			Id:          item.ID,
+			Description: item.Description,
+			CreatedAt:   item.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   item.UpdatedAt.Format(time.RFC3339),
+			UserId:      item.UserId,
+			IsPublic:    item.IsPublic,
+		}
+		var CorrectAnswerCount int
+		sqlString := `SELECT COUNT(*) FROM problem_choice WHERE id = $1 AND is_correct = true`
+		if err := global.Database.Get(&CorrectAnswerCount, sqlString, item.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		choiceProblem.IsMultiple = CorrectAnswerCount > 1
+		choiceProblems = append(choiceProblems, choiceProblem)
 	}
+
 	c.JSON(http.StatusOK, choiceProblems)
 }
 
