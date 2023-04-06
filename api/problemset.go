@@ -66,13 +66,13 @@ func GetProblemSets(c *gin.Context) {
 	var problemsetResponses []ProblemSetResponse
 	for _, problemset := range problemsets {
 		var problemCount int
-		sqlString = `SELECT COUNT(*) FROM problem_in_problemset WHERE problemset_id = $1`
+		sqlString = `SELECT COUNT(*) FROM problem_in_problemset WHERE problem_set_id = $1`
 		if err := global.Database.Get(&problemCount, sqlString, problemset.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
 
-		sqlString = `SELECT COUNT(*) FROM user_favorite_problemset WHERE problemset_id = $1 AND user_id = $2`
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problemset WHERE problem_set_id = $1 AND user_id = $2`
 		var isFavorite int
 		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, c.GetInt("UserId")); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
@@ -154,14 +154,14 @@ func GetProblemsInProblemSet(c *gin.Context) {
 	}
 	if userId == problemsetUserId || role == global.ADMIN {
 		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
-    		problem_type.id = problem_in_problemset.problem_id WHERE problemset_id = $1`
+    		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1`
 		if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
 	} else {
 		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
-    		problem_type.id = problem_in_problemset.problem_id WHERE problemset_id = $1 AND is_public = true`
+    		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1 AND is_public = true`
 		if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
@@ -198,7 +198,7 @@ func GetFavoriteProblemInProblemSet(c *gin.Context) {
 		return
 	}
 	sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
-			problem_type.id = problem_in_problemset.problem_id WHERE problemset_id = $1 AND is_public = true AND problem_id IN 
+			problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1 AND is_public = true AND problem_id IN 
 			(SELECT problem_id FROM user_favorite_problem WHERE user_id = $2)`
 	if err := global.Database.Select(&problems, sqlString, problemsetId, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -242,7 +242,7 @@ func AddProblemToProblemSet(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `INSERT INTO problem_in_problemset (problemset_id, problem_id) VALUES ($1, $2)`
+	sqlString = `INSERT INTO problem_in_problemset (problem_set_id, problem_id) VALUES ($1, $2)`
 	if _, err := global.Database.Exec(sqlString, problemsetId, problemId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -286,7 +286,7 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `DELETE FROM problem_in_problemset WHERE problemset_id = $1 AND problem_id = $2`
+	sqlString = `DELETE FROM problem_in_problemset WHERE problem_set_id = $1 AND problem_id = $2`
 	if _, err := global.Database.Exec(sqlString, problemsetId, problemId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
