@@ -15,7 +15,7 @@ import (
 // @Success 200 {string} string "添加成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题目不存在"
-// @Failure default {string} string "已经添加"
+// @Failure default {string} string "服务器错误"
 // @Router /problem/favorite/{id} [post]
 // @Security ApiKeyAuth
 func AddProblemToFavorite(c *gin.Context) {
@@ -33,7 +33,7 @@ func AddProblemToFavorite(c *gin.Context) {
 	}
 	sqlString = `INSERT INTO user_favorite_problem (user_id, problem_id, created_at) VALUES ($1, $2, $3)`
 	if _, err := global.Database.Exec(sqlString, userId, problemId, time.Now().Local()); err != nil {
-		c.String(http.StatusInternalServerError, "已经添加")
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	c.String(http.StatusOK, "添加成功")
@@ -44,15 +44,14 @@ func AddProblemToFavorite(c *gin.Context) {
 // @Description 从收藏夹移除题目
 // @Param id path int true "题目ID"
 // @Success 200 {string} string "移除成功"
-// @Failure default {string} string "已经移除"
-// @Router /problem/unfavorite/{id} [post]
+// @Failure default {string} string "服务器错误"
+// @Router /problem/unfavorite/{id} [delete]
 // @Security ApiKeyAuth
 func RemoveProblemFromFavorite(c *gin.Context) {
 	problemId := c.Param("id")
-	userId := c.GetInt("UserId")
 	sqlString := `DELETE FROM user_favorite_problem WHERE user_id = $1 AND problem_id = $2`
-	if _, err := global.Database.Exec(sqlString, userId, problemId); err != nil {
-		c.String(http.StatusInternalServerError, "已经移除")
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), problemId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	c.String(http.StatusOK, "移除成功")
@@ -65,14 +64,14 @@ func RemoveProblemFromFavorite(c *gin.Context) {
 // @Success 200 {string} string "添加成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
-// @Failure default {string} string "已经添加"
+// @Failure default {string} string "服务器错误"
 // @Router /problem_set/favorite/{id} [post]
 // @Security ApiKeyAuth
 func AddProblemSetToFavorite(c *gin.Context) {
 	var problemSet model.ProblemSet
 	problemSetId := c.Param("id")
 	userId := c.GetInt("UserId")
-	sqlString := `SELECT * FROM problemSet WHERE id = $1`
+	sqlString := `SELECT * FROM problem_set WHERE id = $1`
 	if err := global.Database.Get(&problemSet, sqlString, problemSetId); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
@@ -83,7 +82,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 	}
 	sqlString = `INSERT INTO user_favorite_problem_set (user_id, "problem_set_id", created_at) VALUES ($1, $2, $3)`
 	if _, err := global.Database.Exec(sqlString, userId, problemSetId, time.Now().Local()); err != nil {
-		c.String(http.StatusInternalServerError, "已经添加")
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	c.String(http.StatusOK, "添加成功")
@@ -94,16 +93,68 @@ func AddProblemSetToFavorite(c *gin.Context) {
 // @Description 从收藏夹移除题集
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "移除成功"
-// @Failure default {string} string "已经移除
-// @Router /problem_set/unfavorite/{id} [post]
+// @Failure default {string} string "服务器错误"
+// @Router /problem_set/unfavorite/{id} [delete]
 // @Security ApiKeyAuth
 func RemoveProblemSetFromFavorite(c *gin.Context) {
 	problemSetId := c.Param("id")
-	userId := c.GetInt("UserId")
 	sqlString := `DELETE FROM user_favorite_problem_set WHERE user_id = $1 AND "problem_set_id" = $2`
-	if _, err := global.Database.Exec(sqlString, userId, problemSetId); err != nil {
-		c.String(http.StatusInternalServerError, "已经移除")
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), problemSetId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	c.String(http.StatusOK, "移除成功")
+}
+
+// FavoriteNote godoc
+// @Schemes http
+// @Description 收藏笔记
+// @Param id path int true "笔记ID"
+// @Success 200 {string} string "收藏成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/favorite/{id} [post]
+// @Security ApiKeyAuth
+func FavoriteNote(c *gin.Context) {
+	sqlString := `SELECT * FROM note WHERE id = $1`
+	var note model.Note
+	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && note.UserId != c.GetInt("UserId") && !note.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `INSERT INTO user_favorite_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, note_id) do update set created_at = $3`
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "收藏成功")
+}
+
+// UnfavoriteNote godoc
+// @Schemes http
+// @Description 取消收藏笔记
+// @Param id path int true "笔记ID"
+// @Success 200 {string} string "取消收藏成功"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/unfavorite/{id} [delete]
+// @Security ApiKeyAuth
+func UnfavoriteNote(c *gin.Context) {
+	var note model.Note
+	sqlString := `SELECT * FROM note WHERE id = $1`
+	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	sqlString = `DELETE FROM user_favorite_note WHERE user_id = $1 AND note_id = $2`
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "取消收藏成功")
 }
