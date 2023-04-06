@@ -131,3 +131,4 @@ func GetUserWrongRecords(c *gin.Context) {
 		Records:    wrongRecordResponses,
 	})
 }
+
