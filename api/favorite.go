@@ -66,7 +66,7 @@ func RemoveProblemFromFavorite(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "已经添加"
-// @Router /problemSet/favorite/{id} [post]
+// @Router /problem_set/favorite/{id} [post]
 // @Security ApiKeyAuth
 func AddProblemSetToFavorite(c *gin.Context) {
 	var problemSet model.ProblemSet
@@ -95,7 +95,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "已经移除
-// @Router /problemSet/unfavorite/{id} [post]
+// @Router /problem_set/unfavorite/{id} [post]
 // @Security ApiKeyAuth
 func RemoveProblemSetFromFavorite(c *gin.Context) {
 	problemSetId := c.Param("id")

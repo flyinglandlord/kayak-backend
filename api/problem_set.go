@@ -33,7 +33,7 @@ type AllProblemSetResponse struct {
 // @Param id query int false "题集ID"
 // @Success 200 {object} AllProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/all [get]
+// @Router /problem_set/all [get]
 // @Security ApiKeyAuth
 func GetProblemSets(c *gin.Context) {
 	var problemsets []model.ProblemSet
@@ -98,11 +98,11 @@ func GetProblemSets(c *gin.Context) {
 // CreateProblemSet godoc
 // @Schemes http
 // @Description 创建题集
-// @Param problemset body ProblemSetRequest true "题集信息"
+// @Param problem_set body ProblemSetRequest true "题集信息"
 // @Param is_public query bool true "是否公开"
 // @Success 200 {string} string "创建成功"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/create [post]
+// @Router /problem_set/create [post]
 // @Security ApiKeyAuth
 func CreateProblemSet(c *gin.Context) {
 	var problemset ProblemSetRequest
@@ -132,7 +132,7 @@ type ProblemResponse struct {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/{id}/all_problem [get]
+// @Router /problem_set/{id}/all_problem [get]
 // @Security ApiKeyAuth
 func GetProblemsInProblemSet(c *gin.Context) {
 	var problems []ProblemResponse
@@ -178,7 +178,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/{id}/favorite_problem [get]
+// @Router /problem_set/{id}/favorite_problem [get]
 // @Security ApiKeyAuth
 func GetFavoriteProblemInProblemSet(c *gin.Context) {
 	var problems []ProblemResponse
@@ -216,7 +216,7 @@ func GetFavoriteProblemInProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/{id}/add [post]
+// @Router /problem_set/{id}/add [post]
 // @Security ApiKeyAuth
 func AddProblemToProblemSet(c *gin.Context) {
 	userId := c.GetInt("UserId")
@@ -259,7 +259,7 @@ func AddProblemToProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/{id}/remove [post]
+// @Router /problem_set/{id}/remove [post]
 // @Security ApiKeyAuth
 func RemoveProblemFromProblemSet(c *gin.Context) {
 	userId := c.GetInt("UserId")
@@ -302,7 +302,7 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problemset/delete/{id} [delete]
+// @Router /problem_set/delete/{id} [delete]
 // @Security ApiKeyAuth
 func DeleteProblemSet(c *gin.Context) {
 	userId := c.GetInt("UserId")
