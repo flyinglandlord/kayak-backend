@@ -48,6 +48,7 @@ func InitRoute() {
 	problem.Use(global.CheckAuth)
 	problem.DELETE("/unfavorite/:id", RemoveProblemFromFavorite)
 	problem.POST("/favorite/:id", AddProblemToFavorite)
+	problem.GET("/:id/problem_set", GetProblemSetContainsProblem)
 
 	choiceProblem := problem.Group("/choice")
 	global.Router.GET("/problem/choice/all", GetChoiceProblems)

@@ -530,3 +530,46 @@ func GetBlankProblemAnswer(c *gin.Context) {
 	}
 	c.String(http.StatusOK, answer)
 }
+
+// GetProblemSetContainsProblem godoc
+// @Schemes http
+// @Description 获取包含某题目的题集
+// @Param id path int true "题目ID"
+// @Success 200 {array} ProblemSetResponse "题集列表"
+// @Failure 404 {string} string "题目不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/{id}/problem_set [get]
+// @Security ApiKeyAuth
+func GetProblemSetContainsProblem(c *gin.Context) {
+	var problemSetList []model.ProblemSet
+	sqlString := `SELECT * FROM problemset WHERE id IN (SELECT problem_set_id FROM problem_in_problemset WHERE problem_id = $1)`
+	if err := global.Database.Select(&problemSetList, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "题目不存在")
+		return
+	}
+	var problemSetResponseList []ProblemSetResponse
+	for _, problemSet := range problemSetList {
+		var ProblemCount int
+		sqlString = `SELECT COUNT(*) FROM problem_in_problemset WHERE problem_set_id = $1`
+		if err := global.Database.Get(&ProblemCount, sqlString, problemSet.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		var isFavorite bool
+		sqlString = `SELECT * FROM user_favorite_problem_set WHERE user_id = $1 AND problem_set_id = $2`
+		if err := global.Database.Get(&isFavorite, sqlString, c.GetInt("UserId"), problemSet.ID); err != nil {
+			isFavorite = false
+		}
+		problemSetResponseList = append(problemSetResponseList, ProblemSetResponse{
+			ID:           problemSet.ID,
+			Name:         problemSet.Name,
+			Description:  problemSet.Description,
+			UserId:       problemSet.UserId,
+			CreatedAt:    problemSet.CreatedAt,
+			UpdatedAt:    problemSet.UpdatedAt,
+			ProblemCount: ProblemCount,
+			IsFavorite:   isFavorite,
+		})
+	}
+	c.JSON(http.StatusOK, problemSetResponseList)
+}
