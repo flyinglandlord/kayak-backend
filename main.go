@@ -94,7 +94,7 @@ func LoadConfig() {
 }
 
 // @title Kayak Backend API
-// @version 0.0.1
+// @version 0.0.2
 // @license null
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header

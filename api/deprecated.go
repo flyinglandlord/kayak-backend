@@ -37,12 +37,14 @@ func GetUserNotes(c *gin.Context) {
 			return
 		}
 		noteResponses = append(noteResponses, NoteResponse{
-			ID:         note.ID,
-			Title:      note.Title,
-			Content:    note.Content,
-			CreatedAt:  note.CreatedAt,
-			IsLiked:    likeCount > 0,
-			IsFavorite: favoriteCount > 0,
+			ID:            note.ID,
+			Title:         note.Title,
+			Content:       note.Content,
+			CreatedAt:     note.CreatedAt,
+			IsLiked:       likeCount > 0,
+			IsFavorite:    favoriteCount > 0,
+			LikeCount:     likeCount,
+			FavoriteCount: favoriteCount,
 		})
 	}
 	c.JSON(http.StatusOK, UserNotesResponse{
@@ -96,26 +98,61 @@ type FavoriteProblemSetResponse struct {
 // @Security ApiKeyAuth
 // @Deprecated
 func GetUserFavoriteProblemSets(c *gin.Context) {
-	var problemsets []ProblemSetResponse
+	var problemsets []model.ProblemSet
 	userId := c.GetInt("UserId")
 	sqlString :=
 		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
-    		ps.updated_at AS updated_at, count(*) AS problem_count
-	 	 FROM user_favorite_problem_set ufps RIGHT JOIN problem_set ps ON ufps."problem_set_id" = ps.id JOIN problem_in_problem_set pip on ps.id = pip."problem_set_id"
-	 	 WHERE ufps.user_id = $1 GROUP BY ps.id`
+    		ps.updated_at AS updated_at, ps.user_id AS user_id, ps.is_public AS is_public
+	 	 FROM user_favorite_problem_set ufps RIGHT JOIN problem_set ps ON ufps."problem_set_id" = ps.id
+	 	 WHERE ufps.user_id = $1`
 	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
+	var problemSetResponses []ProblemSetResponse
+	for _, problemset := range problemsets {
+		// 获取收藏数
+		var favoriteCount int
+		sqlString := `SELECT count(*) FROM user_favorite_problem_set WHERE "problem_set_id" = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, problemset.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		// 获取题目数
+		var problemCount int
+		sqlString = `SELECT count(*) FROM problem_in_problem_set WHERE "problem_set_id" = $1`
+		if err := global.Database.Get(&problemCount, sqlString, problemset.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		// 获取自己是否点过赞
+		var isFavorite bool
+		sqlString = `SELECT count(*) FROM user_favorite_problem_set WHERE "problem_set_id" = $1 AND user_id = $2`
+		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, userId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemSetResponses = append(problemSetResponses, ProblemSetResponse{
+			ID:            problemset.ID,
+			Name:          problemset.Name,
+			Description:   problemset.Description,
+			CreatedAt:     problemset.CreatedAt,
+			ProblemCount:  problemCount,
+			FavoriteCount: favoriteCount,
+			IsFavorite:    isFavorite,
+			UserId:        problemset.UserId,
+			IsPublic:      problemset.IsPublic,
+		})
+	}
 	c.JSON(http.StatusOK, FavoriteProblemSetResponse{
-		TotalCount:  len(problemsets),
-		ProblemSets: problemsets,
+		TotalCount:  len(problemSetResponses),
+		ProblemSets: problemSetResponses,
 	})
 }
 
 type FavoriteNoteResponse struct {
-	TotalCount int          `json:"total_count"`
-	Notes      []model.Note `json:"notes"`
+	TotalCount int            `json:"total_count"`
+	Notes      []NoteResponse `json:"notes"`
 }
 
 // GetUserFavoriteNotes godoc
@@ -138,9 +175,35 @@ func GetUserFavoriteNotes(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
+	var noteResponses []NoteResponse
+	for _, note := range notes {
+		var likeCount, favoriteCount int
+		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1`
+		if err := global.Database.Get(&likeCount, sqlString, note.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_favorite_note WHERE note_id = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, note.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		noteResponses = append(noteResponses, NoteResponse{
+			ID:            note.ID,
+			Title:         note.Title,
+			Content:       note.Content,
+			CreatedAt:     note.CreatedAt,
+			UserId:        note.UserId,
+			IsPublic:      note.IsPublic,
+			LikeCount:     likeCount,
+			FavoriteCount: favoriteCount,
+			IsFavorite:    favoriteCount > 0,
+			IsLiked:       likeCount > 0,
+		})
+	}
 	c.JSON(http.StatusOK, FavoriteNoteResponse{
-		TotalCount: len(notes),
-		Notes:      notes,
+		TotalCount: len(noteResponses),
+		Notes:      noteResponses,
 	})
 }
 
@@ -153,28 +216,65 @@ func GetUserFavoriteNotes(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Deprecated
 func GetUserProblemSets(c *gin.Context) {
-	var problemsets []ProblemSetResponse
+	var problemsets []model.ProblemSet
 	userId := c.GetInt("UserId")
 	sqlString :=
 		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
-    		ps.updated_at AS updated_at, count(*) AS problem_count, ps.user_id AS user_id
-	 	 FROM problem_in_problem_set pip RIGHT JOIN problem_set ps on ps.id = pip."problem_set_id"
-	 	 WHERE ps.user_id = $1 GROUP BY ps.id`
+    		ps.updated_at AS updated_at, ps.user_id AS user_id, ps.is_public AS is_public
+	 	 FROM problem_set ps
+	 	 WHERE ps.user_id = $1`
 	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, problemsets)
+	var problemsetResponses []ProblemSetResponse
+	for _, problemset := range problemsets {
+		// 获取收藏数
+		var favoriteCount int
+		sqlString := `SELECT count(*) FROM user_favorite_problem_set WHERE "problem_set_id" = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, problemset.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		// 获取题目数
+		var problemCount int
+		sqlString = `SELECT count(*) FROM problem_in_problem_set WHERE "problem_set_id" = $1`
+		if err := global.Database.Get(&problemCount, sqlString, problemset.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		// 获取自己是否点过赞
+		var isFavorite bool
+		sqlString = `SELECT count(*) FROM user_favorite_problem_set WHERE "problem_set_id" = $1 AND user_id = $2`
+		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, userId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemsetResponses = append(problemsetResponses, ProblemSetResponse{
+			ID:            problemset.ID,
+			Name:          problemset.Name,
+			Description:   problemset.Description,
+			CreatedAt:     problemset.CreatedAt,
+			UpdatedAt:     problemset.UpdatedAt,
+			UserId:        problemset.UserId,
+			ProblemCount:  problemCount,
+			FavoriteCount: favoriteCount,
+			IsFavorite:    isFavorite,
+			IsPublic:      problemset.IsPublic,
+		})
+	}
+	c.JSON(http.StatusOK, problemsetResponses)
 }
 
 type ChoiceProblemItem struct {
-	Id          int    `json:"id"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
-	UserId      int    `json:"user_id"`
-	IsPublic    bool   `json:"is_public"`
-	IsMultiple  bool   `json:"is_multiple"`
+	Id            int    `json:"id"`
+	Description   string `json:"description"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+	UserId        int    `json:"user_id"`
+	IsPublic      bool   `json:"is_public"`
+	IsMultiple    bool   `json:"is_multiple"`
+	FavoriteCount int    `json:"favorite_count"`
 }
 
 // GetUserChoiceProblems godoc
@@ -196,12 +296,13 @@ func GetUserChoiceProblems(c *gin.Context) {
 	}
 	for _, item := range problemType {
 		choiceProblem := ChoiceProblemItem{
-			Id:          item.ID,
-			Description: item.Description,
-			CreatedAt:   item.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:   item.UpdatedAt.Format(time.RFC3339),
-			UserId:      item.UserId,
-			IsPublic:    item.IsPublic,
+			Id:            item.ID,
+			Description:   item.Description,
+			CreatedAt:     item.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:     item.UpdatedAt.Format(time.RFC3339),
+			UserId:        item.UserId,
+			IsPublic:      item.IsPublic,
+			FavoriteCount: 0,
 		}
 		var CorrectAnswerCount int
 		sqlString := `SELECT COUNT(*) FROM problem_choice WHERE id = $1 AND is_correct = true`
@@ -210,6 +311,12 @@ func GetUserChoiceProblems(c *gin.Context) {
 			return
 		}
 		choiceProblem.IsMultiple = CorrectAnswerCount > 1
+		// 获取收藏数
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1`
+		if err := global.Database.Get(&choiceProblem.FavoriteCount, sqlString, item.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 		choiceProblems = append(choiceProblems, choiceProblem)
 	}
 
@@ -231,6 +338,13 @@ func GetUserBlankProblems(c *gin.Context) {
 	if err := global.Database.Select(&blankProblems, sqlString, BlankProblemType, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	for _, blankProblem := range blankProblems {
+		sqlString := `SELECT count(*) FROM user_favorite_problem WHERE problem_id = $1`
+		if err := global.Database.Get(&blankProblem.FavoriteCount, sqlString, blankProblem.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 	}
 	c.JSON(http.StatusOK, blankProblems)
 }
@@ -270,14 +384,24 @@ func GetChoiceProblem(c *gin.Context) {
 			Description: choice.Description,
 		})
 	}
+
+	// 获取收藏数
+	var favoriteCount int
+	sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1`
+	if err := global.Database.Get(&favoriteCount, sqlString, choiceProblem.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+
 	choiceProblemResponse := ChoiceProblemResponse{
-		ID:          choiceProblem.ID,
-		Description: choiceProblem.Description,
-		CreatedAt:   choiceProblem.CreatedAt,
-		UpdatedAt:   choiceProblem.UpdatedAt,
-		UserId:      choiceProblem.UserId,
-		IsPublic:    choiceProblem.IsPublic,
-		Choices:     choices,
+		ID:            choiceProblem.ID,
+		Description:   choiceProblem.Description,
+		CreatedAt:     choiceProblem.CreatedAt,
+		UpdatedAt:     choiceProblem.UpdatedAt,
+		UserId:        choiceProblem.UserId,
+		IsPublic:      choiceProblem.IsPublic,
+		Choices:       choices,
+		FavoriteCount: favoriteCount,
 	}
 	c.JSON(http.StatusOK, choiceProblemResponse)
 }
@@ -347,13 +471,21 @@ func GetBlankProblem(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	// 获取收藏数
+	var favoriteCount int
+	sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1`
+	if err := global.Database.Get(&favoriteCount, sqlString, blankProblem.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
 	blankProblemResponse := BlankProblemResponse{
-		ID:          blankProblem.ID,
-		Description: blankProblem.Description,
-		CreatedAt:   blankProblem.CreatedAt,
-		UpdatedAt:   blankProblem.UpdatedAt,
-		UserId:      blankProblem.UserId,
-		IsPublic:    blankProblem.IsPublic,
+		ID:            blankProblem.ID,
+		Description:   blankProblem.Description,
+		CreatedAt:     blankProblem.CreatedAt,
+		UpdatedAt:     blankProblem.UpdatedAt,
+		UserId:        blankProblem.UserId,
+		IsPublic:      blankProblem.IsPublic,
+		FavoriteCount: favoriteCount,
 	}
 	c.JSON(http.StatusOK, blankProblemResponse)
 }
