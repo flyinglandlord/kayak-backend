@@ -56,34 +56,25 @@ func GetNotes(c *gin.Context) {
 	}
 	var noteResponses []NoteResponse
 	for _, note := range notes {
-		var noteResponse NoteResponse
-		noteResponse.ID = note.ID
-		noteResponse.Title = note.Title
-		noteResponse.Content = note.Content
-		noteResponse.CreatedAt = note.CreatedAt
-
-		// 查询是否点赞
+		var likeCount, favoriteCount int
 		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1 AND user_id = $2`
-		var count int
-		if err := global.Database.Get(&count, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+		if err := global.Database.Get(&likeCount, sqlString, note.ID, c.GetInt("UserId")); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		if count > 0 {
-			noteResponse.IsLiked = true
-		}
-
-		// 查询是否收藏
 		sqlString = `SELECT COUNT(*) FROM user_favorite_note WHERE note_id = $1 AND user_id = $2`
-		if err := global.Database.Get(&count, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+		if err := global.Database.Get(&favoriteCount, sqlString, note.ID, c.GetInt("UserId")); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		if count > 0 {
-			noteResponse.IsFavorite = true
-		}
-
-		noteResponses = append(noteResponses, noteResponse)
+		noteResponses = append(noteResponses, NoteResponse{
+			ID:         note.ID,
+			Title:      note.Title,
+			Content:    note.Content,
+			CreatedAt:  note.CreatedAt,
+			IsLiked:    likeCount > 0,
+			IsFavorite: favoriteCount > 0,
+		})
 	}
 	c.JSON(http.StatusOK, noteResponses)
 }

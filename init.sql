@@ -49,6 +49,7 @@ CREATE TABLE problem_answer
 (
     "id"     integer      NOT NULL,
     "answer" varchar(255) NOT NULL,
+    PRIMARY KEY ("id"),
     FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
 );
 

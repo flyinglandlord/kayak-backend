@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
+	"kayak-backend/model"
 	"net/http"
 	"time"
 )
@@ -14,10 +15,10 @@ const (
 
 func DeleteProblem(c *gin.Context) {
 	userId := c.GetInt("UserId")
-	choiceProblemId := c.Param("id")
+	problemId := c.Param("id")
 	sqlString := `SELECT user_id FROM problem_type WHERE id = $1`
 	var problemUserId int
-	if err := global.Database.Get(&problemUserId, sqlString, choiceProblemId); err != nil {
+	if err := global.Database.Get(&problemUserId, sqlString, problemId); err != nil {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
@@ -26,7 +27,7 @@ func DeleteProblem(c *gin.Context) {
 		return
 	}
 	sqlString = `DELETE FROM problem_type WHERE id = $1`
-	if _, err := global.Database.Exec(sqlString, choiceProblemId); err != nil {
+	if _, err := global.Database.Exec(sqlString, problemId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -34,54 +35,88 @@ func DeleteProblem(c *gin.Context) {
 }
 
 type ChoiceProblemResponse struct {
-	ID          int      `json:"id"`
-	Description string   `json:"description"`
-	Choices     []Choice `json:"choices"`
-}
-type ChoiceProblemRequest struct {
-	Description string   `json:"description"`
-	Choices     []Choice `json:"choices"`
+	ID          int       `json:"id"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UserId      int       `json:"user_id"`
+	IsPublic    bool      `json:"is_public"`
+	Choices     []Choice  `json:"choices"`
 }
 type Choice struct {
 	Choice      string `json:"choice"`
 	Description string `json:"description"`
-	IsCorrect   bool   `json:"-" db:"is_correct"`
+}
+type ChoiceProblemCreateRequest struct {
+	Description string          `json:"description"`
+	IsPublic    bool            `json:"is_public"`
+	Choices     []ChoiceRequest `json:"choices"`
+}
+type ChoiceProblemUpdateRequest struct {
+	ID          int             `json:"id"`
+	Description *string         `json:"description"`
+	IsPublic    *bool           `json:"is_public"`
+	Choices     []ChoiceRequest `json:"choices"`
+}
+type ChoiceRequest struct {
+	Choice      string `json:"choice"`
+	Description string `json:"description"`
+	IsCorrect   bool   `json:"is_correct"`
 }
 
 // GetChoiceProblems godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有选择题
 // @Success 200 {object} []ChoiceProblemResponse "选择题列表"
-// @Failure default {string} string "服务器错误"
+// @Failure default {string} string "获取题干失败"/"获取选项失败"
 // @Router /problem/choice/all [get]
 // @Security ApiKeyAuth
 func GetChoiceProblems(c *gin.Context) {
-	var choiceProblems []ChoiceProblemResponse
+	var choiceProblems []model.ProblemType
 	var sqlString string
 	var err error
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString = `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND is_public = true`
+		sqlString = `SELECT * FROM problem_type WHERE problem_type_id = $1 AND is_public = true`
 		err = global.Database.Select(&choiceProblems, sqlString, ChoiceProblemType)
 	} else if role == global.USER {
-		sqlString = `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND (is_public = true OR user_id = $2)`
+		sqlString = `SELECT * FROM problem_type WHERE problem_type_id = $1 AND (is_public = true OR user_id = $2)`
 		err = global.Database.Select(&choiceProblems, sqlString, ChoiceProblemType, c.GetInt("UserId"))
 	} else {
-		sqlString = `SELECT id, description FROM problem_type WHERE problem_type_id = $1`
+		sqlString = `SELECT * FROM problem_type WHERE problem_type_id = $1`
 		err = global.Database.Select(&choiceProblems, sqlString, ChoiceProblemType)
 	}
 	if err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusInternalServerError, "获取题干失败")
 		return
 	}
-	for i := range choiceProblems {
-		sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
-		if err := global.Database.Select(&choiceProblems[i].Choices, sqlString, choiceProblems[i].ID); err != nil {
-			c.String(http.StatusInternalServerError, "服务器错误")
+	var choiceProblemResponses []ChoiceProblemResponse
+	for _, problem := range choiceProblems {
+		var problemChoices []model.ProblemChoice
+		sqlString = `SELECT * FROM problem_choice WHERE id = $1`
+		if err := global.Database.Select(&problemChoices, sqlString, problem.ID); err != nil {
+			c.String(http.StatusInternalServerError, "获取选项失败")
 			return
 		}
+		var choices []Choice
+		for _, choice := range problemChoices {
+			choices = append(choices, Choice{
+				Choice:      choice.Choice,
+				Description: choice.Description,
+			})
+		}
+		choiceProblemResponse := ChoiceProblemResponse{
+			ID:          problem.ID,
+			Description: problem.Description,
+			CreatedAt:   problem.CreatedAt,
+			UpdatedAt:   problem.UpdatedAt,
+			UserId:      problem.UserId,
+			IsPublic:    problem.IsPublic,
+			Choices:     choices,
+		}
+		choiceProblemResponses = append(choiceProblemResponses, choiceProblemResponse)
 	}
-	c.JSON(http.StatusOK, choiceProblems)
+	c.JSON(http.StatusOK, choiceProblemResponses)
 }
 
 // GetChoiceProblem godoc
@@ -91,83 +126,76 @@ func GetChoiceProblems(c *gin.Context) {
 // @Success 200 {object} ChoiceProblemResponse "选择题信息"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "选择题不存在"
-// @Failure default {string} string "服务器错误"
+// @Failure default {string} string "获取选项失败"
 // @Router /problem/choice/{id} [get]
+// @Security ApiKeyAuth
 func GetChoiceProblem(c *gin.Context) {
-	var choiceProblem ChoiceProblemResponse
-	role, _ := c.Get("Role")
-	if role == global.GUEST {
-		sqlString := `SELECT is_public FROM problem_type WHERE problem_type_id=$1 AND id = $2`
-		var isPublic bool
-		if err := global.Database.Get(&isPublic, sqlString, ChoiceProblemType, c.Param("id")); err != nil {
-			c.String(http.StatusNotFound, "选择题不存在")
-			return
-		}
-		if !isPublic {
-			c.String(http.StatusForbidden, "没有权限")
-			return
-		}
-	} else if role == global.USER {
-		sqlString := `SELECT is_public, user_id FROM problem_type WHERE problem_type_id=$1 AND id = $2`
-		var isPublic bool
-		var userId int
-		if err := global.Database.Get(&struct {
-			IsPublic bool `db:"is_public"`
-			UserId   int  `db:"user_id"`
-		}{IsPublic: isPublic, UserId: userId}, sqlString, ChoiceProblemType, c.Param("id")); err != nil {
-			c.String(http.StatusNotFound, "选择题不存在")
-			return
-		}
-		if !isPublic && userId != c.GetInt("UserId") {
-			c.String(http.StatusForbidden, "没有权限")
-			return
-		}
-	}
-	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+	var choiceProblem model.ProblemType
+	sqlString := `SELECT * FROM problem_type WHERE problem_type_id = $1 AND id = $2`
 	if err := global.Database.Get(&choiceProblem, sqlString, ChoiceProblemType, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "选择题不存在")
 		return
 	}
-	sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
-	if err := global.Database.Select(&choiceProblem.Choices, sqlString, choiceProblem.ID); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+	if role, _ := c.Get("Role"); role != global.ADMIN && choiceProblem.UserId != c.GetInt("UserId") && !choiceProblem.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	c.JSON(http.StatusOK, choiceProblem)
+	var problemChoices []model.ProblemChoice
+	sqlString = `SELECT * FROM problem_choice WHERE id = $1`
+	if err := global.Database.Select(&problemChoices, sqlString, choiceProblem.ID); err != nil {
+		c.String(http.StatusInternalServerError, "获取选项失败")
+		return
+	}
+	var choices []Choice
+	for _, choice := range problemChoices {
+		choices = append(choices, Choice{
+			Choice:      choice.Choice,
+			Description: choice.Description,
+		})
+	}
+	choiceProblemResponse := ChoiceProblemResponse{
+		ID:          choiceProblem.ID,
+		Description: choiceProblem.Description,
+		CreatedAt:   choiceProblem.CreatedAt,
+		UpdatedAt:   choiceProblem.UpdatedAt,
+		UserId:      choiceProblem.UserId,
+		IsPublic:    choiceProblem.IsPublic,
+		Choices:     choices,
+	}
+	c.JSON(http.StatusOK, choiceProblemResponse)
 }
 
 // CreateChoiceProblem godoc
 // @Schemes http
 // @Description 创建选择题
-// @Param problem body ChoiceProblemRequest true "选择题信息"
-// @Param is_public query bool true "是否公开"
+// @Param problem body ChoiceProblemCreateRequest true "选择题信息"
 // @Success 200 {string} string "创建成功"
 // @Failure 400 {string} string "请求解析失败"
-// @Failure default {string} string "服务器错误"
+// @Failure default {string} string "服务器错误"/"创建选项失败"/"创建题目失败"
 // @Router /problem/choice/create [post]
 // @Security ApiKeyAuth
 func CreateChoiceProblem(c *gin.Context) {
-	choiceProblem := ChoiceProblemResponse{}
-	if err := c.ShouldBindJSON(&choiceProblem); err != nil {
+	var request ChoiceProblemCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
 	tx := global.Database.MustBegin()
-	userId := c.GetInt("UserId")
+	var problemId int
 	sqlString := `INSERT INTO problem_type (description, user_id, problem_type_id, is_public, created_at, updated_at) 
 		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
-	if err := global.Database.Get(&choiceProblem.ID, sqlString, choiceProblem.Description, userId,
-		ChoiceProblemType, c.Query("is_public"), time.Now().Local(), time.Now().Local()); err != nil {
+	if err := global.Database.Get(&problemId, sqlString, request.Description, c.GetInt("UserId"),
+		ChoiceProblemType, request.IsPublic, time.Now().Local(), time.Now().Local()); err != nil {
 		_ = tx.Rollback()
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusInternalServerError, "创建题干失败")
 		return
 	}
-	for i := range choiceProblem.Choices {
+	for i := range request.Choices {
 		sqlString = `INSERT INTO problem_choice (id, choice, description, is_correct) VALUES ($1, $2, $3, $4)`
-		if _, err := tx.Exec(sqlString, choiceProblem.ID, choiceProblem.Choices[i].Choice,
-			choiceProblem.Choices[i].Description, choiceProblem.Choices[i].IsCorrect); err != nil {
+		if _, err := tx.Exec(sqlString, problemId, request.Choices[i].Choice,
+			request.Choices[i].Description, request.Choices[i].IsCorrect); err != nil {
 			_ = tx.Rollback()
-			c.String(http.StatusInternalServerError, "服务器错误")
+			c.String(http.StatusInternalServerError, "创建选项失败")
 			return
 		}
 	}
@@ -180,55 +208,52 @@ func CreateChoiceProblem(c *gin.Context) {
 
 // UpdateChoiceProblem godoc
 // @Schemes http
-// @Description 更新选择题（description为空或不传则维持原description,choices只需传需要更新的）(只有管理员和题目创建者可以更新题目)
-// @Param problem body ChoiceProblemResponse true "选择题信息"
-// @Param is_public query bool true "是否公开"
+// @Description 更新选择题（只需传需要修改的字段,传原值也行）(只有管理员和题目创建者可以更新题目)
+// @Param problem body ChoiceProblemUpdateRequest true "选择题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
-// @Failure default {string} string "服务器错误"
+// @Failure 404 {string} string "选择题不存在"
+// @Failure default {string} string "服务器错误"/"更新选项失败"/"更新题干失败"
 // @Router /problem/choice/update [put]
 // @Security ApiKeyAuth
 func UpdateChoiceProblem(c *gin.Context) {
-	choiceProblem := ChoiceProblemResponse{}
-	if err := c.ShouldBindJSON(&choiceProblem); err != nil {
+	var choiceProblem model.ProblemType
+	var request ChoiceProblemUpdateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
-	userId := c.GetInt("UserId")
-	sqlString := `SELECT user_id FROM problem_type WHERE id = $1`
-	var problemUserId int
-	if err := global.Database.Get(&problemUserId, sqlString, choiceProblem.ID); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+	sqlString := `SELECT * FROM problem_type WHERE id = $1`
+	if err := global.Database.Get(&choiceProblem, sqlString, request.ID); err != nil {
+		c.String(http.StatusInternalServerError, "选择题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); userId != problemUserId && role != global.ADMIN {
+	if role, _ := c.Get("Role"); choiceProblem.UserId != c.GetInt("UserId") && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	tx := global.Database.MustBegin()
-	if choiceProblem.Description == "" {
-		sqlString := `SELECT description FROM problem_type WHERE id = $1`
-		if err := global.Database.Get(&choiceProblem.Description, sqlString, choiceProblem.ID); err != nil {
-			_ = tx.Rollback()
-			c.String(http.StatusInternalServerError, "服务器错误")
-			return
-		}
+	if request.Description == nil {
+		request.Description = &choiceProblem.Description
+	}
+	if request.IsPublic == nil {
+		request.IsPublic = &choiceProblem.IsPublic
 	}
 	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
-	if _, err := global.Database.Exec(sqlString, choiceProblem.Description,
-		c.Query("is_public"), time.Now().Local(), choiceProblem.ID); err != nil {
+	if _, err := global.Database.Exec(sqlString, request.Description,
+		request.IsPublic, time.Now().Local(), request.ID); err != nil {
 		_ = tx.Rollback()
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusInternalServerError, "更新题干失败")
 		return
 	}
-	for i := range choiceProblem.Choices {
+	for _, choice := range request.Choices {
 		sqlString = `INSERT INTO problem_choice (id, choice, description, is_correct) VALUES ($1, $2, $3, $4) 
 			ON CONFLICT (id, choice) DO UPDATE SET description = $3, is_correct = $4`
-		if _, err := global.Database.Exec(sqlString, choiceProblem.ID, choiceProblem.Choices[i].Choice,
-			choiceProblem.Choices[i].Description, choiceProblem.Choices[i].IsCorrect); err != nil {
+		if _, err := global.Database.Exec(sqlString, request.ID, choice.Choice,
+			choice.Description, choice.IsCorrect); err != nil {
 			_ = tx.Rollback()
-			c.String(http.StatusInternalServerError, "服务器错误")
+			c.String(http.StatusInternalServerError, "更新选项失败")
 			return
 		}
 	}
@@ -254,41 +279,65 @@ func DeleteChoiceProblem(c *gin.Context) {
 }
 
 type BlankProblemResponse struct {
-	ID          int    `json:"id"`
-	Description string `json:"description"`
+	ID          int       `json:"id"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UserId      int       `json:"user_id"`
+	IsPublic    bool      `json:"is_public"`
 }
-type BlankProblemRequest struct {
+type BlankProblemCreateRequest struct {
 	Description string `json:"description"`
+	IsPublic    bool   `json:"is_public"`
 	Answer      string `json:"answer"`
+}
+type BlankProblemUpdateRequest struct {
+	ID          int     `json:"id"`
+	Description *string `json:"description"`
+	IsPublic    *bool   `json:"is_public"`
+	Answer      *string `json:"answer"`
 }
 
 // GetBlankProblems godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有填空题
-// @Success 200 {object} BlankProblemResponse "填空题信息"
-// @Failure default {string} string "服务器错误"
+// @Success 200 {object} []BlankProblemResponse "填空题信息"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "答案不存在"
+// @Failure default {string} string "获取题干失败"
 // @Router /problem/blank/all [get]
 // @Security ApiKeyAuth
 func GetBlankProblems(c *gin.Context) {
-	var blankProblems []BlankProblemResponse
+	var blankProblems []model.ProblemType
 	var sqlString string
 	var err error
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString = `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND is_public = true`
+		sqlString = `SELECT * FROM problem_type WHERE problem_type_id = $1 AND is_public = true`
 		err = global.Database.Select(&blankProblems, sqlString, BlankProblemType)
 	} else if role == global.USER {
-		sqlString = `SELECT id, description FROM problem_type WHERE problem_type_id = $1 AND (is_public = true OR user_id = $2)`
+		sqlString = `SELECT * FROM problem_type WHERE problem_type_id = $1 AND (is_public = true OR user_id = $2)`
 		err = global.Database.Select(&blankProblems, sqlString, BlankProblemType, c.GetInt("UserId"))
 	} else {
-		sqlString = `SELECT id, description FROM problem_type WHERE problem_type_id = $1`
+		sqlString = `SELECT * FROM problem_type WHERE problem_type_id = $1`
 		err = global.Database.Select(&blankProblems, sqlString, BlankProblemType)
 	}
 	if err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusInternalServerError, "获取题干失败")
 		return
 	}
-	c.JSON(http.StatusOK, blankProblems)
+	var blankProblemResponses []BlankProblemResponse
+	for _, blankProblem := range blankProblems {
+		blankProblemResponses = append(blankProblemResponses, BlankProblemResponse{
+			ID:          blankProblem.ID,
+			Description: blankProblem.Description,
+			CreatedAt:   blankProblem.CreatedAt,
+			UpdatedAt:   blankProblem.UpdatedAt,
+			UserId:      blankProblem.UserId,
+			IsPublic:    blankProblem.IsPublic,
+		})
+	}
+	c.JSON(http.StatusOK, blankProblemResponses)
 }
 
 // GetBlankProblem godoc
@@ -297,73 +346,56 @@ func GetBlankProblems(c *gin.Context) {
 // @Param id path int true "填空题ID"
 // @Success 200 {object} BlankProblemResponse "填空题信息"
 // @Failure 403 {string} string "没有权限"
-// @Failure 404 {string} string "选择题不存在"
+// @Failure 404 {string} string "填空题不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/blank/{id} [get]
 func GetBlankProblem(c *gin.Context) {
-	var blankProblem BlankProblemResponse
-	role, _ := c.Get("Role")
-	if role == global.GUEST {
-		sqlString := `SELECT is_public FROM problem_type WHERE problem_type_id=$1 AND id = $2`
-		var isPublic bool
-		if err := global.Database.Get(&isPublic, sqlString, BlankProblemType, c.Param("id")); err != nil {
-			c.String(http.StatusNotFound, "填空题不存在")
-			return
-		}
-		if !isPublic {
-			c.String(http.StatusForbidden, "没有权限")
-			return
-		}
-	} else if role == global.USER {
-		sqlString := `SELECT is_public, user_id FROM problem_type WHERE problem_type_id=$1 AND id = $2`
-		var isPublic bool
-		var userId int
-		if err := global.Database.Get(&struct {
-			IsPublic bool `db:"is_public"`
-			UserId   int  `db:"user_id"`
-		}{IsPublic: isPublic, UserId: userId}, sqlString, BlankProblemType, c.Param("id")); err != nil {
-			c.String(http.StatusNotFound, "填空题不存在")
-			return
-		}
-		if !isPublic && userId != c.GetInt("UserId") {
-			c.String(http.StatusForbidden, "没有权限")
-			return
-		}
-	}
-	sqlString := `SELECT id, description FROM problem_type WHERE problem_type_id=$1 AND id = $2`
+	var blankProblem model.ProblemType
+	sqlString := `SELECT * FROM problem_type WHERE problem_type_id = $1 AND id = $2`
 	if err := global.Database.Get(&blankProblem, sqlString, BlankProblemType, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "填空题不存在")
 		return
 	}
-	c.JSON(http.StatusOK, blankProblem)
+	if role, _ := c.Get("Role"); role != global.ADMIN && blankProblem.UserId != c.GetInt("UserId") && !blankProblem.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	blankProblemResponse := BlankProblemResponse{
+		ID:          blankProblem.ID,
+		Description: blankProblem.Description,
+		CreatedAt:   blankProblem.CreatedAt,
+		UpdatedAt:   blankProblem.UpdatedAt,
+		UserId:      blankProblem.UserId,
+		IsPublic:    blankProblem.IsPublic,
+	}
+	c.JSON(http.StatusOK, blankProblemResponse)
 }
 
 // CreateBlankProblem godoc
 // @Schemes http
 // @Description 创建填空题
-// @Param problem body BlankProblemRequest true "填空题信息"
-// @Param is_public query bool true "是否公开"
+// @Param problem body BlankProblemCreateRequest true "填空题信息"
 // @Success 200 {string} string "创建成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/blank/create [post]
 // @Security ApiKeyAuth
 func CreateBlankProblem(c *gin.Context) {
-	userId := c.GetInt("UserId")
-	var blankProblem BlankProblemRequest
-	if err := c.ShouldBindJSON(&blankProblem); err != nil {
+	var request BlankProblemCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
-	var blankProblemID int
-	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
-	if err := global.Database.Get(&blankProblemID, sqlString, BlankProblemType, blankProblem.Description,
-		c.Query("is_public"), userId, time.Now().Local(), time.Now().Local()); err != nil {
+	var problemId int
+	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) 
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	if err := global.Database.Get(&problemId, sqlString, BlankProblemType, request.Description,
+		request.IsPublic, c.GetInt("UserId"), time.Now().Local(), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `INSERT INTO problem_answer (id, answer) VALUES ($1, $2)`
-	if _, err := global.Database.Exec(sqlString, blankProblemID, blankProblem.Answer); err != nil {
+	if _, err := global.Database.Exec(sqlString, problemId, request.Answer); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -373,34 +405,53 @@ func CreateBlankProblem(c *gin.Context) {
 // UpdateBlankProblem godoc
 // @Schemes http
 // @Description 更新填空题（只有管理员和题目创建者可以更新题目）
-// @Param problem body BlankProblemResponse true "填空题信息"
-// @Param is_public query bool true "是否公开"
+// @Param problem body BlankProblemUpdateRequest true "填空题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "填空题不存在"/"答案不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problem/blank/update [put]
 // @Security ApiKeyAuth
 func UpdateBlankProblem(c *gin.Context) {
-	userId := c.GetInt("UserId")
-	var blankProblem BlankProblemResponse
-	if err := c.ShouldBindJSON(&blankProblem); err != nil {
+	var blankProblem model.ProblemType
+	var request BlankProblemUpdateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
-	sqlString := `SELECT user_id FROM problem_type WHERE id = $1`
-	var problemUserId int
-	if err := global.Database.Get(&problemUserId, sqlString, blankProblem.ID); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+	sqlString := `SELECT * FROM problem_type WHERE problem_type_id = $1 AND id = $2`
+	if err := global.Database.Get(&blankProblem, sqlString, BlankProblemType, request.ID); err != nil {
+		c.String(http.StatusNotFound, "填空题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); userId != problemUserId && role != global.ADMIN {
+	if role, _ := c.Get("Role"); c.GetInt("UserId") != blankProblem.UserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	if request.Description == nil {
+		request.Description = &blankProblem.Description
+	}
+	if request.IsPublic == nil {
+		request.IsPublic = &blankProblem.IsPublic
+	}
+	if request.Answer == nil {
+		var answer model.ProblemAnswer
+		sqlString = `SELECT answer FROM problem_answer WHERE id = $1`
+		if err := global.Database.Get(&answer, sqlString, request.ID); err != nil {
+			c.String(http.StatusNotFound, "答案不存在")
+			return
+		}
+		request.Answer = &answer.Answer
+	}
 	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
-	if _, err := global.Database.Exec(sqlString, blankProblem.Description, c.Query("is_public"),
-		time.Now().Local(), blankProblem.ID); err != nil {
+	if _, err := global.Database.Exec(sqlString, request.Description,
+		request.IsPublic, time.Now().Local(), request.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `UPDATE problem_answer SET answer = $1 WHERE id = $2`
+	if _, err := global.Database.Exec(sqlString, request.Answer, request.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
