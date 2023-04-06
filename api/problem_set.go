@@ -131,6 +131,7 @@ type ProblemResponse struct {
 // @Schemes http
 // @Description 获取题集中的所有题目信息（只有管理员和题集创建者能获取所有信息，否则只能获取公开题集的所有公开题目信息）
 // @Param id path int true "题集ID"
+// @Param is_favorite query bool false "是否是收藏的題目"
 // @Success 200 {object} []ProblemResponse "题目列表"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
@@ -158,54 +159,33 @@ func GetProblemsInProblemSet(c *gin.Context) {
 	if userId == problemSetInfo.UserId || role == global.ADMIN {
 		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
     		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1`
-		if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
-			c.String(http.StatusInternalServerError, "服务器错误")
-			return
+		if c.Query("is_favorite") == "true" {
+			sqlString += ` AND problem_id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = $2)`
+			if err := global.Database.Select(&problems, sqlString, problemsetId, userId); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+		} else {
+			if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
 		}
 	} else {
 		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
     		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1 AND is_public = true`
-		if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
-			c.String(http.StatusInternalServerError, "服务器错误")
-			return
+		if c.Query("is_favorite") == "true" {
+			sqlString += ` AND problem_id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = $2)`
+			if err := global.Database.Select(&problems, sqlString, problemsetId, userId); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+		} else {
+			if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
 		}
-	}
-	c.JSON(http.StatusOK, problems)
-}
-
-// GetFavoriteProblemInProblemSet godoc
-// @Schemes http
-// @Description 获取题集中的所有收藏题目信息
-// @Param id path int true "题集ID"
-// @Success 200 {object} []ProblemResponse "题目列表"
-// @Failure 403 {string} string "没有权限"
-// @Failure 404 {string} string "题集不存在"
-// @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/favorite_problem [get]
-// @Security ApiKeyAuth
-func GetFavoriteProblemInProblemSet(c *gin.Context) {
-	var problems []ProblemResponse
-	userId := c.GetInt("UserId")
-	problemsetId := c.Param("id")
-	sqlString := `SELECT is_public, user_id FROM problemset WHERE id = $1`
-	var problemsetUserId int
-	var isPublic bool
-	if err := global.Database.Get(&struct {
-		IsPublic bool `db:"is_public"`
-		UserId   int  `db:"user_id"`
-	}{IsPublic: isPublic, UserId: problemsetUserId}, sqlString, problemsetId); err != nil {
-		c.String(http.StatusNotFound, "题集不存在")
-		return
-	} else if !isPublic && userId != problemsetUserId {
-		c.String(http.StatusForbidden, "没有权限")
-		return
-	}
-	sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
-			problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1 AND is_public = true AND problem_id IN 
-			(SELECT problem_id FROM user_favorite_problem WHERE user_id = $2)`
-	if err := global.Database.Select(&problems, sqlString, problemsetId, userId); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
 	}
 	c.JSON(http.StatusOK, problems)
 }

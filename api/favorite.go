@@ -27,7 +27,7 @@ func AddProblemToFavorite(c *gin.Context) {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); role != global.ADMIN && problem.ID != userId && !problem.IsPublic {
+	if role, _ := c.Get("Role"); role != global.ADMIN && problem.UserId != userId && !problem.IsPublic {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
