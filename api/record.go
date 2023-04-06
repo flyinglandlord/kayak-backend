@@ -9,10 +9,10 @@ import (
 )
 
 type WrongRecordResponse struct {
-	ProblemID int `json:"problem_id"`
-	Count     int `json:"count"`
-	CreatedAt int `json:"created_at"`
-	UpdatedAt int `json:"updated_at"`
+	ProblemId int       `json:"problem_id"`
+	Count     int       `json:"count"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // CreateWrongRecord godoc

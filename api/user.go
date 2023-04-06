@@ -126,13 +126,22 @@ func GetUserNotes(c *gin.Context) {
 // @Router /user/wrong_record [get]
 // @Security ApiKeyAuth
 func GetUserWrongRecords(c *gin.Context) {
-	var wrongRecords []WrongRecordResponse
-	sqlString := `SELECT problem_id, count, created_at, updated_at FROM user_wrong_record WHERE user_id = $1`
+	var wrongRecords []model.WrongRecord
+	sqlString := `SELECT * FROM user_wrong_record WHERE user_id = $1`
 	if err := global.Database.Select(&wrongRecords, sqlString, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, wrongRecords)
+	var wrongRecordResponses []WrongRecordResponse
+	for _, wrongRecord := range wrongRecords {
+		wrongRecordResponses = append(wrongRecordResponses, WrongRecordResponse{
+			ProblemId: wrongRecord.ProblemId,
+			Count:     wrongRecord.Count,
+			CreatedAt: wrongRecord.CreatedAt,
+			UpdatedAt: wrongRecord.UpdatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, wrongRecordResponses)
 }
 
 type FavoriteProblemResponse struct {
@@ -170,7 +179,7 @@ type FavoriteProblemSetResponse struct {
 	ProblemSets []ProblemSetResponse `json:"problem_set"`
 }
 
-// GetUserFavoriteProblemsets godoc
+// GetUserFavoriteProblemSets godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题集
 // @Success 200 {object} FavoriteProblemSetResponse "收藏的题集列表"
@@ -225,7 +234,7 @@ func GetUserFavoriteNotes(c *gin.Context) {
 	})
 }
 
-// GetUserProblemsets godoc
+// GetUserProblemSets godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有题集
 // @Success 200 {object} []ProblemSetResponse "题集列表"
