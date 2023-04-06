@@ -24,7 +24,7 @@ func testUserInfo(t *testing.T) {
 	fmt.Println(time.Now().Local())
 	fmt.Println(userInfoRes.CreateAt)
 	assert.Equal(t, code, http.StatusOK)
-	assert.Equal(t, userInfoRes.UserId, initUser[4].ID)
+	assert.Equal(t, userInfoRes.UserId, 5)
 	assert.Equal(t, userInfoRes.UserName, initUser[4].Name)
 	assert.Equal(t, userInfoRes.Email, initUser[4].Email)
 	assert.Equal(t, userInfoRes.Phone, initUser[4].Phone)

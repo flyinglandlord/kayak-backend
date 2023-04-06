@@ -202,17 +202,20 @@ func CreateChoiceProblem(c *gin.Context) {
 			return
 		}
 	}
+	if err := tx.Commit(); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+
 	sqlString = `SELECT * FROM problem_type WHERE id = $1`
 	var problem model.ProblemType
 	if err := global.Database.Get(&problem, sqlString, problemId); err != nil {
-		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var problemChoices []model.ProblemChoice
 	sqlString = `SELECT * FROM problem_choice WHERE id = $1`
 	if err := global.Database.Select(&problemChoices, sqlString, problemId); err != nil {
-		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -226,10 +229,6 @@ func CreateChoiceProblem(c *gin.Context) {
 	var CorrectChoiceCount int
 	sqlString = `SELECT COUNT(*) FROM problem_choice WHERE id = $1 AND is_correct = true`
 	if err := global.Database.Get(&CorrectChoiceCount, sqlString, problem.ID); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

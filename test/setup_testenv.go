@@ -18,14 +18,14 @@ import (
 )
 
 var initUser = []model.User{
-	{ID: 1, Name: "test1", CreatedAt: time.Now()},
-	{ID: 2, Name: "test2", CreatedAt: time.Now()},
-	{ID: 3, Name: "test3", CreatedAt: time.Now()},
-	{ID: 4, Name: "test4", CreatedAt: time.Now()},
-	{ID: 5, Name: "test5", CreatedAt: time.Now()},
-	{ID: 6, Name: "test6", CreatedAt: time.Now()},
-	{ID: 7, Name: "test7", CreatedAt: time.Now()},
-	{ID: 8, Name: "test8", CreatedAt: time.Now()},
+	{Name: "test1", CreatedAt: time.Now()},
+	{Name: "test2", CreatedAt: time.Now()},
+	{Name: "test3", CreatedAt: time.Now()},
+	{Name: "test4", CreatedAt: time.Now()},
+	{Name: "test5", CreatedAt: time.Now()},
+	{Name: "test6", CreatedAt: time.Now()},
+	{Name: "test7", CreatedAt: time.Now()},
+	{Name: "test8", CreatedAt: time.Now()},
 }
 
 var initProblemType = []model.ProblemType{
@@ -160,11 +160,11 @@ func readConfig() {
 }
 
 func InitUserTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO "user" (id, name, created_at, password) VALUES ($1, $2, now(), $3)`
+	sqlString := `INSERT INTO "user" (name, created_at, password) VALUES ($1, now(), $2)`
 	for i := range initUser {
 		initUser[i].Password = fmt.Sprintf("%s-pwd", initUser[i].Name)
 		encryptPassword, _ := utils.EncryptPassword(initUser[i].Password)
-		if _, err := tx.Exec(sqlString, initUser[i].ID, initUser[i].Name, encryptPassword); err != nil {
+		if _, err := tx.Exec(sqlString, initUser[i].Name, encryptPassword); err != nil {
 			return err
 		}
 	}
@@ -172,9 +172,9 @@ func InitUserTable(tx *sqlx.Tx) error {
 }
 
 func InitProblemTypeTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO problem_type (id, description, created_at, updated_at, user_id, problem_type_id, is_public) VALUES ($1, $2, now(), now(), $3, $4, $5)`
+	sqlString := `INSERT INTO problem_type (description, created_at, updated_at, user_id, problem_type_id, is_public) VALUES ($1, now(), now(), $2, $3, $4)`
 	for i := range initProblemType {
-		if _, err := tx.Exec(sqlString, initProblemType[i].ID, initProblemType[i].Description, initProblemType[i].UserId,
+		if _, err := tx.Exec(sqlString, initProblemType[i].Description, initProblemType[i].UserId,
 			initProblemType[i].ProblemTypeId, initProblemType[i].IsPublic); err != nil {
 			return err
 		}
@@ -203,9 +203,9 @@ func InitProblemAnswerTable(tx *sqlx.Tx) error {
 }
 
 func InitProblemSetTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO problemset (id, name, description, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, $4, $5, $6)`
 	for i := range initProblemSet {
-		if _, err := tx.Exec(sqlString, initProblemSet[i].ID, initProblemSet[i].Name,
+		if _, err := tx.Exec(sqlString, initProblemSet[i].Name,
 			initProblemSet[i].Description, initProblemSet[i].CreatedAt, initProblemSet[i].UpdatedAt,
 			initProblemSet[i].UserId, initProblemSet[i].IsPublic); err != nil {
 			return err
@@ -215,9 +215,9 @@ func InitProblemSetTable(tx *sqlx.Tx) error {
 }
 
 func InitNoteTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO note (id, title, content, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, now(), now(), $4, $5)`
+	sqlString := `INSERT INTO note (title, content, created_at, updated_at, user_id, is_public) VALUES ($1, $2, now(), now(), $3, $4)`
 	for i := range initNote {
-		if _, err := tx.Exec(sqlString, initNote[i].ID, initNote[i].Title, initNote[i].Content, initNote[i].UserId, initNote[i].IsPublic); err != nil {
+		if _, err := tx.Exec(sqlString, initNote[i].Title, initNote[i].Content, initNote[i].UserId, initNote[i].IsPublic); err != nil {
 			return err
 		}
 	}
@@ -225,9 +225,9 @@ func InitNoteTable(tx *sqlx.Tx) error {
 }
 
 func InitNoteReviewTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO note_review (id, title, content, created_at, updated_at, user_id, note_id) VALUES ($1, $2, $3, now(), now(), $4, $5)`
+	sqlString := `INSERT INTO note_review (title, content, created_at, updated_at, user_id, note_id) VALUES ($1, $2, now(), now(), $3, $4)`
 	for i := range initNoteReview {
-		if _, err := tx.Exec(sqlString, initNoteReview[i].ID, initNoteReview[i].Title, initNoteReview[i].Content, initNoteReview[i].UserId, initNoteReview[i].NoteId); err != nil {
+		if _, err := tx.Exec(sqlString, initNoteReview[i].Title, initNoteReview[i].Content, initNoteReview[i].UserId, initNoteReview[i].NoteId); err != nil {
 			return err
 		}
 	}

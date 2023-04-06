@@ -72,4 +72,16 @@ func InitRoute() {
 	noteReview.POST("/add", AddNoteReview)
 	noteReview.DELETE("/remove/:id", RemoveNoteReview)
 	noteReview.GET("/get", GetNoteReviews)
+
+	// Deprecated
+	global.Router.GET("/problem/blank/:id", GetBlankProblem)
+	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
+	problem.GET("/:id/problem_set", GetProblemSetContainsProblem)
+	user.GET("/favorite/problem", GetUserFavoriteProblems)
+	user.GET("/favorite/problem_set", GetUserFavoriteProblemSets)
+	user.GET("/favorite/note", GetUserFavoriteNotes)
+	user.GET("/problem/choice", GetUserChoiceProblems)
+	user.GET("/problem/blank", GetUserBlankProblems)
+	user.GET("/problem_set", GetUserProblemSets)
+	user.GET("/note", GetUserNotes)
 }

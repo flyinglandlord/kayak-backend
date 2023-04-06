@@ -71,7 +71,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 	var problemSet model.ProblemSet
 	problemSetId := c.Param("id")
 	userId := c.GetInt("UserId")
-	sqlString := `SELECT * FROM problemSet WHERE id = $1`
+	sqlString := `SELECT * FROM problem_set WHERE id = $1`
 	if err := global.Database.Get(&problemSet, sqlString, problemSetId); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return

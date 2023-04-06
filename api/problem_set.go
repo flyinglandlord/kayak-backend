@@ -48,7 +48,7 @@ type AllProblemSetResponse struct {
 // @Router /problem_set/all [get]
 // @Security ApiKeyAuth
 func GetProblemSets(c *gin.Context) {
-	sqlString := `SELECT * FROM problemset`
+	sqlString := `SELECT * FROM problem_set`
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
 		sqlString += ` WHERE is_public = true`
@@ -86,7 +86,7 @@ func GetProblemSets(c *gin.Context) {
 	var problemSetResponses []ProblemSetResponse
 	for _, problemSet := range problemSets {
 		var problemCount int
-		sqlString = `SELECT COUNT(*) FROM problem_in_problemset WHERE problem_set_id = $1`
+		sqlString = `SELECT COUNT(*) FROM problem_in_problem_set WHERE problem_set_id = $1`
 		if err := global.Database.Get(&problemCount, sqlString, problemSet.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
@@ -137,7 +137,7 @@ func CreateProblemSet(c *gin.Context) {
 		return
 	}
 	tx := global.Database.MustBegin()
-	sqlString := `INSERT INTO problemset (name, description, created_at, updated_at, user_id, is_public) 
+	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public) 
 		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	var problemSetId int
 	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description,
@@ -146,7 +146,7 @@ func CreateProblemSet(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	sqlString = `SELECT * FROM problemset WHERE id = $1`
+	sqlString = `SELECT * FROM problem_set WHERE id = $1`
 	var problemSet model.ProblemSet
 	if err := global.Database.Get(&problemSet, sqlString, problemSetId); err != nil {
 		_ = tx.Rollback()
@@ -203,7 +203,7 @@ type AllProblemResponse struct {
 // @Router /problem_set/{id}/all_problem [get]
 // @Security ApiKeyAuth
 func GetProblemsInProblemSet(c *gin.Context) {
-	sqlString := `SELECT * FROM problemset WHERE id = $1`
+	sqlString := `SELECT * FROM problem_set WHERE id = $1`
 	var problemSet model.ProblemSet
 	if err := global.Database.Get(&problemSet, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
@@ -218,7 +218,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
-	sqlString = `SELECT * FROM problem_type` + fmt.Sprintf(" WHERE id IN (SELECT problem_id FROM problem_in_problemset WHERE problem_set_id = %d)", problemSet.ID)
+	sqlString = `SELECT * FROM problem_type` + fmt.Sprintf(" WHERE id IN (SELECT problem_id FROM problem_in_problem_set WHERE problem_set_id = %d)", problemSet.ID)
 	if filter.IsFavorite != nil {
 		sqlString += fmt.Sprintf(" AND id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = %d)", c.GetInt("UserId"))
 	}
@@ -273,7 +273,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 // @Router /problem_set/{id}/add [post]
 // @Security ApiKeyAuth
 func AddProblemToProblemSet(c *gin.Context) {
-	sqlString := `SELECT user_id FROM problemset WHERE id = $1`
+	sqlString := `SELECT user_id FROM problem_set WHERE id = $1`
 	var problemSetUserId int
 	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
@@ -293,7 +293,7 @@ func AddProblemToProblemSet(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `INSERT INTO problem_in_problemset (problem_set_id, problem_id) VALUES ($1, $2)`
+	sqlString = `INSERT INTO problem_in_problem_set (problem_set_id, problem_id) VALUES ($1, $2)`
 	if _, err := global.Database.Exec(sqlString, c.Param("id"), c.Query("problem_id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -314,7 +314,7 @@ func AddProblemToProblemSet(c *gin.Context) {
 // @Security ApiKeyAuth
 func RemoveProblemFromProblemSet(c *gin.Context) {
 	role, _ := c.Get("Role")
-	sqlString := `SELECT user_id FROM problemset WHERE id = $1`
+	sqlString := `SELECT user_id FROM problem_set WHERE id = $1`
 	var problemSetUserId int
 	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
@@ -334,7 +334,7 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `DELETE FROM problem_in_problemset WHERE problem_set_id = $1 AND problem_id = $2`
+	sqlString = `DELETE FROM problem_in_problem_set WHERE problem_set_id = $1 AND problem_id = $2`
 	if _, err := global.Database.Exec(sqlString, c.Param("id"), c.Query("problem_id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -353,7 +353,7 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 // @Router /problem_set/delete/{id} [delete]
 // @Security ApiKeyAuth
 func DeleteProblemSet(c *gin.Context) {
-	sqlString := `SELECT user_id FROM problemset WHERE id = $1`
+	sqlString := `SELECT user_id FROM problem_set WHERE id = $1`
 	var problemSetUserId int
 	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
@@ -363,7 +363,7 @@ func DeleteProblemSet(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `DELETE FROM problemset WHERE id = $1`
+	sqlString = `DELETE FROM problem_set WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
