@@ -54,6 +54,7 @@ func InitRoute() {
 	choiceProblem.POST("/create", CreateChoiceProblem)
 	choiceProblem.PUT("/update", UpdateChoiceProblem)
 	choiceProblem.DELETE("/delete/:id", DeleteChoiceProblem)
+	choiceProblem.GET("/answer/:id", GetChoiceProblemAnswer)
 
 	blankProblem := problem.Group("/blank")
 	global.Router.GET("/problem/blank/all", GetBlankProblems)
@@ -61,6 +62,7 @@ func InitRoute() {
 	blankProblem.POST("/create", CreateBlankProblem)
 	blankProblem.PUT("/update", UpdateBlankProblem)
 	blankProblem.DELETE("/delete/:id", DeleteBlankProblem)
+	blankProblem.GET("/answer/:id", GetBlankProblemAnswer)
 
 	problemSet := global.Router.Group("/problem_set")
 	problemSet.Use(global.CheckAuth)

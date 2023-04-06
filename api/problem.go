@@ -278,6 +278,37 @@ func DeleteChoiceProblem(c *gin.Context) {
 	DeleteProblem(c)
 }
 
+type ChoiceProblemAnswerResponse struct {
+	Choice      string `json:"choice" db:"choice"`
+	Description string `json:"description" db:"description"`
+	IsCorrect   bool   `json:"is_correct" db:"is_correct"`
+}
+
+// GetChoiceProblemAnswer godoc
+// @Schemes http
+// @Description 获取选择题答案
+// @Param id path int true "选择题ID"
+// @Success 200 {object} []ChoiceProblemAnswerResponse "答案信息"
+// @Failure 404 {string} string "题目不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/choice/answer/{id} [get]
+// @Security ApiKeyAuth
+func GetChoiceProblemAnswer(c *gin.Context) {
+	var choiceProblem model.ProblemType
+	var choices []ChoiceProblemAnswerResponse
+	sqlString := `SELECT * FROM problem_type WHERE id = $1 AND problem_type_id = 0`
+	if err := global.Database.Get(&choiceProblem, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "题目不存在")
+		return
+	}
+	sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1 AND is_correct = true`
+	if err := global.Database.Select(&choices, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, choices)
+}
+
 type BlankProblemResponse struct {
 	ID          int       `json:"id"`
 	Description string    `json:"description"`
@@ -470,4 +501,23 @@ func UpdateBlankProblem(c *gin.Context) {
 // @Security ApiKeyAuth
 func DeleteBlankProblem(c *gin.Context) {
 	DeleteProblem(c)
+}
+
+// GetBlankProblemAnswer godoc
+// @Schemes http
+// @Description 获取填空题答案
+// @Param id path int true "填空题ID"
+// @Success 200 {string} string "答案"
+// @Failure 404 {string} string "填空题不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/blank/answer/{id} [get]
+// @Security ApiKeyAuth
+func GetBlankProblemAnswer(c *gin.Context) {
+	sqlString := `SELECT answer FROM problem_answer WHERE id = $1`
+	var answer string
+	if err := global.Database.Get(&answer, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "填空题不存在")
+		return
+	}
+	c.String(http.StatusOK, answer)
 }
