@@ -14,6 +14,10 @@ type WrongRecordResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+type AllWrongRecordResponse struct {
+	TotalCount int                   `json:"total_count"`
+	Records    []WrongRecordResponse `json:"records"`
+}
 
 // CreateWrongRecord godoc
 // @Schemes http
@@ -26,9 +30,8 @@ type WrongRecordResponse struct {
 // @Security ApiKeyAuth
 func CreateWrongRecord(c *gin.Context) {
 	var problem model.ProblemType
-	problemID := c.Param("id")
 	sqlString := `SELECT * FROM problem_type WHERE id = $1`
-	if err := global.Database.Get(&problem, sqlString, problemID); err != nil {
+	if err := global.Database.Get(&problem, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
@@ -38,7 +41,7 @@ func CreateWrongRecord(c *gin.Context) {
 	}
 	sqlString = `INSERT INTO user_wrong_record (user_id, problem_id, count, created_at, updated_at) VALUES ($1, $2, 1, $3, $4) ON CONFLICT 
 		(user_id, problem_id) DO UPDATE SET count = user_wrong_record.count + 1, updated_at = $3`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), problemID, time.Now().Local(), time.Now().Local()); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local(), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -53,9 +56,8 @@ func CreateWrongRecord(c *gin.Context) {
 // @Router /wrong_record/delete/{id} [delete]
 // @Security ApiKeyAuth
 func DeleteWrongRecord(c *gin.Context) {
-	problemID := c.Param("id")
 	sqlString := `DELETE FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), problemID); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

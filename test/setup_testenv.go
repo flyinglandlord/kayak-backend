@@ -23,14 +23,20 @@ var initUser = []model.User{
 	{ID: 3, Name: "test3", CreatedAt: time.Now()},
 	{ID: 4, Name: "test4", CreatedAt: time.Now()},
 	{ID: 5, Name: "test5", CreatedAt: time.Now()},
+	{ID: 6, Name: "test6", CreatedAt: time.Now()},
+	{ID: 7, Name: "test7", CreatedAt: time.Now()},
+	{ID: 8, Name: "test8", CreatedAt: time.Now()},
 }
 
 var initProblemType = []model.ProblemType{
-	{ID: 1, Description: "problem1", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 1, ProblemTypeId: 0, IsPublic: false},
-	{ID: 2, Description: "problem2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 2, ProblemTypeId: 1, IsPublic: false},
-	{ID: 3, Description: "problem3", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 3, ProblemTypeId: 0, IsPublic: false},
-	{ID: 4, Description: "problem4", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 4, ProblemTypeId: 1, IsPublic: false},
+	{ID: 1, Description: "problem1", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 1, ProblemTypeId: 0, IsPublic: true},
+	{ID: 2, Description: "problem2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 2, ProblemTypeId: 1, IsPublic: true},
+	{ID: 3, Description: "problem3", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 3, ProblemTypeId: 0, IsPublic: true},
+	{ID: 4, Description: "problem4", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 4, ProblemTypeId: 1, IsPublic: true},
 	{ID: 5, Description: "problem5", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 5, ProblemTypeId: 0, IsPublic: false},
+	{ID: 6, Description: "problem6", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 6, ProblemTypeId: 1, IsPublic: false},
+	{ID: 7, Description: "problem7", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 7, ProblemTypeId: 0, IsPublic: false},
+	{ID: 8, Description: "problem8", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 8, ProblemTypeId: 1, IsPublic: false},
 }
 
 var initProblemChoice = []model.ProblemChoice{
@@ -46,11 +52,28 @@ var initProblemChoice = []model.ProblemChoice{
 	{ID: 5, Choice: "B", Description: "description2", IsCorrect: false},
 	{ID: 5, Choice: "C", Description: "description3", IsCorrect: true},
 	{ID: 5, Choice: "D", Description: "description4", IsCorrect: false},
+	{ID: 7, Choice: "A", Description: "description1", IsCorrect: false},
+	{ID: 7, Choice: "B", Description: "description2", IsCorrect: false},
+	{ID: 7, Choice: "C", Description: "description3", IsCorrect: false},
+	{ID: 7, Choice: "D", Description: "description4", IsCorrect: true},
 }
 
 var initProblemAnswer = []model.ProblemAnswer{
 	{ID: 2, Answer: "problem2_answer"},
 	{ID: 4, Answer: "problem4_answer"},
+	{ID: 6, Answer: "problem6_answer"},
+	{ID: 8, Answer: "problem8_answer"},
+}
+
+var initProblemSet = []model.ProblemSet{
+	{ID: 1, Name: "name1", Description: "description1", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 1, IsPublic: false},
+	{ID: 2, Name: "name2", Description: "description2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 2, IsPublic: false},
+	{ID: 3, Name: "name3", Description: "description3", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 3, IsPublic: false},
+	{ID: 4, Name: "name4", Description: "description4", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 4, IsPublic: false},
+	{ID: 5, Name: "name5", Description: "description5", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 5, IsPublic: true},
+	{ID: 6, Name: "name6", Description: "description6", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 6, IsPublic: true},
+	{ID: 7, Name: "name7", Description: "description7", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 7, IsPublic: true},
+	{ID: 8, Name: "name8", Description: "description8", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 8, IsPublic: true},
 }
 
 var initNote = []model.Note{
@@ -58,20 +81,44 @@ var initNote = []model.Note{
 	{ID: 2, Title: "title2", Content: "content2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 2, IsPublic: false},
 	{ID: 3, Title: "title3", Content: "content3", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 3, IsPublic: false},
 	{ID: 4, Title: "title4", Content: "content4", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 4, IsPublic: false},
-	{ID: 5, Title: "title5", Content: "content5", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 5, IsPublic: false},
+	{ID: 5, Title: "title5", Content: "content5", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 5, IsPublic: true},
+	{ID: 6, Title: "title6", Content: "content6", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 6, IsPublic: true},
+	{ID: 7, Title: "title7", Content: "content7", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 7, IsPublic: true},
+	{ID: 8, Title: "title8", Content: "content8", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 8, IsPublic: true},
 }
 
 var initNoteReview = []model.NoteReview{
-	{ID: 1, NoteId: 1, UserId: 2, Title: "title1", Content: "content1", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 2, NoteId: 1, UserId: 3, Title: "title2", Content: "content2", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 3, NoteId: 2, UserId: 1, Title: "title2", Content: "content2", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 4, NoteId: 2, UserId: 4, Title: "title3", Content: "content3", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 5, NoteId: 3, UserId: 2, Title: "title3", Content: "content3", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 6, NoteId: 3, UserId: 5, Title: "title4", Content: "content4", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 7, NoteId: 4, UserId: 5, Title: "title4", Content: "content4", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 8, NoteId: 4, UserId: 1, Title: "title5", Content: "content5", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 9, NoteId: 5, UserId: 3, Title: "title5", Content: "content5", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	{ID: 10, NoteId: 5, UserId: 2, Title: "title5", Content: "content5", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 1, NoteId: 1, UserId: 1, Title: "title1", Content: "content1", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 2, NoteId: 1, UserId: 2, Title: "title2", Content: "content2", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 3, NoteId: 2, UserId: 1, Title: "title3", Content: "content3", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 4, NoteId: 2, UserId: 3, Title: "title4", Content: "content4", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 5, NoteId: 3, UserId: 4, Title: "title5", Content: "content5", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 6, NoteId: 3, UserId: 2, Title: "title6", Content: "content6", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 7, NoteId: 4, UserId: 5, Title: "title7", Content: "content7", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 8, NoteId: 4, UserId: 6, Title: "title8", Content: "content8", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 9, NoteId: 5, UserId: 3, Title: "title9", Content: "content9", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 10, NoteId: 5, UserId: 7, Title: "title10", Content: "content10", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 11, NoteId: 6, UserId: 8, Title: "title11", Content: "content11", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 12, NoteId: 6, UserId: 4, Title: "title12", Content: "content12", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 13, NoteId: 7, UserId: 5, Title: "title13", Content: "content13", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 14, NoteId: 7, UserId: 6, Title: "title14", Content: "content14", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 15, NoteId: 8, UserId: 7, Title: "title15", Content: "content15", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	{ID: 16, NoteId: 8, UserId: 8, Title: "title16", Content: "content16", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+}
+
+var initWrongRecord = []model.WrongRecord{
+	{ProblemId: 1, UserId: 1, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 1},
+	{ProblemId: 2, UserId: 2, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 2},
+	{ProblemId: 3, UserId: 3, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 3},
+	{ProblemId: 4, UserId: 4, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 4},
+	{ProblemId: 5, UserId: 5, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 5},
+	{ProblemId: 6, UserId: 6, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 6},
+	{ProblemId: 7, UserId: 7, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 7},
+	{ProblemId: 8, UserId: 8, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 8},
+	{ProblemId: 1, UserId: 5, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 9},
+	{ProblemId: 2, UserId: 6, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 10},
+	{ProblemId: 3, UserId: 7, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 11},
+	{ProblemId: 4, UserId: 8, CreatedAt: time.Now(), UpdatedAt: time.Now(), Count: 12},
 }
 
 func readConfig() {
@@ -155,6 +202,18 @@ func InitProblemAnswerTable(tx *sqlx.Tx) error {
 	return nil
 }
 
+func InitProblemSetTable(tx *sqlx.Tx) error {
+	sqlString := `INSERT INTO problemset (id, name, description, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	for i := range initProblemSet {
+		if _, err := tx.Exec(sqlString, initProblemSet[i].ID, initProblemSet[i].Name,
+			initProblemSet[i].Description, initProblemSet[i].CreatedAt, initProblemSet[i].UpdatedAt,
+			initProblemSet[i].UserId, initProblemSet[i].IsPublic); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func InitNoteTable(tx *sqlx.Tx) error {
 	sqlString := `INSERT INTO note (id, title, content, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, now(), now(), $4, $5)`
 	for i := range initNote {
@@ -175,13 +234,27 @@ func InitNoteReviewTable(tx *sqlx.Tx) error {
 	return nil
 }
 
+func InitWrongRecord(tx *sqlx.Tx) error {
+	sqlString := `INSERT INTO user_wrong_record (user_id, problem_id, created_at, updated_at, count) VALUES ($1, $2, $3, $4, $5)`
+	for i := range initWrongRecord {
+		if _, err := tx.Exec(sqlString, initWrongRecord[i].UserId, initWrongRecord[i].ProblemId,
+			initWrongRecord[i].CreatedAt, initWrongRecord[i].UpdatedAt, initWrongRecord[i].Count); err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
 var initFuncList = []func(tx *sqlx.Tx) error{
 	InitUserTable,
 	InitProblemTypeTable,
 	InitProblemChoiceTable,
 	InitProblemAnswerTable,
+	InitProblemSetTable,
 	InitNoteTable,
 	InitNoteReviewTable,
+	InitWrongRecord,
 }
 
 func InitDatabase() {

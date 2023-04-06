@@ -9,92 +9,112 @@ import (
 	"time"
 )
 
+type ProblemSetFilter struct {
+	ID         *int  `json:"id"`
+	UserId     *int  `json:"user_id"`
+	IsFavorite *bool `json:"is_favorite"`
+	Contain    *int  `json:"contain"`
+}
 type ProblemSetResponse struct {
-	ID           int       `json:"id" db:"id"`
-	Name         string    `json:"name" db:"name"`
-	Description  string    `json:"description" db:"description"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
-	ProblemCount int       `json:"problem_count" db:"problem_count"`
-	IsFavorite   bool      `json:"is_favorite" db:"is_favorite"`
-	UserId       int       `json:"user_id" db:"user_id"`
+	ID            int       `json:"id" db:"id"`
+	Name          string    `json:"name" db:"name"`
+	Description   string    `json:"description" db:"description"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+	ProblemCount  int       `json:"problem_count" db:"problem_count"`
+	IsFavorite    bool      `json:"is_favorite" db:"is_favorite"`
+	FavoriteCount int       `json:"favorite_count" db:"favorite_count"`
+	UserId        int       `json:"user_id" db:"user_id"`
+	IsPublic      bool      `json:"is_public" db:"is_public"`
 }
 type ProblemSetRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	IsPublic    bool   `json:"is_public"`
 }
-
 type AllProblemSetResponse struct {
 	TotalCount int                  `json:"total_count"`
-	ProblemSet []ProblemSetResponse `json:"problemset"`
+	ProblemSet []ProblemSetResponse `json:"problem_set"`
 }
 
 // GetProblemSets godoc
 // @Schemes http
-// @Description 获取当前用户视角下的所有题集
-// @Param id query int false "题集ID"
+// @Description 获取符合filter要求的当前用户视角下的所有题集
+// @Param filter query ProblemSetFilter false "题集ID"
 // @Success 200 {object} AllProblemSetResponse "题集列表"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure 403 {string} string "没有权限"
 // @Failure default {string} string "服务器错误"
 // @Router /problem_set/all [get]
 // @Security ApiKeyAuth
 func GetProblemSets(c *gin.Context) {
-	var problemsets []model.ProblemSet
-	var sqlString string
-	var err error
+	sqlString := `SELECT * FROM problemset`
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString = `SELECT id, name, description, created_at, updated_at, user_id, is_public FROM problemset WHERE is_public = true`
-		if c.Query("id") != "" {
-			sqlString += ` AND id = ` + c.Query("id")
-		}
-		err = global.Database.Select(&problemsets, sqlString)
+		sqlString += ` WHERE is_public = true`
 	} else if role == global.USER {
-		sqlString = `SELECT id, name, description, created_at, updated_at, user_id, is_public FROM problemset WHERE (is_public = true OR user_id = $1)`
-		if c.Query("id") != "" {
-			sqlString += ` AND id = ` + c.Query("id")
-		}
-		err = global.Database.Select(&problemsets, sqlString, c.GetInt("UserId"))
+		sqlString += ` WHERE (is_public = true OR user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
 	} else {
-		sqlString = `SELECT id, name, description, created_at, updated_at, user_id, is_public FROM problemset`
-		if c.Query("id") != "" {
-			sqlString += ` WHERE id = ` + c.Query("id")
-		}
-		err = global.Database.Select(&problemsets, sqlString)
+		sqlString += ` WHERE 1 = 1`
 	}
-	if err != nil {
+	var filter ProblemSetFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	if filter.ID != nil {
+		sqlString += fmt.Sprintf(` AND id = %d`, *filter.ID)
+	}
+	if filter.UserId != nil {
+		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
+	}
+	if filter.IsFavorite != nil {
+		sqlString += ` AND id IN (SELECT problem_set_id FROM user_favorite_problem_set WHERE user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
+	}
+	if filter.Contain != nil {
+		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problemset WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
+	}
+	var problemSets []model.ProblemSet
+	if err := global.Database.Select(&problemSets, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	var problemsetResponses []ProblemSetResponse
-	for _, problemset := range problemsets {
+	var problemSetResponses []ProblemSetResponse
+	for _, problemSet := range problemSets {
 		var problemCount int
 		sqlString = `SELECT COUNT(*) FROM problem_in_problemset WHERE problem_set_id = $1`
-		if err := global.Database.Get(&problemCount, sqlString, problemset.ID); err != nil {
+		if err := global.Database.Get(&problemCount, sqlString, problemSet.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-
 		sqlString = `SELECT COUNT(*) FROM user_favorite_problem_set WHERE problem_set_id = $1 AND user_id = $2`
 		var isFavorite int
-		if err := global.Database.Get(&isFavorite, sqlString, problemset.ID, c.GetInt("UserId")); err != nil {
+		if err := global.Database.Get(&isFavorite, sqlString, problemSet.ID, c.GetInt("UserId")); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-
-		problemsetResponses = append(problemsetResponses, ProblemSetResponse{
-			ID:           problemset.ID,
-			Name:         problemset.Name,
-			Description:  problemset.Description,
-			CreatedAt:    problemset.CreatedAt,
-			UpdatedAt:    problemset.UpdatedAt,
-			ProblemCount: problemCount,
-			IsFavorite:   isFavorite != 0,
-			UserId:       problemset.UserId,
+		var favoriteCount int
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem_set WHERE problem_set_id = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, problemSet.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemSetResponses = append(problemSetResponses, ProblemSetResponse{
+			ID:            problemSet.ID,
+			Name:          problemSet.Name,
+			Description:   problemSet.Description,
+			CreatedAt:     problemSet.CreatedAt,
+			UpdatedAt:     problemSet.UpdatedAt,
+			ProblemCount:  problemCount,
+			IsFavorite:    isFavorite > 0,
+			FavoriteCount: favoriteCount,
+			UserId:        problemSet.UserId,
+			IsPublic:      problemSet.IsPublic,
 		})
 	}
 	c.JSON(http.StatusOK, AllProblemSetResponse{
-		TotalCount: len(problemsetResponses),
-		ProblemSet: problemsetResponses,
+		TotalCount: len(problemSetResponses),
+		ProblemSet: problemSetResponses,
 	})
 }
 
@@ -102,92 +122,139 @@ func GetProblemSets(c *gin.Context) {
 // @Schemes http
 // @Description 创建题集
 // @Param problem_set body ProblemSetRequest true "题集信息"
-// @Param is_public query bool true "是否公开"
-// @Success 200 {string} string "创建成功"
+// @Success 200 {object} ProblemSetResponse "题集信息"
 // @Failure default {string} string "服务器错误"
 // @Router /problem_set/create [post]
 // @Security ApiKeyAuth
 func CreateProblemSet(c *gin.Context) {
-	var problemset ProblemSetRequest
-	if err := c.ShouldBindJSON(&problemset); err != nil {
+	var request ProblemSetRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return
 	}
-	sqlString := `INSERT INTO problemset (name, description, created_at, updated_at, user_id, is_public) VALUES ($1, $2, $3, $4, $5, $6)`
-	if _, err := global.Database.Exec(sqlString, problemset.Name, problemset.Description,
-		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), c.Query("is_public")); err != nil {
+	tx := global.Database.MustBegin()
+	sqlString := `INSERT INTO problemset (name, description, created_at, updated_at, user_id, is_public) 
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	var problemSetId int
+	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description,
+		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), request.IsPublic); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.String(http.StatusOK, "创建成功")
+	sqlString = `SELECT * FROM problemset WHERE id = $1`
+	var problemSet model.ProblemSet
+	if err := global.Database.Get(&problemSet, sqlString, problemSetId); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, ProblemSetResponse{
+		ID:            problemSet.ID,
+		Name:          problemSet.Name,
+		Description:   problemSet.Description,
+		CreatedAt:     problemSet.CreatedAt,
+		UpdatedAt:     problemSet.UpdatedAt,
+		ProblemCount:  0,
+		IsFavorite:    false,
+		FavoriteCount: 0,
+		UserId:        problemSet.UserId,
+		IsPublic:      problemSet.IsPublic,
+	})
 }
 
+type ProblemInProblemSetFilter struct {
+	IsFavorite    *bool `json:"is_favorite"`
+	ProblemTypeId *int  `json:"problem_type_id"`
+}
 type ProblemResponse struct {
-	ID            int `json:"problem_id" db:"problem_id"`
-	ProblemTypeID int `json:"problem_type_id" db:"problem_type_id"`
+	ID            int       `json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	UserId        int       `json:"user_id"`
+	IsPublic      bool      `json:"is_public"`
+	IsFavorite    bool      `json:"is_favorite"`
+	FavoriteCount int       `json:"favorite_count"`
+	ProblemTypeId int       `json:"problem_type_id"`
+}
+type AllProblemResponse struct {
+	TotalCount int               `json:"total_count"`
+	Problems   []ProblemResponse `json:"problems"`
 }
 
 // GetProblemsInProblemSet godoc
 // @Schemes http
-// @Description 获取题集中的所有题目信息（只有管理员和题集创建者能获取所有信息，否则只能获取公开题集的所有公开题目信息）
+// @Description 根据filter获取题集中的所有题目信息
 // @Param id path int true "题集ID"
-// @Param is_favorite query bool false "是否是收藏的題目"
-// @Success 200 {object} []ProblemResponse "题目列表"
+// @Param filter query ProblemInProblemSetFilter false "筛选条件"
+// @Success 200 {object} AllProblemResponse "题目列表"
+// @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /problem_set/{id}/all_problem [get]
 // @Security ApiKeyAuth
 func GetProblemsInProblemSet(c *gin.Context) {
-	var problems []ProblemResponse
-	userId := c.GetInt("UserId")
-	role, _ := c.Get("Role")
-	problemsetId := c.Param("id")
-	sqlString := `SELECT is_public, user_id FROM problemset WHERE id = $1`
-	var problemSetInfo struct {
-		IsPublic bool `db:"is_public"`
-		UserId   int  `db:"user_id"`
-	}
-	if err := global.Database.Get(&problemSetInfo, sqlString, problemsetId); err != nil {
+	sqlString := `SELECT * FROM problemset WHERE id = $1`
+	var problemSet model.ProblemSet
+	if err := global.Database.Get(&problemSet, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
-	} else if !problemSetInfo.IsPublic && userId != problemSetInfo.UserId && role != global.ADMIN {
-		fmt.Println(userId, problemSetInfo.UserId, role, problemSetInfo.IsPublic)
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && problemSet.UserId != c.GetInt("UserId") && !problemSet.IsPublic {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	if userId == problemSetInfo.UserId || role == global.ADMIN {
-		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
-    		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1`
-		if c.Query("is_favorite") == "true" {
-			sqlString += ` AND problem_id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = $2)`
-			if err := global.Database.Select(&problems, sqlString, problemsetId, userId); err != nil {
-				c.String(http.StatusInternalServerError, "服务器错误")
-				return
-			}
-		} else {
-			if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
-				c.String(http.StatusInternalServerError, "服务器错误")
-				return
-			}
-		}
-	} else {
-		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
-    		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1 AND is_public = true`
-		if c.Query("is_favorite") == "true" {
-			sqlString += ` AND problem_id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = $2)`
-			if err := global.Database.Select(&problems, sqlString, problemsetId, userId); err != nil {
-				c.String(http.StatusInternalServerError, "服务器错误")
-				return
-			}
-		} else {
-			if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
-				c.String(http.StatusInternalServerError, "服务器错误")
-				return
-			}
-		}
+	var filter ProblemInProblemSetFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
 	}
-	c.JSON(http.StatusOK, problems)
+	sqlString = `SELECT * FROM problem_type` + fmt.Sprintf(" WHERE id IN (SELECT problem_id FROM problem_in_problemset WHERE problem_set_id = %d)", problemSet.ID)
+	if filter.IsFavorite != nil {
+		sqlString += fmt.Sprintf(" AND id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = %d)", c.GetInt("UserId"))
+	}
+	if filter.ProblemTypeId != nil {
+		sqlString += fmt.Sprintf(" AND problem_type_id = %d", *filter.ProblemTypeId)
+	}
+	var problems []model.ProblemType
+	if err := global.Database.Select(&problems, sqlString); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var problemResponses []ProblemResponse
+	for _, problem := range problems {
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1 AND user_id = $2`
+		var isFavorite int
+		if err := global.Database.Get(&isFavorite, sqlString, problem.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1`
+		var favoriteCount int
+		if err := global.Database.Get(&favoriteCount, sqlString, problem.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemResponses = append(problemResponses, ProblemResponse{
+			ID:            problem.ID,
+			CreatedAt:     problem.CreatedAt,
+			UpdatedAt:     problem.UpdatedAt,
+			UserId:        problem.UserId,
+			IsPublic:      problem.IsPublic,
+			IsFavorite:    isFavorite > 0,
+			FavoriteCount: favoriteCount,
+			ProblemTypeId: problem.ProblemTypeId,
+		})
+	}
+	c.JSON(http.StatusOK, AllProblemResponse{
+		TotalCount: len(problemResponses),
+		Problems:   problemResponses,
+	})
 }
 
 // AddProblemToProblemSet godoc
@@ -202,31 +269,28 @@ func GetProblemsInProblemSet(c *gin.Context) {
 // @Router /problem_set/{id}/add [post]
 // @Security ApiKeyAuth
 func AddProblemToProblemSet(c *gin.Context) {
-	userId := c.GetInt("UserId")
-	problemsetId := c.Param("id")
-	problemId := c.Query("problem_id")
 	sqlString := `SELECT user_id FROM problemset WHERE id = $1`
-	var problemsetUserId int
-	if err := global.Database.Get(&problemsetUserId, sqlString, problemsetId); err != nil {
+	var problemSetUserId int
+	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
 	}
-	if userId != problemsetUserId {
+	if c.GetInt("UserId") != problemSetUserId {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `SELECT user_id FROM problem_type WHERE id = $1`
 	var problemUserId int
-	if err := global.Database.Get(&problemUserId, sqlString, problemId); err != nil {
+	if err := global.Database.Get(&problemUserId, sqlString, c.Query("problem_id")); err != nil {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if userId != problemUserId {
+	if c.GetInt("UserId") != problemUserId {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `INSERT INTO problem_in_problemset (problem_set_id, problem_id) VALUES ($1, $2)`
-	if _, err := global.Database.Exec(sqlString, problemsetId, problemId); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.Param("id"), c.Query("problem_id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -245,32 +309,29 @@ func AddProblemToProblemSet(c *gin.Context) {
 // @Router /problem_set/{id}/remove [post]
 // @Security ApiKeyAuth
 func RemoveProblemFromProblemSet(c *gin.Context) {
-	userId := c.GetInt("UserId")
 	role, _ := c.Get("Role")
-	problemsetId := c.Param("id")
-	problemId := c.Query("problem_id")
 	sqlString := `SELECT user_id FROM problemset WHERE id = $1`
-	var problemsetUserId int
-	if err := global.Database.Get(&problemsetUserId, sqlString, problemsetId); err != nil {
+	var problemSetUserId int
+	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
 	}
-	if userId != problemsetUserId && role != global.ADMIN {
+	if c.GetInt("UserId") != problemSetUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `SELECT user_id FROM problem_type WHERE id = $1`
 	var problemUserId int
-	if err := global.Database.Get(&problemUserId, sqlString, problemId); err != nil {
+	if err := global.Database.Get(&problemUserId, sqlString, c.Query("problem_id")); err != nil {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if userId != problemUserId && role != global.ADMIN {
+	if c.GetInt("UserId") != problemUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `DELETE FROM problem_in_problemset WHERE problem_set_id = $1 AND problem_id = $2`
-	if _, err := global.Database.Exec(sqlString, problemsetId, problemId); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.Param("id"), c.Query("problem_id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -288,20 +349,18 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 // @Router /problem_set/delete/{id} [delete]
 // @Security ApiKeyAuth
 func DeleteProblemSet(c *gin.Context) {
-	userId := c.GetInt("UserId")
-	problemsetId := c.Param("id")
 	sqlString := `SELECT user_id FROM problemset WHERE id = $1`
-	var problemsetUserId int
-	if err := global.Database.Get(&problemsetUserId, sqlString, problemsetId); err != nil {
+	var problemSetUserId int
+	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); userId != problemsetUserId && role != global.ADMIN {
+	if role, _ := c.Get("Role"); c.GetInt("UserId") != problemSetUserId && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `DELETE FROM problemset WHERE id = $1`
-	if _, err := global.Database.Exec(sqlString, problemsetId); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
