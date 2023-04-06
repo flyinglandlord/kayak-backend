@@ -190,7 +190,7 @@ func GetUserFavoriteProblems(c *gin.Context) {
 		`SELECT p.id AS id, p.description as description, p.created_at AS created_at, 
     		p.updated_at AS updated_at, p.user_id AS user_id, p.problem_type_id AS problem_type_id, p.is_public AS is_public
 	     FROM user_favorite_problem ufp JOIN problem_type p ON ufp.problem_id = p.id 
-	     WHERE ufp.user_id = $1 GROUP BY ufp.problem_id`
+	     WHERE ufp.user_id = $1`
 	if err := global.Database.Select(&problems, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -219,7 +219,7 @@ func GetUserFavoriteProblemSets(c *gin.Context) {
 	sqlString :=
 		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
     		ps.updated_at AS updated_at, count(*) AS problem_count
-	 	 FROM user_favorite_problem_set ufps JOIN problemset ps ON ufps."problem_set_id" = ps.id JOIN problem_in_problemset pip on ps.id = pip."problem_set_id"
+	 	 FROM user_favorite_problem_set ufps RIGHT JOIN problemset ps ON ufps."problem_set_id" = ps.id JOIN problem_in_problemset pip on ps.id = pip."problem_set_id"
 	 	 WHERE ufps.user_id = $1 GROUP BY ps.id`
 	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -273,8 +273,8 @@ func GetUserProblemSets(c *gin.Context) {
 	userId := c.GetInt("UserId")
 	sqlString :=
 		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
-    		ps.updated_at AS updated_at, count(*) AS problem_count
-	 	 FROM problemset ps JOIN problem_in_problemset pip on ps.id = pip."problem_set_id"
+    		ps.updated_at AS updated_at, count(*) AS problem_count, ps.user_id AS user_id
+	 	 FROM problem_in_problemset pip RIGHT JOIN problemset ps on ps.id = pip."problem_set_id"
 	 	 WHERE ps.user_id = $1 GROUP BY ps.id`
 	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")

@@ -53,7 +53,7 @@ CREATE TABLE problem_answer
     FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
 );
 
-CREATE TABLE problemSet
+CREATE TABLE problemset
 (
     "id"          serial       NOT NULL,
     "name"        varchar(255) NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE problemSet
     FOREIGN KEY ("user_id") REFERENCES "user" ("id")
 );
 
-CREATE TABLE problem_in_problemSet
+CREATE TABLE problem_in_problemset
 (
     "problem_set_id" integer NOT NULL,
     "problem_id"    integer NOT NULL,
