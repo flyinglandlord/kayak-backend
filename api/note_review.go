@@ -12,7 +12,6 @@ type NoteReviewCreateRequest struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	NoteId  int    `json:"note_id"`
-	UserId  int    `json:"user_id"`
 }
 
 type NoteReviewResponse struct {
@@ -55,7 +54,7 @@ func AddNoteReview(c *gin.Context) {
 	}
 	sqlString = `INSERT INTO note_review (title, content, note_id, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
 	if _, err := global.Database.Exec(sqlString, review.Title, review.Content, review.NoteId,
-		review.UserId, time.Now().Local(), time.Now().Local()); err != nil {
+		c.GetInt("UserId"), time.Now().Local(), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
