@@ -41,6 +41,7 @@ type ChoiceProblemResponse struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 	UserId      int       `json:"user_id"`
 	IsPublic    bool      `json:"is_public"`
+	IsMultiple  bool      `json:"is_multiple"`
 	Choices     []Choice  `json:"choices"`
 }
 type Choice struct {
@@ -105,6 +106,13 @@ func GetChoiceProblems(c *gin.Context) {
 				Description: choice.Description,
 			})
 		}
+
+		var CorrectChoiceCount int
+		sqlString = `SELECT COUNT(*) FROM problem_choice WHERE id = $1 AND is_correct = true`
+		if err := global.Database.Get(&CorrectChoiceCount, sqlString, problem.ID); err != nil {
+			c.String(http.StatusInternalServerError, "获取选项失败")
+			return
+		}
 		choiceProblemResponse := ChoiceProblemResponse{
 			ID:          problem.ID,
 			Description: problem.Description,
@@ -113,6 +121,7 @@ func GetChoiceProblems(c *gin.Context) {
 			UserId:      problem.UserId,
 			IsPublic:    problem.IsPublic,
 			Choices:     choices,
+			IsMultiple:  CorrectChoiceCount > 1,
 		}
 		choiceProblemResponses = append(choiceProblemResponses, choiceProblemResponse)
 	}
