@@ -184,7 +184,7 @@ type FavoriteProblemSetResponse struct {
 // @Description 获取当前登录用户收藏的题集
 // @Success 200 {object} FavoriteProblemSetResponse "收藏的题集列表"
 // @Failure default {string} string "服务器错误"
-// @Router /user/favorite/problemset [get]
+// @Router /user/favorite/problem_set [get]
 // @Security ApiKeyAuth
 func GetUserFavoriteProblemSets(c *gin.Context) {
 	var problemsets []ProblemSetResponse
@@ -192,7 +192,7 @@ func GetUserFavoriteProblemSets(c *gin.Context) {
 	sqlString :=
 		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
     		ps.updated_at AS updated_at, count(*) AS problem_count
-	 	 FROM user_favorite_problemset ufps JOIN problemset ps ON ufps."problemSet_id" = ps.id JOIN problem_in_problemset pip on ps.id = pip."problemSet_id"
+	 	 FROM user_favorite_problem_set ufps JOIN problemset ps ON ufps."problem_set_id" = ps.id JOIN problem_in_problemset pip on ps.id = pip."problem_set_id"
 	 	 WHERE ufps.user_id = $1 GROUP BY ps.id`
 	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -239,7 +239,7 @@ func GetUserFavoriteNotes(c *gin.Context) {
 // @Description 获取当前登录用户的所有题集
 // @Success 200 {object} []ProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
-// @Router /user/problemset [get]
+// @Router /user/problem_set [get]
 // @Security ApiKeyAuth
 func GetUserProblemSets(c *gin.Context) {
 	var problemsets []ProblemSetResponse

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
@@ -88,6 +89,7 @@ func GetProblemSets(c *gin.Context) {
 			UpdatedAt:    problemset.UpdatedAt,
 			ProblemCount: problemCount,
 			IsFavorite:   isFavorite != 0,
+			UserId:       problemset.UserId,
 		})
 	}
 	c.JSON(http.StatusOK, AllProblemSetResponse{
@@ -121,8 +123,8 @@ func CreateProblemSet(c *gin.Context) {
 }
 
 type ProblemResponse struct {
-	ID            int `json:"id"`
-	ProblemTypeID int `json:"problem_type_id"`
+	ID            int `json:"problem_id" db:"problem_id"`
+	ProblemTypeID int `json:"problem_type_id" db:"problem_type_id"`
 }
 
 // GetProblemsInProblemSet godoc
@@ -141,19 +143,19 @@ func GetProblemsInProblemSet(c *gin.Context) {
 	role, _ := c.Get("Role")
 	problemsetId := c.Param("id")
 	sqlString := `SELECT is_public, user_id FROM problemset WHERE id = $1`
-	var problemsetUserId int
-	var isPublic bool
-	if err := global.Database.Get(&struct {
+	var problemSetInfo struct {
 		IsPublic bool `db:"is_public"`
 		UserId   int  `db:"user_id"`
-	}{IsPublic: isPublic, UserId: problemsetUserId}, sqlString, problemsetId); err != nil {
+	}
+	if err := global.Database.Get(&problemSetInfo, sqlString, problemsetId); err != nil {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
-	} else if !isPublic && userId != problemsetUserId && role != global.ADMIN {
+	} else if !problemSetInfo.IsPublic && userId != problemSetInfo.UserId && role != global.ADMIN {
+		fmt.Println(userId, problemSetInfo.UserId, role, problemSetInfo.IsPublic)
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	if userId == problemsetUserId || role == global.ADMIN {
+	if userId == problemSetInfo.UserId || role == global.ADMIN {
 		sqlString = `SELECT problem_id, problem_type_id FROM problem_type JOIN problem_in_problemset ON 
     		problem_type.id = problem_in_problemset.problem_id WHERE problem_set_id = $1`
 		if err := global.Database.Select(&problems, sqlString, problemsetId); err != nil {
