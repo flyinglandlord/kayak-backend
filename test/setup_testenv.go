@@ -26,11 +26,11 @@ var initUser = []model.User{
 }
 
 var initProblemType = []model.ProblemType{
-	{ID: 1, Description: "problem1", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: 1, ProblemTypeID: 0, IsPublic: false},
-	{ID: 2, Description: "problem2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: 2, ProblemTypeID: 1, IsPublic: false},
-	{ID: 3, Description: "problem3", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: 3, ProblemTypeID: 0, IsPublic: false},
-	{ID: 4, Description: "problem4", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: 4, ProblemTypeID: 1, IsPublic: false},
-	{ID: 5, Description: "problem5", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: 5, ProblemTypeID: 0, IsPublic: false},
+	{ID: 1, Description: "problem1", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 1, ProblemTypeId: 0, IsPublic: false},
+	{ID: 2, Description: "problem2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 2, ProblemTypeId: 1, IsPublic: false},
+	{ID: 3, Description: "problem3", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 3, ProblemTypeId: 0, IsPublic: false},
+	{ID: 4, Description: "problem4", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 4, ProblemTypeId: 1, IsPublic: false},
+	{ID: 5, Description: "problem5", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 5, ProblemTypeId: 0, IsPublic: false},
 }
 
 var initProblemChoice = []model.ProblemChoice{
@@ -127,8 +127,8 @@ func InitUserTable(tx *sqlx.Tx) error {
 func InitProblemTypeTable(tx *sqlx.Tx) error {
 	sqlString := `INSERT INTO problem_type (id, description, created_at, updated_at, user_id, problem_type_id, is_public) VALUES ($1, $2, now(), now(), $3, $4, $5)`
 	for i := range initProblemType {
-		if _, err := tx.Exec(sqlString, initProblemType[i].ID, initProblemType[i].Description, initProblemType[i].UserID,
-			initProblemType[i].ProblemTypeID, initProblemType[i].IsPublic); err != nil {
+		if _, err := tx.Exec(sqlString, initProblemType[i].ID, initProblemType[i].Description, initProblemType[i].UserId,
+			initProblemType[i].ProblemTypeId, initProblemType[i].IsPublic); err != nil {
 			return err
 		}
 	}
