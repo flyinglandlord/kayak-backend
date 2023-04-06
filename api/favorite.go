@@ -80,7 +80,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `INSERT INTO user_favorite_problem_set (user_id, "problem_set_id", created_at) VALUES ($1, $2, $3)`
+	sqlString = `INSERT INTO user_favorite_problem_set (user_id, "problem_set_id", created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, "problem_set_id") DO update set created_at = $3`
 	if _, err := global.Database.Exec(sqlString, userId, problemSetId, time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
