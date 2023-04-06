@@ -270,8 +270,13 @@ func GetUserFavoriteNotes(c *gin.Context) {
 // @Security ApiKeyAuth
 func GetUserProblemSets(c *gin.Context) {
 	var problemsets []ProblemSetResponse
-	sqlString := `SELECT id, name, description FROM problemset WHERE user_id = $1`
-	if err := global.Database.Select(&problemsets, sqlString, c.GetInt("UserId")); err != nil {
+	userId := c.GetInt("UserId")
+	sqlString :=
+		`SELECT ps.id AS id, ps.name AS name, ps.description AS description, ps.created_at AS created_at, 
+    		ps.updated_at AS updated_at, count(*) AS problem_count
+	 	 FROM problemset ps JOIN problem_in_problemset pip on ps.id = pip."problem_set_id"
+	 	 WHERE ps.user_id = $1 GROUP BY ps.id`
+	if err := global.Database.Select(&problemsets, sqlString, userId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

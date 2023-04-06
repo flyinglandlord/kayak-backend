@@ -311,7 +311,7 @@ func GetChoiceProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1 AND is_correct = true`
+	sqlString = `SELECT choice, description, is_correct FROM problem_choice WHERE id = $1`
 	if err := global.Database.Select(&choices, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
