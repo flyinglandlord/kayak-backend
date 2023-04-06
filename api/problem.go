@@ -5,6 +5,7 @@ import (
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -212,7 +213,7 @@ func CreateChoiceProblem(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.String(http.StatusOK, "创建成功")
+	c.String(http.StatusOK, strconv.Itoa(problemId))
 }
 
 // UpdateChoiceProblem godoc
@@ -439,7 +440,7 @@ func CreateBlankProblem(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.String(http.StatusOK, "创建成功")
+	c.String(http.StatusOK, strconv.Itoa(problemId))
 }
 
 // UpdateBlankProblem godoc
