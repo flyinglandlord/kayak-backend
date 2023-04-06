@@ -16,6 +16,7 @@ type ProblemSetResponse struct {
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 	ProblemCount int       `json:"problem_count" db:"problem_count"`
 	IsFavorite   bool      `json:"is_favorite" db:"is_favorite"`
+	UserId       int       `json:"user_id" db:"user_id"`
 }
 type ProblemSetRequest struct {
 	Name        string `json:"name"`
