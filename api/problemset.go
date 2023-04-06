@@ -27,7 +27,7 @@ type AllProblemSetResponse struct {
 	ProblemSet []ProblemSetResponse `json:"problemset"`
 }
 
-// GetProblemsets godoc
+// GetProblemSets godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有题集
 // @Param id query int false "题集ID"
@@ -35,7 +35,7 @@ type AllProblemSetResponse struct {
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/all [get]
 // @Security ApiKeyAuth
-func GetProblemsets(c *gin.Context) {
+func GetProblemSets(c *gin.Context) {
 	var problemsets []model.ProblemSet
 	var sqlString string
 	var err error
@@ -95,7 +95,7 @@ func GetProblemsets(c *gin.Context) {
 	})
 }
 
-// CreateProblemset godoc
+// CreateProblemSet godoc
 // @Schemes http
 // @Description 创建题集
 // @Param problemset body ProblemSetRequest true "题集信息"
@@ -104,7 +104,7 @@ func GetProblemsets(c *gin.Context) {
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/create [post]
 // @Security ApiKeyAuth
-func CreateProblemset(c *gin.Context) {
+func CreateProblemSet(c *gin.Context) {
 	var problemset ProblemSetRequest
 	if err := c.ShouldBindJSON(&problemset); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
@@ -124,7 +124,7 @@ type ProblemResponse struct {
 	ProblemTypeID int `json:"problem_type_id"`
 }
 
-// GetProblemsInProblemset godoc
+// GetProblemsInProblemSet godoc
 // @Schemes http
 // @Description 获取题集中的所有题目信息（只有管理员和题集创建者能获取所有信息，否则只能获取公开题集的所有公开题目信息）
 // @Param id path int true "题集ID"
@@ -134,7 +134,7 @@ type ProblemResponse struct {
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/{id}/all_problem [get]
 // @Security ApiKeyAuth
-func GetProblemsInProblemset(c *gin.Context) {
+func GetProblemsInProblemSet(c *gin.Context) {
 	var problems []ProblemResponse
 	userId := c.GetInt("UserId")
 	role, _ := c.Get("Role")
@@ -207,7 +207,7 @@ func GetFavoriteProblemInProblemSet(c *gin.Context) {
 	c.JSON(http.StatusOK, problems)
 }
 
-// AddProblemToProblemset godoc
+// AddProblemToProblemSet godoc
 // @Schemes http
 // @Description 添加题目到题集（只有同时为题集的创建者和题目的创建者可以添加题目）
 // @Param id path int true "题集ID"
@@ -218,7 +218,7 @@ func GetFavoriteProblemInProblemSet(c *gin.Context) {
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/{id}/add [post]
 // @Security ApiKeyAuth
-func AddProblemToProblemset(c *gin.Context) {
+func AddProblemToProblemSet(c *gin.Context) {
 	userId := c.GetInt("UserId")
 	problemsetId := c.Param("id")
 	problemId := c.Query("problem_id")
@@ -250,7 +250,7 @@ func AddProblemToProblemset(c *gin.Context) {
 	c.String(http.StatusOK, "添加成功")
 }
 
-// RemoveProblemFromProblemset godoc
+// RemoveProblemFromProblemSet godoc
 // @Schemes http
 // @Description 从题集中移除题目（只有管理员或者同时为题集的创建者和题目的创建者可以移除题目）
 // @Param id path int true "题集ID"
@@ -261,7 +261,7 @@ func AddProblemToProblemset(c *gin.Context) {
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/{id}/remove [post]
 // @Security ApiKeyAuth
-func RemoveProblemFromProblemset(c *gin.Context) {
+func RemoveProblemFromProblemSet(c *gin.Context) {
 	userId := c.GetInt("UserId")
 	role, _ := c.Get("Role")
 	problemsetId := c.Param("id")
@@ -294,7 +294,7 @@ func RemoveProblemFromProblemset(c *gin.Context) {
 	c.String(http.StatusOK, "移除成功")
 }
 
-// DeleteProblemset godoc
+// DeleteProblemSet godoc
 // @Schemes http
 // @Description 删除题集（只有管理员或者题集的创建者可以删除题集）
 // @Param id path int true "题集ID"
@@ -304,7 +304,7 @@ func RemoveProblemFromProblemset(c *gin.Context) {
 // @Failure default {string} string "服务器错误"
 // @Router /problemset/delete/{id} [delete]
 // @Security ApiKeyAuth
-func DeleteProblemset(c *gin.Context) {
+func DeleteProblemSet(c *gin.Context) {
 	userId := c.GetInt("UserId")
 	problemsetId := c.Param("id")
 	sqlString := `SELECT user_id FROM problemset WHERE id = $1`

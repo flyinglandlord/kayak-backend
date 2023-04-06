@@ -186,7 +186,7 @@ func DeleteNote(c *gin.Context) {
 // @Success 200 {string} string "点赞成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "笔记不存在"
-// @Failure default {string} string "已经点赞"
+// @Failure default {string} string "服务器错误"
 // @Router /note/like/{id} [post]
 // @Security ApiKeyAuth
 func LikeNote(c *gin.Context) {
@@ -204,7 +204,6 @@ func LikeNote(c *gin.Context) {
 	}
 	sqlString = `INSERT INTO user_like_note (user_id, note_id, created_at) VALUES ($1, $2, $3)`
 	if _, err := global.Database.Exec(sqlString, userId, noteId, time.Now().Local()); err != nil {
-		c.String(http.StatusInternalServerError, "已经点赞")
 		return
 	}
 	c.String(http.StatusOK, "点赞成功")
@@ -216,7 +215,7 @@ func LikeNote(c *gin.Context) {
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "取消点赞成功"
 // @Failure 404 {string} string "笔记不存在"
-// @Failure default {string} string "已经取消点赞"
+// @Failure default {string} string "服务器错误"
 // @Router /note/unlike/{id} [post]
 // @Security ApiKeyAuth
 func UnlikeNote(c *gin.Context) {
@@ -230,7 +229,6 @@ func UnlikeNote(c *gin.Context) {
 	}
 	sqlString = `DELETE FROM user_like_note WHERE user_id = $1 AND note_id = $2`
 	if _, err := global.Database.Exec(sqlString, userId, noteId); err != nil {
-		c.String(http.StatusInternalServerError, "已经取消点赞")
 		return
 	}
 	c.String(http.StatusOK, "取消点赞成功")
@@ -243,7 +241,7 @@ func UnlikeNote(c *gin.Context) {
 // @Success 200 {string} string "收藏成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "笔记不存在"
-// @Failure default {string} string "已经收藏"
+// @Failure default {string} string "服务器错误"
 // @Router /note/favorite/{id} [post]
 // @Security ApiKeyAuth
 func FavoriteNote(c *gin.Context) {
@@ -261,7 +259,6 @@ func FavoriteNote(c *gin.Context) {
 	}
 	sqlString = `INSERT INTO user_favorite_note (user_id, note_id, created_at) VALUES ($1, $2, $3)`
 	if _, err := global.Database.Exec(sqlString, userId, noteId, time.Now().Local()); err != nil {
-		c.String(http.StatusInternalServerError, "已经收藏")
 		return
 	}
 	c.String(http.StatusOK, "收藏成功")
@@ -273,7 +270,7 @@ func FavoriteNote(c *gin.Context) {
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "取消收藏成功"
 // @Failure 404 {string} string "笔记不存在"
-// @Failure default {string} string "已经取消收藏"
+// @Failure default {string} string "服务器错误"
 // @Router /note/unfavorite/{id} [post]
 // @Security ApiKeyAuth
 func UnfavoriteNote(c *gin.Context) {
@@ -287,7 +284,6 @@ func UnfavoriteNote(c *gin.Context) {
 	}
 	sqlString = `DELETE FROM user_favorite_note WHERE user_id = $1 AND note_id = $2`
 	if _, err := global.Database.Exec(sqlString, userId, noteId); err != nil {
-		c.String(http.StatusInternalServerError, "已经取消收藏")
 		return
 	}
 	c.String(http.StatusOK, "取消收藏成功")
