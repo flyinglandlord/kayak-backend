@@ -10,10 +10,10 @@ import (
 )
 
 type ProblemSetFilter struct {
-	ID         *int  `json:"id"`
-	UserId     *int  `json:"user_id"`
-	IsFavorite *bool `json:"is_favorite"`
-	Contain    *int  `json:"contain"`
+	ID         *int  `json:"id" form:"id"`
+	UserId     *int  `json:"user_id" form:"user_id"`
+	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
+	Contain    *int  `json:"contain" form:"contain"`
 }
 type ProblemSetResponse struct {
 	ID            int       `json:"id" db:"id"`
@@ -69,7 +69,11 @@ func GetProblemSets(c *gin.Context) {
 		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
 	}
 	if filter.IsFavorite != nil {
-		sqlString += ` AND id IN (SELECT problem_set_id FROM user_favorite_problem_set WHERE user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
+		if *filter.IsFavorite {
+			sqlString += ` AND id IN (SELECT problem_set_id FROM user_favorite_problem_set WHERE user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
+		} else {
+			sqlString += ` AND id NOT IN (SELECT problem_set_id FROM user_favorite_problem_set WHERE user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
+		}
 	}
 	if filter.Contain != nil {
 		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problemset WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
@@ -306,7 +310,7 @@ func AddProblemToProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/remove [post]
+// @Router /problem_set/{id}/remove [delete]
 // @Security ApiKeyAuth
 func RemoveProblemFromProblemSet(c *gin.Context) {
 	role, _ := c.Get("Role")

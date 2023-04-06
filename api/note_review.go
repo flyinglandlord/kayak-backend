@@ -135,6 +135,7 @@ func RemoveNoteReview(c *gin.Context) {
 // @Failure 404 {string} string "笔记不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /note_review/get [get]
+// @Security ApiKeyAuth
 func GetNoteReviews(c *gin.Context) {
 	var note model.Note
 	noteId := c.Query("note_id")

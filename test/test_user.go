@@ -12,8 +12,8 @@ import (
 func testUserInfo(t *testing.T) {
 	loginRes := api.LoginResponse{}
 	code := Post("/login", "", &api.LoginInfo{
-		UserName: initUser[0].Name,
-		Password: initUser[0].Password,
+		UserName: initUser[4].Name,
+		Password: initUser[4].Password,
 	}, &loginRes)
 	assert.Equal(t, code, http.StatusOK)
 	assert.NotEqual(t, loginRes.Token, "")
@@ -24,8 +24,8 @@ func testUserInfo(t *testing.T) {
 	fmt.Println(time.Now().Local())
 	fmt.Println(userInfoRes.CreateAt)
 	assert.Equal(t, code, http.StatusOK)
-	assert.Equal(t, userInfoRes.UserId, initUser[0].ID)
-	assert.Equal(t, userInfoRes.UserName, initUser[0].Name)
-	assert.Equal(t, userInfoRes.Email, initUser[0].Email)
-	assert.Equal(t, userInfoRes.Phone, initUser[0].Phone)
+	assert.Equal(t, userInfoRes.UserId, initUser[4].ID)
+	assert.Equal(t, userInfoRes.UserName, initUser[4].Name)
+	assert.Equal(t, userInfoRes.Email, initUser[4].Email)
+	assert.Equal(t, userInfoRes.Phone, initUser[4].Phone)
 }

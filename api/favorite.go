@@ -45,7 +45,7 @@ func AddProblemToFavorite(c *gin.Context) {
 // @Param id path int true "题目ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
-// @Router /problem/unfavorite/{id} [post]
+// @Router /problem/unfavorite/{id} [delete]
 // @Security ApiKeyAuth
 func RemoveProblemFromFavorite(c *gin.Context) {
 	problemId := c.Param("id")
@@ -94,7 +94,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/unfavorite/{id} [post]
+// @Router /problem_set/unfavorite/{id} [delete]
 // @Security ApiKeyAuth
 func RemoveProblemSetFromFavorite(c *gin.Context) {
 	problemSetId := c.Param("id")
@@ -127,7 +127,7 @@ func FavoriteNote(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `INSERT INTO user_favorite_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT do update set created_at = $3`
+	sqlString = `INSERT INTO user_favorite_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, note_id) do update set created_at = $3`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -142,7 +142,7 @@ func FavoriteNote(c *gin.Context) {
 // @Success 200 {string} string "取消收藏成功"
 // @Failure 404 {string} string "笔记不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /note/unfavorite/{id} [post]
+// @Router /note/unfavorite/{id} [delete]
 // @Security ApiKeyAuth
 func UnfavoriteNote(c *gin.Context) {
 	var note model.Note

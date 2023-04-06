@@ -30,7 +30,7 @@ func InitRoute() {
 	note.POST("/like/:id", LikeNote)
 	note.POST("/unlike/:id", UnlikeNote)
 	note.POST("/favorite/:id", FavoriteNote)
-	note.POST("/unfavorite/:id", UnfavoriteNote)
+	note.DELETE("/unfavorite/:id", UnfavoriteNote)
 
 	wrongRecord := global.Router.Group("/wrong_record")
 	wrongRecord.Use(global.CheckAuth)
@@ -63,7 +63,7 @@ func InitRoute() {
 	problemSet.DELETE("/delete/:id", DeleteProblemSet)
 	problemSet.GET("/:id/all_problem", GetProblemsInProblemSet)
 	problemSet.POST("/:id/add", AddProblemToProblemSet)
-	problemSet.PUT("/:id/remove", RemoveProblemFromProblemSet)
+	problemSet.DELETE("/:id/remove", RemoveProblemFromProblemSet)
 	problemSet.POST("/favorite/:id", AddProblemSetToFavorite)
 	problemSet.DELETE("/unfavorite/:id", RemoveProblemSetFromFavorite)
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
@@ -10,10 +11,10 @@ import (
 )
 
 type NoteFilter struct {
-	ID         *int  `json:"id"`
-	UserId     *int  `json:"user_id"`
-	IsLiked    *bool `json:"is_liked"`
-	IsFavorite *bool `json:"is_favorite"`
+	ID         *int  `json:"id" form:"id"`
+	UserId     *int  `json:"user_id" form:"user_id"`
+	IsLiked    *bool `json:"is_liked" form:"is_liked"`
+	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
 }
 type NoteResponse struct {
 	ID            int       `json:"id" db:"id"`
@@ -85,7 +86,7 @@ func GetNotes(c *gin.Context) {
 		}
 	}
 	if filter.UserId != nil {
-		sqlString += ` AND user_id = ` + strconv.Itoa(*filter.UserId)
+		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
 	}
 	var notes []model.Note
 	if err := global.Database.Select(&notes, sqlString); err != nil {
@@ -279,7 +280,7 @@ func LikeNote(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `INSERT INTO user_like_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT do update set created_at = $3`
+	sqlString = `INSERT INTO user_like_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, note_id) do update set created_at = $3`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return

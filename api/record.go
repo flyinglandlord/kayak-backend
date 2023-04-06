@@ -22,6 +22,7 @@ type AllWrongRecordResponse struct {
 // CreateWrongRecord godoc
 // @Schemes http
 // @Description 创建错题记录（只有管理员和题目创建者能将私有题目加入到错题记录中）（重复创建会增加做错次数）
+// @Param id path int true "题目ID"
 // @Success 200 {string} string "创建成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题目不存在"
@@ -51,6 +52,7 @@ func CreateWrongRecord(c *gin.Context) {
 // DeleteWrongRecord godoc
 // @Schemes http
 // @Description 删除错题记录
+// @Param id path int true "题目ID"
 // @Success 200 {string} string "删除成功"
 // @Failure default {string} string "服务器错误"
 // @Router /wrong_record/delete/{id} [delete]

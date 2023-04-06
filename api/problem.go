@@ -36,9 +36,9 @@ func DeleteProblem(c *gin.Context) {
 }
 
 type ProblemFilter struct {
-	ID         *int  `json:"id"`
-	UserId     *int  `json:"user_id"`
-	IsFavorite *bool `json:"is_favorite"`
+	ID         *int  `json:"id" form:"id"`
+	UserId     *int  `json:"user_id" form:"user_id"`
+	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
 }
 type ChoiceProblemResponse struct {
 	ID            int       `json:"id"`
@@ -346,13 +346,21 @@ func GetChoiceProblemAnswer(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	sqlString = `SELECT * FROM problem_choice WHERE id = $1 AND is_correct = true`
-	var choices []ChoiceProblemAnswerResponse
+	sqlString = `SELECT * FROM problem_choice WHERE id = $1`
+	var choices []model.ProblemChoice
 	if err := global.Database.Select(&choices, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	c.JSON(http.StatusOK, choices)
+	var choiceProblemAnswerResponses []ChoiceProblemAnswerResponse
+	for _, choice := range choices {
+		choiceProblemAnswerResponses = append(choiceProblemAnswerResponses, ChoiceProblemAnswerResponse{
+			Choice:      choice.Choice,
+			Description: choice.Description,
+			IsCorrect:   choice.IsCorrect,
+		})
+	}
+	c.JSON(http.StatusOK, choiceProblemAnswerResponses)
 }
 
 type BlankProblemResponse struct {
