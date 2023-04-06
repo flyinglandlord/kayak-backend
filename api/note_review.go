@@ -29,7 +29,7 @@ type NoteReviewResponse struct {
 // AddNoteReview godoc
 // @Schemes http
 // @Description 添加评论
-// @Param review body AddReviewRequest true "评论信息"
+// @Param review body NoteReviewCreateRequest true "评论信息"
 // @Success 200 {string} string "创建成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
