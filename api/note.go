@@ -31,6 +31,7 @@ type NoteUpdateRequest struct {
 // GetNotes godoc
 // @Schemes http
 // @Description 获取当前用户视角下的所有笔记
+// @Param id query int false "笔记ID"
 // @Success 200 {object} []NoteResponse "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /note/all [get]
@@ -42,12 +43,21 @@ func GetNotes(c *gin.Context) {
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
 		sqlString = `SELECT * FROM note WHERE is_public = true`
+		if c.Query("id") != "" {
+			sqlString += ` AND id = ` + c.Query("id")
+		}
 		err = global.Database.Select(&notes, sqlString)
 	} else if role == global.USER {
-		sqlString = `SELECT * FROM note WHERE is_public = true OR user_id = $1`
+		sqlString = `SELECT * FROM note WHERE (is_public = true OR user_id = $1)`
+		if c.Query("id") != "" {
+			sqlString += ` AND id = ` + c.Query("id")
+		}
 		err = global.Database.Select(&notes, sqlString, c.GetInt("UserId"))
 	} else {
 		sqlString = `SELECT * FROM note`
+		if c.Query("id") != "" {
+			sqlString += ` WHERE id = ` + c.Query("id")
+		}
 		err = global.Database.Select(&notes, sqlString)
 	}
 	if err != nil {
