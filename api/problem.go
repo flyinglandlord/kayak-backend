@@ -391,7 +391,7 @@ type BlankProblemUpdateRequest struct {
 
 // GetBlankProblems godoc
 // @Schemes http
-// @Description 获取符合filter要求的当前用户视角下的所有填空题
+// @Description 获取符合要求的当前用户视角下的所有填空题
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllBlankProblemResponse "填空题信息"
 // @Failure 400 {string} string "请求解析失败"
