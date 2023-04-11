@@ -646,7 +646,7 @@ type JudgeProblemUpdateRequest struct {
 
 // GetJudgeProblems godoc
 // @Schemes http
-// @Description 获取符合filter要求的当前用户视角下的所有判断题
+// @Description 获取符合要求的当前用户视角下的所有判断题
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllJudgeProblemResponse "判断题信息"
 // @Failure 400 {string} string "请求解析失败"
