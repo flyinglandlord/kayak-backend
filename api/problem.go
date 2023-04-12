@@ -12,6 +12,7 @@ import (
 const (
 	ChoiceProblemType = iota
 	BlankProblemType
+	JudgeProblemType
 )
 
 func DeleteProblem(c *gin.Context) {
@@ -390,7 +391,7 @@ type BlankProblemUpdateRequest struct {
 
 // GetBlankProblems godoc
 // @Schemes http
-// @Description 获取当前用户视角下的所有填空题
+// @Description 获取符合要求的当前用户视角下的所有填空题
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllBlankProblemResponse "填空题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -615,4 +616,259 @@ func GetBlankProblemAnswer(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, answer)
+}
+
+type JudgeProblemResponse struct {
+	ID            int       `json:"id"`
+	Description   string    `json:"description"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	UserId        int       `json:"user_id"`
+	IsPublic      bool      `json:"is_public"`
+	IsFavorite    bool      `json:"is_favorite"`
+	FavoriteCount int       `json:"favorite_count"`
+}
+type AllJudgeProblemResponse struct {
+	TotalCount int                    `json:"total_count"`
+	Problems   []JudgeProblemResponse `json:"problems"`
+}
+type JudgeProblemCreateRequest struct {
+	Description string `json:"description"`
+	IsPublic    bool   `json:"is_public"`
+	IsCorrect   bool   `json:"is_correct"`
+}
+type JudgeProblemUpdateRequest struct {
+	ID          int     `json:"id"`
+	Description *string `json:"description"`
+	IsPublic    *bool   `json:"is_public"`
+	IsCorrect   *bool   `json:"is_correct"`
+}
+
+// GetJudgeProblems godoc
+// @Schemes http
+// @Description 获取符合要求的当前用户视角下的所有判断题
+// @Param filter query ProblemFilter false "筛选条件"
+// @Success 200 {object} AllJudgeProblemResponse "判断题信息"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/judge/all [get]
+// @Security ApiKeyAuth
+func GetJudgeProblems(c *gin.Context) {
+	sqlString := `SELECT * FROM problem_type` + ` WHERE problem_type_id = ` + strconv.Itoa(JudgeProblemType)
+	role, _ := c.Get("Role")
+	if role == global.GUEST {
+		sqlString += ` AND is_public = true`
+	} else if role == global.USER {
+		sqlString += ` AND (is_public = true OR user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+	}
+	var filter ProblemFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	if filter.ID != nil {
+		sqlString += ` AND id = ` + strconv.Itoa(*filter.ID)
+	}
+	if filter.UserId != nil {
+		sqlString += ` AND user_id = ` + strconv.Itoa(*filter.UserId)
+	}
+	if filter.IsFavorite != nil {
+		if *filter.IsFavorite {
+			sqlString += ` AND id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+		} else {
+			sqlString += ` AND id NOT IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+		}
+	}
+	var judgeProblems []model.ProblemType
+	if err := global.Database.Select(&judgeProblems, sqlString); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var judgeProblemResponses []JudgeProblemResponse
+	for _, blankProblem := range judgeProblems {
+		var isFavorite int
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE user_id = $1 AND problem_id = $2`
+		if err := global.Database.Get(&isFavorite, sqlString, c.GetInt("UserId"), blankProblem.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		var favoriteCount int
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, blankProblem.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		judgeProblemResponses = append(judgeProblemResponses, JudgeProblemResponse{
+			ID:            blankProblem.ID,
+			Description:   blankProblem.Description,
+			CreatedAt:     blankProblem.CreatedAt,
+			UpdatedAt:     blankProblem.UpdatedAt,
+			UserId:        blankProblem.UserId,
+			IsPublic:      blankProblem.IsPublic,
+			IsFavorite:    isFavorite > 0,
+			FavoriteCount: favoriteCount,
+		})
+	}
+	c.JSON(http.StatusOK, AllJudgeProblemResponse{
+		TotalCount: len(judgeProblemResponses),
+		Problems:   judgeProblemResponses,
+	})
+}
+
+// CreateJudgeProblem godoc
+// @Schemes http
+// @Description 创建判断题
+// @Param problem body JudgeProblemCreateRequest true "判断题信息"
+// @Success 200 {object} JudgeProblemResponse "创建成功"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/judge/create [post]
+// @Security ApiKeyAuth
+func CreateJudgeProblem(c *gin.Context) {
+	var request JudgeProblemCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	tx := global.Database.MustBegin()
+	var problemId int
+	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) 
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	if err := global.Database.Get(&problemId, sqlString, JudgeProblemType, request.Description,
+		request.IsPublic, c.GetInt("UserId"), time.Now().Local(), time.Now().Local()); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `INSERT INTO problem_judge (id, is_correct) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, problemId, request.IsCorrect); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var problem model.ProblemType
+	sqlString = `SELECT * FROM problem_type WHERE id = $1`
+	if err := global.Database.Get(&problem, sqlString, problemId); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, JudgeProblemResponse{
+		ID:            problem.ID,
+		Description:   problem.Description,
+		CreatedAt:     problem.CreatedAt,
+		UpdatedAt:     problem.UpdatedAt,
+		UserId:        problem.UserId,
+		IsPublic:      problem.IsPublic,
+		IsFavorite:    false,
+		FavoriteCount: 0,
+	})
+}
+
+// UpdateJudgeProblem godoc
+// @Schemes http
+// @Description 更新判断题（只有管理员和题目创建者可以更新题目）
+// @Param problem body JudgeProblemUpdateRequest true "判断题信息"
+// @Success 200 {string} string "更新成功"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "判断题不存在"/"答案不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/judge/update [put]
+// @Security ApiKeyAuth
+func UpdateJudgeProblem(c *gin.Context) {
+	var request JudgeProblemUpdateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	sqlString := `SELECT * FROM problem_type WHERE id = $1`
+	var judgeProblem model.ProblemType
+	if err := global.Database.Get(&judgeProblem, sqlString, request.ID); err != nil {
+		c.String(http.StatusNotFound, "判断题不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); c.GetInt("UserId") != judgeProblem.UserId && role != global.ADMIN {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	if request.Description == nil {
+		request.Description = &judgeProblem.Description
+	}
+	if request.IsPublic == nil {
+		request.IsPublic = &judgeProblem.IsPublic
+	}
+	if request.IsCorrect == nil {
+		var judge model.ProblemJudge
+		sqlString = `SELECT * FROM problem_judge WHERE id = $1`
+		if err := global.Database.Get(&judge, sqlString, request.ID); err != nil {
+			c.String(http.StatusNotFound, "答案不存在")
+			return
+		}
+		request.IsCorrect = &judge.IsCorrect
+	}
+	tx := global.Database.MustBegin()
+	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
+	if _, err := global.Database.Exec(sqlString, request.Description,
+		request.IsPublic, time.Now().Local(), request.ID); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `UPDATE problem_judge SET is_correct = $1 WHERE id = $2`
+	if _, err := global.Database.Exec(sqlString, request.IsCorrect, request.ID); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "更新成功")
+}
+
+// DeleteJudgeProblem godoc
+// @Schemes http
+// @Description 删除判断题（只有管理员和题目创建者可以删除题目）
+// @Param id path int true "判断题ID"
+// @Success 200 {string} string "删除成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "题目不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/judge/delete/{id} [delete]
+// @Security ApiKeyAuth
+func DeleteJudgeProblem(c *gin.Context) {
+	DeleteProblem(c)
+}
+
+// GetJudgeProblemAnswer godoc
+// @Schemes http
+// @Description 获取判断题答案
+// @Param id path int true "判断题ID"
+// @Success 200 {string} string "答案"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "判断题不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/judge/answer/{id} [get]
+// @Security ApiKeyAuth
+func GetJudgeProblemAnswer(c *gin.Context) {
+	var problem model.ProblemType
+	sqlString := `SELECT * FROM problem_type WHERE id = $1`
+	if err := global.Database.Get(&problem, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "判断题不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); c.GetInt("UserId") != problem.UserId && role != global.ADMIN && !problem.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `SELECT is_correct FROM problem_judge WHERE id = $1`
+	var isCorrect bool
+	if err := global.Database.Get(&isCorrect, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "判断题不存在")
+		return
+	}
+	c.String(http.StatusOK, strconv.FormatBool(isCorrect))
 }

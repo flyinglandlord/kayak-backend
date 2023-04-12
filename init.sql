@@ -53,6 +53,14 @@ CREATE TABLE problem_answer
     FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
 );
 
+CREATE TABLE problem_judge
+(
+    "id"         integer NOT NULL,
+    "is_correct" boolean NOT NULL,
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
+);
+
 CREATE TABLE problem_set
 (
     "id"          serial       NOT NULL,

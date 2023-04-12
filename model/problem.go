@@ -23,3 +23,8 @@ type ProblemAnswer struct {
 	ID     int    `json:"id" db:"id"`
 	Answer string `json:"answer" db:"answer"`
 }
+
+type ProblemJudge struct {
+	ID        int  `json:"id" db:"id"`
+	IsCorrect bool `json:"is_correct" db:"is_correct"`
+}
