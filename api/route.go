@@ -80,6 +80,11 @@ func InitRoute() {
 	noteReview.DELETE("/remove/:id", RemoveNoteReview)
 	noteReview.GET("/get", GetNoteReviews)
 
+	group := global.Router.Group("/group")
+	group.Use(global.CheckAuth)
+	group.POST("/create", CreateGroup)
+	group.DELETE("/delete/:id", DeleteGroup)
+
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
 	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
