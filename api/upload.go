@@ -59,6 +59,7 @@ func DoUploadPublic(c *gin.Context) (int, string) {
 // UploadPublicFile godoc
 // @Schemes http
 // @Description 上传公开文件
+// @Tags upload
 // @Param file formData file true "文件"
 // @Success 200 {string} string "文件 URL"
 // @Failure 400 {string} string "请求解析失败"
@@ -76,6 +77,7 @@ func UploadPublicFile(c *gin.Context) {
 // UploadAvatar godoc
 // @Schemes http
 // @Description 上传用户头像
+// @Tags upload
 // @Param file formData file true "头像"
 // @Success 200 {string} string
 // @Failure 400 {string} string "请求解析失败"

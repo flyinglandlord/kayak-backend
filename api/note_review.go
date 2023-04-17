@@ -32,6 +32,7 @@ type AllNoteReviewResponse struct {
 // AddNoteReview godoc
 // @Schemes http
 // @Description 添加评论
+// @Tags noteReview
 // @Param review body NoteReviewCreateRequest true "评论信息"
 // @Success 200 {string} NoteReviewResponse "评论信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -93,6 +94,7 @@ func AddNoteReview(c *gin.Context) {
 // RemoveNoteReview godoc
 // @Schemes http
 // @Description 删除评论
+// @Tags noteReview
 // @Param id path int true "评论id"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -129,6 +131,7 @@ func RemoveNoteReview(c *gin.Context) {
 // GetNoteReviews godoc
 // @Schemes http
 // @Description 获取笔记的评论
+// @Tags noteReview
 // @Param note_id query int true "笔记id"
 // @Success 200 {object} AllNoteReviewResponse "评论列表"
 // @Failure 403 {string} string "没有权限"

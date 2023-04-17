@@ -23,6 +23,7 @@ type GroupCreateRequest struct {
 // CreateGroup godoc
 // @Schemes http
 // @Description 创建小组
+// @Tags group
 // @Param group body GroupCreateRequest true "小组信息"
 // @Success 200 {object} GroupResponse "小组信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -59,6 +60,7 @@ func CreateGroup(c *gin.Context) {
 // DeleteGroup godoc
 // @Schemes http
 // @Description 删除小组
+// @Tags group
 // @Param id path int true "小组ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"

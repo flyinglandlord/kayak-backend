@@ -47,6 +47,7 @@ type NoteUpdateRequest struct {
 // GetNotes godoc
 // @Schemes http
 // @Description 获取符合filter要求的当前用户视角下的所有笔记
+// @Tags note
 // @Param filter query NoteFilter false "筛选条件"
 // @Success 200 {object} AllNoteResponse "笔记列表"
 // @Failure 400 {string} string "请求解析失败"
@@ -139,6 +140,7 @@ func GetNotes(c *gin.Context) {
 // CreateNote godoc
 // @Schemes http
 // @Description 创建笔记
+// @Tags note
 // @Param note body NoteCreateRequest true "笔记信息"
 // @Success 200 {object} NoteResponse "笔记信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -188,6 +190,7 @@ func CreateNote(c *gin.Context) {
 // UpdateNote godoc
 // @Schemes http
 // @Description 更新笔记（只有管理员和笔记作者可以更新）(可以只传需要更新的字段)
+// @Tags note
 // @Param note body NoteUpdateRequest true "笔记信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -233,6 +236,7 @@ func UpdateNote(c *gin.Context) {
 // DeleteNote godoc
 // @Schemes http
 // @Description 删除笔记（只有管理员和笔记作者可以删除）
+// @Tags note
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -262,6 +266,7 @@ func DeleteNote(c *gin.Context) {
 // LikeNote godoc
 // @Schemes http
 // @Description 点赞笔记
+// @Tags note
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "点赞成功"
 // @Failure 403 {string} string "没有权限"
@@ -291,6 +296,7 @@ func LikeNote(c *gin.Context) {
 // UnlikeNote godoc
 // @Schemes http
 // @Description 取消点赞笔记
+// @Tags note
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "取消点赞成功"
 // @Failure 404 {string} string "笔记不存在"
