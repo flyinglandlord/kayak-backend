@@ -83,6 +83,8 @@ func InitRoute() {
 	group := global.Router.Group("/group")
 	group.Use(global.CheckAuth)
 	group.POST("/create", CreateGroup)
+	group.POST("/add/:id", AddUserToGroup)
+	group.DELETE("/remove/:id", RemoveUserFromGroup)
 	group.DELETE("/delete/:id", DeleteGroup)
 
 	// Deprecated

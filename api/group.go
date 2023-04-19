@@ -57,6 +57,68 @@ func CreateGroup(c *gin.Context) {
 	})
 }
 
+// AddUserToGroup godoc
+// @Schemes http
+// @Description 添加用户到小组
+// @Tags group
+// @Param id path int true "小组ID"
+// @Param user_id query int true "用户ID"
+// @Success 200 {string} string "添加成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/add/{id} [post]
+// @Security ApiKeyAuth
+func AddUserToGroup(c *gin.Context) {
+	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
+	var groupUserId int
+	if err := global.Database.Get(&groupUserId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); groupUserId != c.GetInt("UserId") && role != global.ADMIN {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `INSERT INTO group_member (user_id, group_id) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, c.Query("user_id"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "添加成功")
+}
+
+// RemoveUserFromGroup godoc
+// @Schemes http
+// @Description 从小组移除用户
+// @Tags group
+// @Param id path int true "小组ID"
+// @Param user_id query int true "用户ID"
+// @Success 200 {string} string "移除成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/remove/{id} [delete]
+// @Security ApiKeyAuth
+func RemoveUserFromGroup(c *gin.Context) {
+	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
+	var groupUserId int
+	if err := global.Database.Get(&groupUserId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); groupUserId != c.GetInt("UserId") && role != global.ADMIN {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `DELETE FROM group_member WHERE user_id = $1 AND group_id = $2`
+	if _, err := global.Database.Exec(sqlString, c.Query("user_id"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "移除成功")
+}
+
 // DeleteGroup godoc
 // @Schemes http
 // @Description 删除小组
