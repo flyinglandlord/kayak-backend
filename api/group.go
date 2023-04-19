@@ -57,6 +57,81 @@ func CreateGroup(c *gin.Context) {
 	})
 }
 
+// DeleteGroup godoc
+// @Schemes http
+// @Description 删除小组
+// @Tags group
+// @Param id path int true "小组ID"
+// @Success 200 {string} string "删除成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/delete/{id} [delete]
+// @Security ApiKeyAuth
+func DeleteGroup(c *gin.Context) {
+	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
+	var groupUserId int
+	if err := global.Database.Get(&groupUserId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); groupUserId != c.GetInt("UserId") && role != global.ADMIN {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `DELETE FROM "group" WHERE id = $1`
+	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "删除成功")
+}
+
+type AllUserResponse struct {
+	TotalCount int                `json:"total_count"`
+	User       []UserInfoResponse `json:"user"`
+}
+
+// GetUsersInGroup godoc
+// @Schemes http
+// @Description 获取小组成员
+// @Tags group
+// @Param id path int true "小组ID"
+// @Success 200 {object} AllUserResponse "用户信息"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/all_user/{id} [get]
+// @Security ApiKeyAuth
+func GetUsersInGroup(c *gin.Context) {
+	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
+	var groupUserId int
+	if err := global.Database.Get(&groupUserId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	var users []model.User
+	sqlString = `SELECT * FROM "user" WHERE id IN (SELECT user_id FROM group_member WHERE group_id = $1)`
+	if err := global.Database.Select(&users, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var userResponses []UserInfoResponse
+	for _, user := range users {
+		userResponses = append(userResponses, UserInfoResponse{
+			UserId:     user.ID,
+			UserName:   user.Name,
+			Email:      user.Email,
+			Phone:      user.Phone,
+			AvatarPath: user.AvatarURL,
+			CreateAt:   user.CreatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, AllUserResponse{
+		TotalCount: len(userResponses),
+		User:       userResponses,
+	})
+}
+
 // AddUserToGroup godoc
 // @Schemes http
 // @Description 添加用户到小组
@@ -65,7 +140,7 @@ func CreateGroup(c *gin.Context) {
 // @Param user_id query int true "用户ID"
 // @Success 200 {string} string "添加成功"
 // @Failure 403 {string} string "没有权限"
-// @Failure 404 {string} string "小组不存在"
+// @Failure 404 {string} string "小组不存在"/"用户不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /group/add/{id} [post]
 // @Security ApiKeyAuth
@@ -74,6 +149,12 @@ func AddUserToGroup(c *gin.Context) {
 	var groupUserId int
 	if err := global.Database.Get(&groupUserId, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	sqlString = `SELECT id FROM "user" WHERE id = $1`
+	var userId int
+	if err := global.Database.Get(&userId, sqlString, c.Query("user_id")); err != nil {
+		c.String(http.StatusNotFound, "用户不存在")
 		return
 	}
 	if role, _ := c.Get("Role"); groupUserId != c.GetInt("UserId") && role != global.ADMIN {
@@ -117,34 +198,4 @@ func RemoveUserFromGroup(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "移除成功")
-}
-
-// DeleteGroup godoc
-// @Schemes http
-// @Description 删除小组
-// @Tags group
-// @Param id path int true "小组ID"
-// @Success 200 {string} string "删除成功"
-// @Failure 403 {string} string "没有权限"
-// @Failure 404 {string} string "小组不存在"
-// @Failure default {string} string "服务器错误"
-// @Router /group/delete/{id} [delete]
-// @Security ApiKeyAuth
-func DeleteGroup(c *gin.Context) {
-	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
-	var groupUserId int
-	if err := global.Database.Get(&groupUserId, sqlString, c.Param("id")); err != nil {
-		c.String(http.StatusNotFound, "小组不存在")
-		return
-	}
-	if role, _ := c.Get("Role"); groupUserId != c.GetInt("UserId") && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
-		return
-	}
-	sqlString = `DELETE FROM "group" WHERE id = $1`
-	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	c.String(http.StatusOK, "删除成功")
 }

@@ -83,9 +83,10 @@ func InitRoute() {
 	group := global.Router.Group("/group")
 	group.Use(global.CheckAuth)
 	group.POST("/create", CreateGroup)
+	group.DELETE("/delete/:id", DeleteGroup)
+	group.GET("/all_user/:id", GetUsersInGroup)
 	group.POST("/add/:id", AddUserToGroup)
 	group.DELETE("/remove/:id", RemoveUserFromGroup)
-	group.DELETE("/delete/:id", DeleteGroup)
 
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
