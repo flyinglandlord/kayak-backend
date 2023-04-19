@@ -203,7 +203,7 @@ type AllProblemResponse struct {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/all_problem [get]
+// @Router /problem_set/all_problem/{id} [get]
 // @Security ApiKeyAuth
 func GetProblemsInProblemSet(c *gin.Context) {
 	sqlString := `SELECT * FROM problem_set WHERE id = $1`
@@ -274,7 +274,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/add [post]
+// @Router /problem_set/add/{id} [post]
 // @Security ApiKeyAuth
 func AddProblemToProblemSet(c *gin.Context) {
 	sqlString := `SELECT user_id FROM problem_set WHERE id = $1`
@@ -315,7 +315,7 @@ func AddProblemToProblemSet(c *gin.Context) {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/remove [delete]
+// @Router /problem_set/remove/{id} [delete]
 // @Security ApiKeyAuth
 func RemoveProblemFromProblemSet(c *gin.Context) {
 	role, _ := c.Get("Role")
