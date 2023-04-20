@@ -84,6 +84,7 @@ func InitRoute() {
 	group.Use(global.CheckAuth)
 	group.GET("/all", GetGroups)
 	group.POST("/create", CreateGroup)
+	group.GET("/invitation/:id", GetGroupInvitation)
 	group.DELETE("/delete/:id", DeleteGroup)
 	group.GET("/all_user/:id", GetUsersInGroup)
 	group.POST("/add/:id", AddUserToGroup)
