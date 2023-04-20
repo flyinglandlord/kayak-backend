@@ -31,6 +31,7 @@ CREATE TABLE problem_type
     "user_id"         integer   NOT NULL,
     "problem_type_id" integer   NOT NULL,
     "is_public"       boolean   NOT NULL,
+    "analysis"        text,
     PRIMARY KEY ("id"),
     FOREIGN KEY ("user_id") REFERENCES "user" ("id")
 );
