@@ -1,10 +1,12 @@
-FROM golang:1.18-alpine AS builder
+FROM golang:1.20-alpine AS builder
 RUN mkdir /build
 WORKDIR /build
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
 RUN apk update && apk add git
 RUN go env -w GOPROXY=https://goproxy.cn,direct
-RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN go install github.com/swaggo/swag/cmd/swag@f475da2  \
+    # Related to Issue #1564, waiting for the next release to solve this problem
+
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
