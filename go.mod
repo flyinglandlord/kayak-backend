@@ -14,7 +14,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.5.3
-	github.com/swaggo/swag v1.8.1
+	github.com/swaggo/swag v1.8.11
 	golang.org/x/crypto v0.5.0
 )
 
