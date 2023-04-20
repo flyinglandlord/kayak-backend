@@ -11,6 +11,7 @@ import (
 // AddProblemToFavorite godoc
 // @Schemes http
 // @Description 添加题目到收藏夹（只有管理员和题目创建者能添加私有题目）
+// @Tags problem
 // @Param id path int true "题目ID"
 // @Success 200 {string} string "添加成功"
 // @Failure 403 {string} string "没有权限"
@@ -42,6 +43,7 @@ func AddProblemToFavorite(c *gin.Context) {
 // RemoveProblemFromFavorite godoc
 // @Schemes http
 // @Description 从收藏夹移除题目
+// @Tags problem
 // @Param id path int true "题目ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
@@ -60,6 +62,7 @@ func RemoveProblemFromFavorite(c *gin.Context) {
 // AddProblemSetToFavorite godoc
 // @Schemes http
 // @Description 添加题集到收藏夹（只有管理员和题集创建者能添加私有题集）
+// @Tags problemSet
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "添加成功"
 // @Failure 403 {string} string "没有权限"
@@ -91,6 +94,7 @@ func AddProblemSetToFavorite(c *gin.Context) {
 // RemoveProblemSetFromFavorite godoc
 // @Schemes http
 // @Description 从收藏夹移除题集
+// @Tags problemSet
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "移除成功"
 // @Failure default {string} string "服务器错误"
@@ -109,6 +113,7 @@ func RemoveProblemSetFromFavorite(c *gin.Context) {
 // FavoriteNote godoc
 // @Schemes http
 // @Description 收藏笔记
+// @Tags note
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "收藏成功"
 // @Failure 403 {string} string "没有权限"
@@ -138,6 +143,7 @@ func FavoriteNote(c *gin.Context) {
 // UnfavoriteNote godoc
 // @Schemes http
 // @Description 取消收藏笔记
+// @Tags note
 // @Param id path int true "笔记ID"
 // @Success 200 {string} string "取消收藏成功"
 // @Failure 404 {string} string "笔记不存在"

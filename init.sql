@@ -171,3 +171,25 @@ CREATE TABLE user_favorite_note
     FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE,
     FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );
+
+CREATE TABLE "group"
+(
+    "id"          serial       NOT NULL,
+    "name"        varchar(255) NOT NULL,
+    "description" text         NOT NULL,
+    "invitation"  varchar(255) NOT NULL,
+    "created_at"  timestamp    NOT NULL,
+    "user_id"     integer      NOT NULL,
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+);
+
+CREATE TABLE "group_member"
+(
+    "group_id"   integer   NOT NULL,
+    "user_id"    integer   NOT NULL,
+    "created_at" timestamp NOT NULL,
+    PRIMARY KEY ("group_id", "user_id"),
+    FOREIGN KEY ("group_id") REFERENCES "group" ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+);

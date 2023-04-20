@@ -11,6 +11,7 @@ import (
 // GetUserNotes godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有笔记
+// @Tags Deprecated
 // @Success 200 {object} UserNotesResponse "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/note [get]
@@ -61,6 +62,7 @@ type FavoriteProblemResponse struct {
 // GetUserFavoriteProblems godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题目
+// @Tags Deprecated
 // @Success 200 {object} FavoriteProblemResponse "收藏的题目列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/problem [get]
@@ -92,6 +94,7 @@ type FavoriteProblemSetResponse struct {
 // GetUserFavoriteProblemSets godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的题集
+// @Tags Deprecated
 // @Success 200 {object} FavoriteProblemSetResponse "收藏的题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/problem_set [get]
@@ -158,6 +161,7 @@ type FavoriteNoteResponse struct {
 // GetUserFavoriteNotes godoc
 // @Schemes http
 // @Description 获取当前登录用户收藏的笔记
+// @Tags Deprecated
 // @Success 200 {object} FavoriteNoteResponse "收藏的笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/favorite/note [get]
@@ -210,6 +214,7 @@ func GetUserFavoriteNotes(c *gin.Context) {
 // GetUserProblemSets godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有题集
+// @Tags Deprecated
 // @Success 200 {object} []ProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/problem_set [get]
@@ -280,6 +285,7 @@ type ChoiceProblemItem struct {
 // GetUserChoiceProblems godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有选择题
+// @Tags Deprecated
 // @Success 200 {object} []ChoiceProblemResponse "选择题列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/problem/choice [get]
@@ -326,6 +332,7 @@ func GetUserChoiceProblems(c *gin.Context) {
 // GetUserBlankProblems godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有填空题
+// @Tags Deprecated
 // @Success 200 {object} BlankProblemResponse "填空题信息"
 // @Failure default {string} string "服务器错误"
 // @Router /user/problem/blank [get]
@@ -352,6 +359,7 @@ func GetUserBlankProblems(c *gin.Context) {
 // GetChoiceProblem godoc
 // @Schemes http
 // @Description 获取单个选择题信息（只有管理员和题目创建者可以获取私有题目）
+// @Tags Deprecated
 // @Param id path int true "选择题ID"
 // @Success 200 {object} ChoiceProblemResponse "选择题信息"
 // @Failure 403 {string} string "没有权限"
@@ -409,6 +417,7 @@ func GetChoiceProblem(c *gin.Context) {
 // GetProblemSetContainsProblem godoc
 // @Schemes http
 // @Description 获取包含某题目的题集
+// @Tags Deprecated
 // @Param id path int true "题目ID"
 // @Success 200 {array} ProblemSetResponse "题集列表"
 // @Failure 404 {string} string "题目不存在"
@@ -453,6 +462,7 @@ func GetProblemSetContainsProblem(c *gin.Context) {
 // GetBlankProblem godoc
 // @Schemes http
 // @Description 获取单个填空题信息（只有管理员和题目创建者可以查看私有题目）
+// @Tags Deprecated
 // @Param id path int true "填空题ID"
 // @Success 200 {object} BlankProblemResponse "填空题信息"
 // @Failure 403 {string} string "没有权限"

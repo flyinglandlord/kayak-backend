@@ -40,7 +40,8 @@ type AllProblemSetResponse struct {
 // GetProblemSets godoc
 // @Schemes http
 // @Description 获取符合filter要求的当前用户视角下的所有题集
-// @Param filter query ProblemSetFilter false "题集ID"
+// @Tags problemSet
+// @Param filter query ProblemSetFilter false "筛选条件"
 // @Success 200 {object} AllProblemSetResponse "题集列表"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"
@@ -125,6 +126,7 @@ func GetProblemSets(c *gin.Context) {
 // CreateProblemSet godoc
 // @Schemes http
 // @Description 创建题集
+// @Tags problemSet
 // @Param problem_set body ProblemSetRequest true "题集信息"
 // @Success 200 {object} ProblemSetResponse "题集信息"
 // @Failure default {string} string "服务器错误"
@@ -193,6 +195,7 @@ type AllProblemResponse struct {
 // GetProblemsInProblemSet godoc
 // @Schemes http
 // @Description 根据filter获取题集中的所有题目信息
+// @Tags problemSet
 // @Param id path int true "题集ID"
 // @Param filter query ProblemInProblemSetFilter false "筛选条件"
 // @Success 200 {object} AllProblemResponse "题目列表"
@@ -200,7 +203,7 @@ type AllProblemResponse struct {
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/all_problem [get]
+// @Router /problem_set/all_problem/{id} [get]
 // @Security ApiKeyAuth
 func GetProblemsInProblemSet(c *gin.Context) {
 	sqlString := `SELECT * FROM problem_set WHERE id = $1`
@@ -264,13 +267,14 @@ func GetProblemsInProblemSet(c *gin.Context) {
 // AddProblemToProblemSet godoc
 // @Schemes http
 // @Description 添加题目到题集（只有同时为题集的创建者和题目的创建者可以添加题目）
+// @Tags problemSet
 // @Param id path int true "题集ID"
 // @Param problem_id query int true "题目ID"
 // @Success 200 {string} string "添加成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/add [post]
+// @Router /problem_set/add/{id} [post]
 // @Security ApiKeyAuth
 func AddProblemToProblemSet(c *gin.Context) {
 	sqlString := `SELECT user_id FROM problem_set WHERE id = $1`
@@ -304,13 +308,14 @@ func AddProblemToProblemSet(c *gin.Context) {
 // RemoveProblemFromProblemSet godoc
 // @Schemes http
 // @Description 从题集中移除题目（只有管理员或者同时为题集的创建者和题目的创建者可以移除题目）
+// @Tags problemSet
 // @Param id path int true "题集ID"
 // @Param problem_id query int true "题目ID"
 // @Success 200 {string} string "移除成功"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题集不存在"/"题目不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /problem_set/{id}/remove [delete]
+// @Router /problem_set/remove/{id} [delete]
 // @Security ApiKeyAuth
 func RemoveProblemFromProblemSet(c *gin.Context) {
 	role, _ := c.Get("Role")
@@ -345,6 +350,7 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 // DeleteProblemSet godoc
 // @Schemes http
 // @Description 删除题集（只有管理员或者题集的创建者可以删除题集）
+// @Tags problemSet
 // @Param id path int true "题集ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"

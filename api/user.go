@@ -20,6 +20,7 @@ type UserInfoResponse struct {
 // GetUserInfoById godoc
 // @Schemes http
 // @Description 根据ID获取用户信息
+// @Tags user
 // @Param user_id path int true "用户ID"
 // @Success 200 {object} UserInfoResponse "用户信息"
 // @Failure 404 {string} string "用户不存在"
@@ -47,6 +48,7 @@ func GetUserInfoById(c *gin.Context) {
 // GetUserInfo godoc
 // @Schemes http
 // @Description 获取用户信息
+// @Tags user
 // @Success 200 {object} UserInfoResponse "用户信息"
 // @Failure default {string} string "服务器错误"
 // @Router /user/info [get]
@@ -78,6 +80,7 @@ type UserInfoRequest struct {
 // UpdateUserInfo godoc
 // @Schemes http
 // @Description 更新用户信息
+// @Tags user
 // @Param info body UserInfoRequest true "用户信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -106,6 +109,7 @@ type UserNotesResponse struct {
 // GetUserWrongRecords godoc
 // @Schemes http
 // @Description 获取当前登录用户的所有错题记录
+// @Tags user
 // @Success 200 {object} AllWrongRecordResponse "错题记录列表"
 // @Failure default {string} string "服务器错误"
 // @Router /user/wrong_record [get]
@@ -131,4 +135,3 @@ func GetUserWrongRecords(c *gin.Context) {
 		Records:    wrongRecordResponses,
 	})
 }
-

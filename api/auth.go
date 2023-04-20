@@ -33,6 +33,7 @@ type RegisterResponse struct {
 // Login godoc
 // @Schemes http
 // @Description 用户登录
+// @Tags auth
 // @Param info body LoginInfo true "用户登陆信息"
 // @Success 200 {object} LoginResponse "用户登陆反馈"
 // @Failure 400 {string} string "请求解析失败"
@@ -72,6 +73,7 @@ func Login(c *gin.Context) {
 // Register godoc
 // @Schemes http
 // @Description 用户注册
+// @Tags auth
 // @Param info body RegisterInfo true "用户注册信息"
 // @Success 200 {string} string "注册成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -111,6 +113,7 @@ func Register(c *gin.Context) {
 // ResetPassword godoc
 // @Schemes http
 // @Description 用户修改密码
+// @Tags auth
 // @Param info body RegisterResponse true "用户修改密码信息"
 // @Success 200 {string} string "修改成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -152,6 +155,7 @@ func ResetPassword(c *gin.Context) {
 // Logout godoc
 // @Schemes http
 // @Description 用户退出
+// @Tags auth
 // @Success 200 {string} string "退出成功"
 // @Failure default {string} string "服务器错误"
 // @Router /logout [get]

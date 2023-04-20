@@ -10,6 +10,7 @@ type ProblemType struct {
 	UserId        int       `json:"user_id" db:"user_id"`
 	ProblemTypeId int       `json:"problem_type_id" db:"problem_type_id"`
 	IsPublic      bool      `json:"is_public" db:"is_public"`
+	Analysis      *string   `json:"analysis" db:"analysis"`
 }
 
 type ProblemChoice struct {

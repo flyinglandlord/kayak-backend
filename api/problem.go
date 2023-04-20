@@ -65,12 +65,14 @@ type ChoiceProblemCreateRequest struct {
 	Description string          `json:"description"`
 	IsPublic    bool            `json:"is_public"`
 	Choices     []ChoiceRequest `json:"choices"`
+	Analysis    *string         `json:"analysis"`
 }
 type ChoiceProblemUpdateRequest struct {
 	ID          int             `json:"id"`
 	Description *string         `json:"description"`
 	IsPublic    *bool           `json:"is_public"`
 	Choices     []ChoiceRequest `json:"choices"`
+	Analysis    *string         `json:"analysis"`
 }
 type ChoiceRequest struct {
 	Choice      string `json:"choice"`
@@ -81,6 +83,7 @@ type ChoiceRequest struct {
 // GetChoiceProblems godoc
 // @Schemes http
 // @Description 获取符合filter要求的当前用户视角下的所有选择题
+// @Tags problem
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} []ChoiceProblemResponse "选择题列表"
 // @Failure 400 {string} string "请求解析失败"
@@ -173,6 +176,7 @@ func GetChoiceProblems(c *gin.Context) {
 // CreateChoiceProblem godoc
 // @Schemes http
 // @Description 创建选择题
+// @Tags problem
 // @Param problem body ChoiceProblemCreateRequest true "选择题信息"
 // @Success 200 {object} ChoiceProblemResponse "选择题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -187,10 +191,10 @@ func CreateChoiceProblem(c *gin.Context) {
 	}
 	tx := global.Database.MustBegin()
 	var problemId int
-	sqlString := `INSERT INTO problem_type (description, user_id, problem_type_id, is_public, created_at, updated_at) 
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	sqlString := `INSERT INTO problem_type (description, user_id, problem_type_id, is_public, created_at, updated_at, analysis) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	if err := global.Database.Get(&problemId, sqlString, request.Description, c.GetInt("UserId"),
-		ChoiceProblemType, request.IsPublic, time.Now().Local(), time.Now().Local()); err != nil {
+		ChoiceProblemType, request.IsPublic, time.Now().Local(), time.Now().Local(), request.Analysis); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -250,6 +254,7 @@ func CreateChoiceProblem(c *gin.Context) {
 // UpdateChoiceProblem godoc
 // @Schemes http
 // @Description 更新选择题（只需传需要修改的字段,传原值也行）(只有管理员和题目创建者可以更新题目)
+// @Tags problem
 // @Param problem body ChoiceProblemUpdateRequest true "选择题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -281,9 +286,12 @@ func UpdateChoiceProblem(c *gin.Context) {
 	if request.IsPublic == nil {
 		request.IsPublic = &choiceProblem.IsPublic
 	}
-	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
+	if request.Analysis == nil {
+		request.Analysis = choiceProblem.Analysis
+	}
+	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3, analysis = $4 WHERE id = $5`
 	if _, err := global.Database.Exec(sqlString, request.Description,
-		request.IsPublic, time.Now().Local(), request.ID); err != nil {
+		request.IsPublic, time.Now().Local(), request.Analysis, request.ID); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -308,6 +316,7 @@ func UpdateChoiceProblem(c *gin.Context) {
 // DeleteChoiceProblem godoc
 // @Schemes http
 // @Description 删除选择题（只有管理员和题目创建者可以删除题目）
+// @Tags problem
 // @Param id path int true "选择题ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -319,17 +328,23 @@ func DeleteChoiceProblem(c *gin.Context) {
 	DeleteProblem(c)
 }
 
-type ChoiceProblemAnswerResponse struct {
+type ChoiceProblemAnswerItem struct {
 	Choice      string `json:"choice" db:"choice"`
 	Description string `json:"description" db:"description"`
 	IsCorrect   bool   `json:"is_correct" db:"is_correct"`
 }
 
+type ChoiceProblemAnswerResponse struct {
+	ChoiceProblemAnswer []ChoiceProblemAnswerItem `json:"choice_problem_answer"`
+	Analysis            *string                   `json:"analysis"`
+}
+
 // GetChoiceProblemAnswer godoc
 // @Schemes http
 // @Description 获取选择题答案
+// @Tags problem
 // @Param id path int true "选择题ID"
-// @Success 200 {object} []ChoiceProblemAnswerResponse "答案信息"
+// @Success 200 {object} ChoiceProblemAnswerResponse "答案信息"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "题目不存在"
 // @Failure default {string} string "服务器错误"
@@ -352,15 +367,18 @@ func GetChoiceProblemAnswer(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	var choiceProblemAnswerResponses []ChoiceProblemAnswerResponse
+	var choiceProblemAnswerItems []ChoiceProblemAnswerItem
 	for _, choice := range choices {
-		choiceProblemAnswerResponses = append(choiceProblemAnswerResponses, ChoiceProblemAnswerResponse{
+		choiceProblemAnswerItems = append(choiceProblemAnswerItems, ChoiceProblemAnswerItem{
 			Choice:      choice.Choice,
 			Description: choice.Description,
 			IsCorrect:   choice.IsCorrect,
 		})
 	}
-	c.JSON(http.StatusOK, choiceProblemAnswerResponses)
+	c.JSON(http.StatusOK, ChoiceProblemAnswerResponse{
+		ChoiceProblemAnswer: choiceProblemAnswerItems,
+		Analysis:            choiceProblem.Analysis,
+	})
 }
 
 type BlankProblemResponse struct {
@@ -378,20 +396,24 @@ type AllBlankProblemResponse struct {
 	Problems   []BlankProblemResponse `json:"problems"`
 }
 type BlankProblemCreateRequest struct {
-	Description string `json:"description"`
-	IsPublic    bool   `json:"is_public"`
-	Answer      string `json:"answer"`
+	Description   string  `json:"description"`
+	IsPublic      bool    `json:"is_public"`
+	Answer        string  `json:"answer"`
+	AnswerExplain string  `json:"answer_explanation"`
+	Analysis      *string `json:"analysis"`
 }
 type BlankProblemUpdateRequest struct {
 	ID          int     `json:"id"`
 	Description *string `json:"description"`
 	IsPublic    *bool   `json:"is_public"`
 	Answer      *string `json:"answer"`
+	Analysis    *string `json:"analysis"`
 }
 
 // GetBlankProblems godoc
 // @Schemes http
 // @Description 获取符合要求的当前用户视角下的所有填空题
+// @Tags problem
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllBlankProblemResponse "填空题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -463,6 +485,7 @@ func GetBlankProblems(c *gin.Context) {
 // CreateBlankProblem godoc
 // @Schemes http
 // @Description 创建填空题
+// @Tags problem
 // @Param problem body BlankProblemCreateRequest true "填空题信息"
 // @Success 200 {object} BlankProblemResponse "创建成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -477,10 +500,10 @@ func CreateBlankProblem(c *gin.Context) {
 	}
 	tx := global.Database.MustBegin()
 	var problemId int
-	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) 
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at, analysis) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	if err := global.Database.Get(&problemId, sqlString, BlankProblemType, request.Description,
-		request.IsPublic, c.GetInt("UserId"), time.Now().Local(), time.Now().Local()); err != nil {
+		request.IsPublic, c.GetInt("UserId"), time.Now().Local(), time.Now().Local(), request.Analysis); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -513,6 +536,7 @@ func CreateBlankProblem(c *gin.Context) {
 // UpdateBlankProblem godoc
 // @Schemes http
 // @Description 更新填空题（只有管理员和题目创建者可以更新题目）
+// @Tags problem
 // @Param problem body BlankProblemUpdateRequest true "填空题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -543,6 +567,9 @@ func UpdateBlankProblem(c *gin.Context) {
 	if request.IsPublic == nil {
 		request.IsPublic = &blankProblem.IsPublic
 	}
+	if request.Analysis == nil {
+		request.Analysis = blankProblem.Analysis
+	}
 	if request.Answer == nil {
 		var answer model.ProblemAnswer
 		sqlString = `SELECT answer FROM problem_answer WHERE id = $1`
@@ -553,9 +580,9 @@ func UpdateBlankProblem(c *gin.Context) {
 		request.Answer = &answer.Answer
 	}
 	tx := global.Database.MustBegin()
-	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
+	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3, analysis = $4 WHERE id = $5`
 	if _, err := global.Database.Exec(sqlString, request.Description,
-		request.IsPublic, time.Now().Local(), request.ID); err != nil {
+		request.IsPublic, time.Now().Local(), request.Analysis, request.ID); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -577,6 +604,7 @@ func UpdateBlankProblem(c *gin.Context) {
 // DeleteBlankProblem godoc
 // @Schemes http
 // @Description 删除填空题（只有管理员和题目创建者可以删除题目）
+// @Tags problem
 // @Param id path int true "填空题ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -588,11 +616,17 @@ func DeleteBlankProblem(c *gin.Context) {
 	DeleteProblem(c)
 }
 
+type BlankProblemAnswerResponse struct {
+	Answer   string  `json:"answer"`
+	Analysis *string `json:"analysis"`
+}
+
 // GetBlankProblemAnswer godoc
 // @Schemes http
 // @Description 获取填空题答案
+// @Tags problem
 // @Param id path int true "填空题ID"
-// @Success 200 {string} string "答案"
+// @Success 200 {string} BlankProblemAnswerResponse "答案"
 // @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "填空题不存在"
 // @Failure default {string} string "服务器错误"
@@ -615,7 +649,10 @@ func GetBlankProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "填空题不存在")
 		return
 	}
-	c.String(http.StatusOK, answer)
+	c.JSON(http.StatusOK, BlankProblemAnswerResponse{
+		Answer:   answer,
+		Analysis: problem.Analysis,
+	})
 }
 
 type JudgeProblemResponse struct {
@@ -633,20 +670,23 @@ type AllJudgeProblemResponse struct {
 	Problems   []JudgeProblemResponse `json:"problems"`
 }
 type JudgeProblemCreateRequest struct {
-	Description string `json:"description"`
-	IsPublic    bool   `json:"is_public"`
-	IsCorrect   bool   `json:"is_correct"`
+	Description string  `json:"description"`
+	IsPublic    bool    `json:"is_public"`
+	IsCorrect   bool    `json:"is_correct"`
+	Analysis    *string `json:"analysis"`
 }
 type JudgeProblemUpdateRequest struct {
 	ID          int     `json:"id"`
 	Description *string `json:"description"`
 	IsPublic    *bool   `json:"is_public"`
 	IsCorrect   *bool   `json:"is_correct"`
+	Analysis    *string `json:"analysis"`
 }
 
 // GetJudgeProblems godoc
 // @Schemes http
 // @Description 获取符合要求的当前用户视角下的所有判断题
+// @Tags problem
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllJudgeProblemResponse "判断题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -718,6 +758,7 @@ func GetJudgeProblems(c *gin.Context) {
 // CreateJudgeProblem godoc
 // @Schemes http
 // @Description 创建判断题
+// @Tags problem
 // @Param problem body JudgeProblemCreateRequest true "判断题信息"
 // @Success 200 {object} JudgeProblemResponse "创建成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -732,10 +773,10 @@ func CreateJudgeProblem(c *gin.Context) {
 	}
 	tx := global.Database.MustBegin()
 	var problemId int
-	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at) 
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	sqlString := `INSERT INTO problem_type (problem_type_id, description, is_public, user_id, created_at, updated_at, analysis) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	if err := global.Database.Get(&problemId, sqlString, JudgeProblemType, request.Description,
-		request.IsPublic, c.GetInt("UserId"), time.Now().Local(), time.Now().Local()); err != nil {
+		request.IsPublic, c.GetInt("UserId"), time.Now().Local(), time.Now().Local(), request.Analysis); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -768,6 +809,7 @@ func CreateJudgeProblem(c *gin.Context) {
 // UpdateJudgeProblem godoc
 // @Schemes http
 // @Description 更新判断题（只有管理员和题目创建者可以更新题目）
+// @Tags problem
 // @Param problem body JudgeProblemUpdateRequest true "判断题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -798,6 +840,9 @@ func UpdateJudgeProblem(c *gin.Context) {
 	if request.IsPublic == nil {
 		request.IsPublic = &judgeProblem.IsPublic
 	}
+	if request.Analysis == nil {
+		request.Analysis = judgeProblem.Analysis
+	}
 	if request.IsCorrect == nil {
 		var judge model.ProblemJudge
 		sqlString = `SELECT * FROM problem_judge WHERE id = $1`
@@ -808,9 +853,9 @@ func UpdateJudgeProblem(c *gin.Context) {
 		request.IsCorrect = &judge.IsCorrect
 	}
 	tx := global.Database.MustBegin()
-	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3 WHERE id = $4`
+	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3, analysis = $4 WHERE id = $5`
 	if _, err := global.Database.Exec(sqlString, request.Description,
-		request.IsPublic, time.Now().Local(), request.ID); err != nil {
+		request.IsPublic, time.Now().Local(), request.Analysis, request.ID); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -832,6 +877,7 @@ func UpdateJudgeProblem(c *gin.Context) {
 // DeleteJudgeProblem godoc
 // @Schemes http
 // @Description 删除判断题（只有管理员和题目创建者可以删除题目）
+// @Tags problem
 // @Param id path int true "判断题ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -843,9 +889,15 @@ func DeleteJudgeProblem(c *gin.Context) {
 	DeleteProblem(c)
 }
 
+type JudgeProblemAnswerResponse struct {
+	IsCorrect bool   `json:"is_correct"`
+	Analysis  string `json:"analysis"`
+}
+
 // GetJudgeProblemAnswer godoc
 // @Schemes http
 // @Description 获取判断题答案
+// @Tags problem
 // @Param id path int true "判断题ID"
 // @Success 200 {string} string "答案"
 // @Failure 403 {string} string "没有权限"
@@ -870,5 +922,8 @@ func GetJudgeProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "判断题不存在")
 		return
 	}
-	c.String(http.StatusOK, strconv.FormatBool(isCorrect))
+	c.JSON(http.StatusOK, JudgeProblemAnswerResponse{
+		IsCorrect: isCorrect,
+		Analysis:  *problem.Analysis,
+	})
 }

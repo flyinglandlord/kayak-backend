@@ -68,9 +68,9 @@ func InitRoute() {
 	global.Router.GET("/problem_set/all", GetProblemSets)
 	problemSet.POST("/create", CreateProblemSet)
 	problemSet.DELETE("/delete/:id", DeleteProblemSet)
-	problemSet.GET("/:id/all_problem", GetProblemsInProblemSet)
-	problemSet.POST("/:id/add", AddProblemToProblemSet)
-	problemSet.DELETE("/:id/remove", RemoveProblemFromProblemSet)
+	problemSet.GET("/all_problem/:id", GetProblemsInProblemSet)
+	problemSet.POST("/add/:id", AddProblemToProblemSet)
+	problemSet.DELETE("/remove/:id", RemoveProblemFromProblemSet)
 	problemSet.POST("/favorite/:id", AddProblemSetToFavorite)
 	problemSet.DELETE("/unfavorite/:id", RemoveProblemSetFromFavorite)
 
@@ -79,6 +79,16 @@ func InitRoute() {
 	noteReview.POST("/add", AddNoteReview)
 	noteReview.DELETE("/remove/:id", RemoveNoteReview)
 	noteReview.GET("/get", GetNoteReviews)
+
+	group := global.Router.Group("/group")
+	group.Use(global.CheckAuth)
+	group.GET("/all", GetGroups)
+	group.POST("/create", CreateGroup)
+	group.GET("/invitation/:id", GetGroupInvitation)
+	group.DELETE("/delete/:id", DeleteGroup)
+	group.GET("/all_user/:id", GetUsersInGroup)
+	group.POST("/add/:id", AddUserToGroup)
+	group.DELETE("/remove/:id", RemoveUserFromGroup)
 
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
