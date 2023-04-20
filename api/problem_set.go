@@ -41,7 +41,7 @@ type AllProblemSetResponse struct {
 // @Schemes http
 // @Description 获取符合filter要求的当前用户视角下的所有题集
 // @Tags problemSet
-// @Param filter query ProblemSetFilter false "题集ID"
+// @Param filter query ProblemSetFilter false "筛选条件"
 // @Success 200 {object} AllProblemSetResponse "题集列表"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"

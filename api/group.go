@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
@@ -8,6 +9,11 @@ import (
 	"time"
 )
 
+type GroupFilter struct {
+	ID      *int `json:"id" form:"id"`
+	UserId  *int `json:"user_id" form:"user_id"`
+	OwnerId *int `json:"owner_id" form:"owner_id"`
+}
 type GroupResponse struct {
 	Id          int       `json:"id"`
 	Name        string    `json:"name"`
@@ -18,6 +24,57 @@ type GroupResponse struct {
 type GroupCreateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+type AllGroupResponse struct {
+	TotalCount int             `json:"total_count"`
+	Group      []GroupResponse `json:"group"`
+}
+
+// GetGroups godoc
+// @Schemes http
+// @Description 获取符合filter要求,并且自己已经在其中的小组列表
+// @Tags group
+// @Param filter query GroupFilter false "筛选条件"
+// @Success 200 {object} AllGroupResponse "小组列表"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure default {string} string "服务器错误"
+// @Router /group/all [get]
+// @Security ApiKeyAuth
+func GetGroups(c *gin.Context) {
+	var filter GroupFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	var groups []model.Group
+	sqlString := `SELECT * FROM "group" WHERE id IN (SELECT group_id FROM group_member WHERE user_id = $1)`
+	if filter.ID != nil {
+		sqlString += fmt.Sprintf(" AND id = %d", *filter.ID)
+	}
+	if filter.UserId != nil {
+		sqlString += fmt.Sprintf(" AND id IN (SELECT group_id FROM group_member WHERE user_id = %d)", *filter.UserId)
+	}
+	if filter.OwnerId != nil {
+		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.OwnerId)
+	}
+	if err := global.Database.Select(&groups, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var groupResponses []GroupResponse
+	for _, group := range groups {
+		groupResponses = append(groupResponses, GroupResponse{
+			Id:          group.Id,
+			Name:        group.Name,
+			Description: group.Description,
+			UserId:      group.UserId,
+			CreatedAt:   group.CreatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, AllGroupResponse{
+		TotalCount: len(groupResponses),
+		Group:      groupResponses,
+	})
 }
 
 // CreateGroup godoc
@@ -39,6 +96,11 @@ func CreateGroup(c *gin.Context) {
 	sqlString := `INSERT INTO "group" (name, description, user_id, created_at) VALUES ($1, $2, $3, $4) RETURNING id`
 	var groupId int
 	if err := global.Database.Get(&groupId, sqlString, request.Name, request.Description, c.GetInt("UserId"), time.Now().Local()); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `INSERT INTO group_member (group_id, user_id) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, groupId, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
