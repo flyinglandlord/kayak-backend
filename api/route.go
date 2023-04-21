@@ -70,6 +70,7 @@ func InitRoute() {
 	problemSet.DELETE("/delete/:id", DeleteProblemSet)
 	problemSet.GET("/all_problem/:id", GetProblemsInProblemSet)
 	problemSet.POST("/add/:id", AddProblemToProblemSet)
+	problemSet.POST("/migrate/:id", MigrateProblemToProblemSet)
 	problemSet.DELETE("/remove/:id", RemoveProblemFromProblemSet)
 	problemSet.POST("/favorite/:id", AddProblemSetToFavorite)
 	problemSet.DELETE("/unfavorite/:id", RemoveProblemSetFromFavorite)

@@ -307,6 +307,107 @@ func AddProblemToProblemSet(c *gin.Context) {
 	c.String(http.StatusOK, "添加成功")
 }
 
+// MigrateProblemToProblemSet godoc
+// @Schemes http
+// @Description 复制题目到题集
+// @Tags problemSet
+// @Param id path int true "题集ID"
+// @Param problem_id query int true "题目ID"
+// @Success 200 {string} string "复制成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "题集不存在"/"题目不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem_set/migrate/{id} [post]
+// @Security ApiKeyAuth
+func MigrateProblemToProblemSet(c *gin.Context) {
+	sqlString := `SELECT user_id FROM problem_set WHERE id = $1`
+	var problemSetUserId int
+	if err := global.Database.Get(&problemSetUserId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "题集不存在")
+		return
+	}
+	if c.GetInt("UserId") != problemSetUserId {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `SELECT * FROM problem_type WHERE id = $1`
+	var problem model.ProblemType
+	if err := global.Database.Get(&problem, sqlString, c.Query("problem_id")); err != nil {
+		c.String(http.StatusNotFound, "题目不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && problem.UserId != c.GetInt("UserId") && !problem.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	tx := global.Database.MustBegin()
+	sqlString = `INSERT INTO problem_type (description, created_at, updated_at, user_id, 
+  		is_public, problem_type_id, analysis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+	if err := global.Database.Get(&problem.ID, sqlString, problem.Description, time.Now().Local(), time.Now().Local(),
+		c.GetInt("UserId"), problem.IsPublic, problem.ProblemTypeId, problem.Analysis); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `INSERT INTO problem_in_problem_set (problem_set_id, problem_id) VALUES ($1, $2)`
+	if _, err := global.Database.Exec(sqlString, c.Param("id"), problem.ID); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if problem.ProblemTypeId == ChoiceProblemType {
+		var choices []model.ProblemChoice
+		sqlString = `SELECT * FROM problem_choice WHERE id = $1`
+		if err := global.Database.Select(&choices, sqlString, c.Query("problem_id")); err != nil {
+			_ = tx.Rollback()
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		for _, choice := range choices {
+			sqlString = `INSERT INTO problem_choice (id, choice, description, is_correct) VALUES ($1, $2, $3, $4)`
+			if _, err := global.Database.Exec(sqlString, problem.ID, choice.Choice, choice.Description, choice.IsCorrect); err != nil {
+				_ = tx.Rollback()
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+		}
+	} else if problem.ProblemTypeId == BlankProblemType {
+		var answer model.ProblemAnswer
+		sqlString = `SELECT * FROM problem_answer WHERE id = $1`
+		if err := global.Database.Get(&answer, sqlString, c.Query("problem_id")); err != nil {
+			_ = tx.Rollback()
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `INSERT INTO problem_answer (id, answer) VALUES ($1, $2)`
+		if _, err := global.Database.Exec(sqlString, problem.ID, answer.Answer); err != nil {
+			_ = tx.Rollback()
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+	} else if problem.ProblemTypeId == JudgeProblemType {
+		var judge model.ProblemJudge
+		sqlString = `SELECT * FROM problem_judge WHERE id = $1`
+		if err := global.Database.Get(&judge, sqlString, c.Query("problem_id")); err != nil {
+			_ = tx.Rollback()
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `INSERT INTO problem_judge (id, is_correct) VALUES ($1, $2)`
+		if _, err := global.Database.Exec(sqlString, problem.ID, judge.IsCorrect); err != nil {
+			_ = tx.Rollback()
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "添加成功")
+}
+
 // RemoveProblemFromProblemSet godoc
 // @Schemes http
 // @Description 从题集中移除题目（只有管理员或者同时为题集的创建者和题目的创建者可以移除题目）
