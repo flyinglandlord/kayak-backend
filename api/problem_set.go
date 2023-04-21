@@ -77,7 +77,7 @@ func GetProblemSets(c *gin.Context) {
 		}
 	}
 	if filter.Contain != nil {
-		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problemset WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
+		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
 	}
 	var problemSets []model.ProblemSet
 	if err := global.Database.Select(&problemSets, sqlString); err != nil {
