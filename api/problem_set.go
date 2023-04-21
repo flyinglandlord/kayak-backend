@@ -179,6 +179,7 @@ type ProblemInProblemSetFilter struct {
 }
 type ProblemResponse struct {
 	ID            int       `json:"id"`
+	Description   string    `json:"description"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 	UserId        int       `json:"user_id"`
@@ -249,6 +250,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 		}
 		problemResponses = append(problemResponses, ProblemResponse{
 			ID:            problem.ID,
+			Description:   problem.Description,
 			CreatedAt:     problem.CreatedAt,
 			UpdatedAt:     problem.UpdatedAt,
 			UserId:        problem.UserId,
