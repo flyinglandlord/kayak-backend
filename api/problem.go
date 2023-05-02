@@ -40,6 +40,9 @@ type ProblemFilter struct {
 	ID         *int  `json:"id" form:"id"`
 	UserId     *int  `json:"user_id" form:"user_id"`
 	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
+	IsWrong    *bool `json:"is_wrong" form:"is_wrong"`
+	Offset     *int  `json:"offset" form:"offset"`
+	Limit      *int  `json:"limit" form:"limit"`
 }
 type ChoiceProblemResponse struct {
 	ID            int       `json:"id"`
@@ -116,6 +119,12 @@ func GetChoiceProblems(c *gin.Context) {
 			sqlString += ` AND id NOT IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		}
 	}
+	if filter.Limit != nil {
+		sqlString += ` LIMIT ` + strconv.Itoa(*filter.Limit)
+	}
+	if filter.Offset != nil {
+		sqlString += ` OFFSET ` + strconv.Itoa(*filter.Offset)
+	}
 	var choiceProblems []model.ProblemType
 	if err := global.Database.Select(&choiceProblems, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -153,6 +162,19 @@ func GetChoiceProblems(c *gin.Context) {
 		if err := global.Database.Get(&favoriteCount, sqlString, problem.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
+		}
+		if filter.IsWrong != nil {
+			if *filter.IsWrong {
+				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+				var count int
+				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
+					c.String(http.StatusInternalServerError, "服务器错误")
+					return
+				}
+				if count == 0 {
+					continue
+				}
+			}
 		}
 		choiceProblemResponses = append(choiceProblemResponses, ChoiceProblemResponse{
 			ID:            problem.ID,
@@ -446,6 +468,12 @@ func GetBlankProblems(c *gin.Context) {
 			sqlString += ` AND id NOT IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		}
 	}
+	if filter.Limit != nil {
+		sqlString += ` LIMIT ` + strconv.Itoa(*filter.Limit)
+	}
+	if filter.Offset != nil {
+		sqlString += ` OFFSET ` + strconv.Itoa(*filter.Offset)
+	}
 	var blankProblems []model.ProblemType
 	if err := global.Database.Select(&blankProblems, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -464,6 +492,19 @@ func GetBlankProblems(c *gin.Context) {
 		if err := global.Database.Get(&favoriteCount, sqlString, blankProblem.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
+		}
+		if filter.IsWrong != nil {
+			if *filter.IsWrong {
+				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+				var count int
+				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), blankProblem.ID); err != nil {
+					c.String(http.StatusInternalServerError, "服务器错误")
+					return
+				}
+				if count == 0 {
+					continue
+				}
+			}
 		}
 		blankProblemResponses = append(blankProblemResponses, BlankProblemResponse{
 			ID:            blankProblem.ID,
@@ -719,32 +760,51 @@ func GetJudgeProblems(c *gin.Context) {
 			sqlString += ` AND id NOT IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		}
 	}
+	if filter.Limit != nil {
+		sqlString += ` LIMIT ` + strconv.Itoa(*filter.Limit)
+	}
+	if filter.Offset != nil {
+		sqlString += ` OFFSET ` + strconv.Itoa(*filter.Offset)
+	}
 	var judgeProblems []model.ProblemType
 	if err := global.Database.Select(&judgeProblems, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var judgeProblemResponses []JudgeProblemResponse
-	for _, blankProblem := range judgeProblems {
+	for _, judgeProblem := range judgeProblems {
 		var isFavorite int
 		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE user_id = $1 AND problem_id = $2`
-		if err := global.Database.Get(&isFavorite, sqlString, c.GetInt("UserId"), blankProblem.ID); err != nil {
+		if err := global.Database.Get(&isFavorite, sqlString, c.GetInt("UserId"), judgeProblem.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
 		var favoriteCount int
 		sqlString = `SELECT COUNT(*) FROM user_favorite_problem WHERE problem_id = $1`
-		if err := global.Database.Get(&favoriteCount, sqlString, blankProblem.ID); err != nil {
+		if err := global.Database.Get(&favoriteCount, sqlString, judgeProblem.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		if filter.IsWrong != nil {
+			if *filter.IsWrong {
+				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+				var count int
+				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), judgeProblem.ID); err != nil {
+					c.String(http.StatusInternalServerError, "服务器错误")
+					return
+				}
+				if count == 0 {
+					continue
+				}
+			}
+		}
 		judgeProblemResponses = append(judgeProblemResponses, JudgeProblemResponse{
-			ID:            blankProblem.ID,
-			Description:   blankProblem.Description,
-			CreatedAt:     blankProblem.CreatedAt,
-			UpdatedAt:     blankProblem.UpdatedAt,
-			UserId:        blankProblem.UserId,
-			IsPublic:      blankProblem.IsPublic,
+			ID:            judgeProblem.ID,
+			Description:   judgeProblem.Description,
+			CreatedAt:     judgeProblem.CreatedAt,
+			UpdatedAt:     judgeProblem.UpdatedAt,
+			UserId:        judgeProblem.UserId,
+			IsPublic:      judgeProblem.IsPublic,
 			IsFavorite:    isFavorite > 0,
 			FavoriteCount: favoriteCount,
 		})

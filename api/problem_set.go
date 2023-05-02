@@ -6,6 +6,7 @@ import (
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -176,6 +177,9 @@ func CreateProblemSet(c *gin.Context) {
 type ProblemInProblemSetFilter struct {
 	IsFavorite    *bool `json:"is_favorite"`
 	ProblemTypeId *int  `json:"problem_type_id"`
+	IsWrong       *bool `json:"is_wrong"`
+	Offset        *int  `json:"offset" form:"offset"`
+	Limit         *int  `json:"limit" form:"limit"`
 }
 type ProblemResponse struct {
 	ID            int       `json:"id"`
@@ -229,6 +233,12 @@ func GetProblemsInProblemSet(c *gin.Context) {
 	if filter.ProblemTypeId != nil {
 		sqlString += fmt.Sprintf(" AND problem_type_id = %d", *filter.ProblemTypeId)
 	}
+	if filter.Limit != nil {
+		sqlString += ` LIMIT ` + strconv.Itoa(*filter.Limit)
+	}
+	if filter.Offset != nil {
+		sqlString += ` OFFSET ` + strconv.Itoa(*filter.Offset)
+	}
 	var problems []model.ProblemType
 	if err := global.Database.Select(&problems, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -247,6 +257,19 @@ func GetProblemsInProblemSet(c *gin.Context) {
 		if err := global.Database.Get(&favoriteCount, sqlString, problem.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
+		}
+		if filter.IsWrong != nil {
+			if *filter.IsWrong {
+				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+				var count int
+				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
+					c.String(http.StatusInternalServerError, "服务器错误")
+					return
+				}
+				if count == 0 {
+					continue
+				}
+			}
 		}
 		problemResponses = append(problemResponses, ProblemResponse{
 			ID:            problem.ID,

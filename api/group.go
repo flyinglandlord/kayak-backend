@@ -20,7 +20,7 @@ type GroupResponse struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Invitation  string    `json:"invitation"`
-	UserId      int       `json:"user_id"`
+	UserId      int       `json:"owner_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 type GroupCreateRequest struct {
