@@ -72,7 +72,7 @@ func GetUserInfo(c *gin.Context) {
 }
 
 type UserInfoRequest struct {
-	Name       string  `json:"name"`
+	Name       *string `json:"name"`
 	Email      *string `json:"email"`
 	Phone      *string `json:"phone"`
 	AvatarPath *string `json:"avatar_path"`
@@ -108,6 +108,9 @@ func UpdateUserInfo(c *gin.Context) {
 	}
 	if user.Phone == nil {
 		user.Phone = formerUserInfo.Phone
+	}
+	if user.Name == nil {
+		user.Name = &formerUserInfo.Name
 	}
 	sqlString = `UPDATE "user" SET name = $1, email = $2, phone = $3, avatar_url = $4 WHERE id = $5`
 	if _, err := global.Database.Exec(sqlString, user.Name, user.Email, user.Phone, user.AvatarPath, c.GetInt("UserId")); err != nil {

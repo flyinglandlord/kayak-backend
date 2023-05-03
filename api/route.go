@@ -36,6 +36,7 @@ func InitRoute() {
 	wrongRecord.Use(global.CheckAuth)
 	wrongRecord.POST("/create/:id", CreateWrongRecord)
 	wrongRecord.DELETE("/delete/:id", DeleteWrongRecord)
+	wrongRecord.GET("/get/:id", GetWrongRecord)
 
 	problem := global.Router.Group("/problem")
 	problem.Use(global.CheckAuth)

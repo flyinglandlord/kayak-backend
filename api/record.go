@@ -67,3 +67,34 @@ func DeleteWrongRecord(c *gin.Context) {
 	}
 	c.String(http.StatusOK, "删除成功")
 }
+
+// GetWrongRecord godoc
+// @Schemes http
+// @Description 获取错题记录
+// @Tags wrongRecord
+// @Param id path int true "题目ID"
+// @Success 200 {object} AllWrongRecordResponse "获取成功"
+// @Failure default {string} string "服务器错误"
+// @Router /wrong_record/get/{id} [get]
+// @Security ApiKeyAuth
+func GetWrongRecord(c *gin.Context) {
+	var wrongRecord []model.WrongRecord
+	sqlString := `SELECT * FROM user_wrong_record WHERE problem_id = $1 ORDER BY updated_at DESC`
+	if err := global.Database.Select(&wrongRecord, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var records []WrongRecordResponse
+	for _, record := range wrongRecord {
+		records = append(records, WrongRecordResponse{
+			ProblemId: record.ProblemId,
+			Count:     record.Count,
+			CreatedAt: record.CreatedAt,
+			UpdatedAt: record.UpdatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, AllWrongRecordResponse{
+		TotalCount: len(records),
+		Records:    records,
+	})
+}
