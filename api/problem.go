@@ -982,6 +982,13 @@ func GetJudgeProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "判断题不存在")
 		return
 	}
+	if problem.Analysis == nil {
+		c.JSON(http.StatusOK, JudgeProblemAnswerResponse{
+			IsCorrect: isCorrect,
+			Analysis:  "",
+		})
+		return
+	}
 	c.JSON(http.StatusOK, JudgeProblemAnswerResponse{
 		IsCorrect: isCorrect,
 		Analysis:  *problem.Analysis,
