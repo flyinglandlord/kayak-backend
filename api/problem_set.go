@@ -34,7 +34,7 @@ type ProblemSetRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsPublic    bool   `json:"is_public"`
-	GroupId     int    `json:"group_id"`
+	GroupId     *int   `json:"group_id"`
 }
 type AllProblemSetResponse struct {
 	TotalCount int                  `json:"total_count"`
@@ -150,6 +150,10 @@ func CreateProblemSet(c *gin.Context) {
 	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	var problemSetId int
+	if request.GroupId == nil {
+		request.GroupId = new(int)
+		*request.GroupId = 0
+	}
 	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description,
 		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), request.IsPublic, request.GroupId); err != nil {
 		_ = tx.Rollback()
