@@ -13,6 +13,7 @@ import (
 type ProblemSetFilter struct {
 	ID         *int  `json:"id" form:"id"`
 	UserId     *int  `json:"user_id" form:"user_id"`
+	GroupId    *int  `json:"group_id" form:"group_id"`
 	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
 	Contain    *int  `json:"contain" form:"contain"`
 }
@@ -27,11 +28,13 @@ type ProblemSetResponse struct {
 	FavoriteCount int       `json:"favorite_count" db:"favorite_count"`
 	UserId        int       `json:"user_id" db:"user_id"`
 	IsPublic      bool      `json:"is_public" db:"is_public"`
+	GroupId       int       `json:"group_id" db:"group_id"`
 }
 type ProblemSetRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsPublic    bool   `json:"is_public"`
+	GroupId     int    `json:"group_id"`
 }
 type AllProblemSetResponse struct {
 	TotalCount int                  `json:"total_count"`
@@ -80,6 +83,9 @@ func GetProblemSets(c *gin.Context) {
 	if filter.Contain != nil {
 		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
 	}
+	if filter.GroupId != nil {
+		sqlString += ` AND group_id = ` + fmt.Sprintf("%d", *filter.GroupId)
+	}
 	var problemSets []model.ProblemSet
 	if err := global.Database.Select(&problemSets, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -116,6 +122,7 @@ func GetProblemSets(c *gin.Context) {
 			FavoriteCount: favoriteCount,
 			UserId:        problemSet.UserId,
 			IsPublic:      problemSet.IsPublic,
+			GroupId:       problemSet.GroupId,
 		})
 	}
 	c.JSON(http.StatusOK, AllProblemSetResponse{
@@ -140,11 +147,11 @@ func CreateProblemSet(c *gin.Context) {
 		return
 	}
 	tx := global.Database.MustBegin()
-	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public) 
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	var problemSetId int
 	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description,
-		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), request.IsPublic); err != nil {
+		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), request.IsPublic, request.GroupId); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
