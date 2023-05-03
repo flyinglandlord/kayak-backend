@@ -182,16 +182,17 @@ func GetChoiceProblems(c *gin.Context) {
 			return
 		}
 		if filter.IsWrong != nil {
-			if *filter.IsWrong {
-				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
-				var count int
-				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
-					c.String(http.StatusInternalServerError, "服务器错误")
-					return
-				}
-				if count == 0 {
-					continue
-				}
+			sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+			var count int
+			if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+			if *filter.IsWrong && count == 0 {
+				continue
+			}
+			if !(*filter.IsWrong) && count > 0 {
+				continue
 			}
 		}
 		choiceProblemResponses = append(choiceProblemResponses, ChoiceProblemResponse{
@@ -512,16 +513,17 @@ func GetBlankProblems(c *gin.Context) {
 			return
 		}
 		if filter.IsWrong != nil {
-			if *filter.IsWrong {
-				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
-				var count int
-				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), blankProblem.ID); err != nil {
-					c.String(http.StatusInternalServerError, "服务器错误")
-					return
-				}
-				if count == 0 {
-					continue
-				}
+			sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+			var count int
+			if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), blankProblem.ID); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+			if *filter.IsWrong && count == 0 {
+				continue
+			}
+			if !(*filter.IsWrong) && count > 0 {
+				continue
 			}
 		}
 		blankProblemResponses = append(blankProblemResponses, BlankProblemResponse{
@@ -804,16 +806,17 @@ func GetJudgeProblems(c *gin.Context) {
 			return
 		}
 		if filter.IsWrong != nil {
-			if *filter.IsWrong {
-				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
-				var count int
-				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), judgeProblem.ID); err != nil {
-					c.String(http.StatusInternalServerError, "服务器错误")
-					return
-				}
-				if count == 0 {
-					continue
-				}
+			sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+			var count int
+			if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), judgeProblem.ID); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+			if *filter.IsWrong && count == 0 {
+				continue
+			}
+			if !(*filter.IsWrong) && count > 0 {
+				continue
 			}
 		}
 		judgeProblemResponses = append(judgeProblemResponses, JudgeProblemResponse{

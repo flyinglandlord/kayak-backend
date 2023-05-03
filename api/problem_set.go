@@ -175,9 +175,9 @@ func CreateProblemSet(c *gin.Context) {
 }
 
 type ProblemInProblemSetFilter struct {
-	IsFavorite    *bool `json:"is_favorite"`
-	ProblemTypeId *int  `json:"problem_type_id"`
-	IsWrong       *bool `json:"is_wrong"`
+	IsFavorite    *bool `json:"is_favorite" form:"is_favorite"`
+	ProblemTypeId *int  `json:"problem_type_id" form:"problem_type_id"`
+	IsWrong       *bool `json:"is_wrong" form:"is_wrong"`
 	Offset        *int  `json:"offset" form:"offset"`
 	Limit         *int  `json:"limit" form:"limit"`
 }
@@ -259,16 +259,17 @@ func GetProblemsInProblemSet(c *gin.Context) {
 			return
 		}
 		if filter.IsWrong != nil {
-			if *filter.IsWrong {
-				sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
-				var count int
-				if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
-					c.String(http.StatusInternalServerError, "服务器错误")
-					return
-				}
-				if count == 0 {
-					continue
-				}
+			sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
+			var count int
+			if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+			if *filter.IsWrong && count == 0 {
+				continue
+			}
+			if !(*filter.IsWrong) && count > 0 {
+				continue
 			}
 		}
 		problemResponses = append(problemResponses, ProblemResponse{
