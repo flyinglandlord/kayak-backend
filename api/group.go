@@ -357,3 +357,45 @@ func QuitGroup(c *gin.Context) {
 	}
 	c.String(http.StatusOK, "退出成功")
 }
+
+type EditGroupInfoRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Invitation  string `json:"invitation"`
+}
+
+// UpdateGroupInfo godoc
+// @Schemes http
+// @Description 编辑小组信息
+// @Tags group
+// @Param id path int true "小组ID"
+// @Param group body EditGroupInfoRequest true "编辑信息，如果希望不改变的字段传入原值"
+// @Success 200 {string} string "编辑成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/update/{id} [put]
+// @Security ApiKeyAuth
+func UpdateGroupInfo(c *gin.Context) {
+	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
+	var userId int
+	if err := global.Database.Get(&userId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); userId != c.GetInt("UserId") && role != global.ADMIN {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	var request EditGroupInfoRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	sqlString = `UPDATE "group" SET name = $1, description = $2, invitation = $3 WHERE id = $4`
+	if _, err := global.Database.Exec(sqlString, request.Name, request.Description, request.Invitation, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "编辑成功")
+}

@@ -91,6 +91,7 @@ func InitRoute() {
 	group.POST("/add/:id", AddUserToGroup)
 	group.DELETE("/remove/:id", RemoveUserFromGroup)
 	group.DELETE("/quit/:id", QuitGroup)
+	group.PUT("/update/:id", UpdateGroupInfo)
 
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
