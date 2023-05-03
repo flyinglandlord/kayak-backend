@@ -9,6 +9,11 @@ func InitRoute() {
 	global.Router.POST("/register", Register)
 	global.Router.POST("/reset-password", ResetPassword)
 
+	special := global.Router.Group("/special")
+	special.Use(global.CheckAuth)
+	special.GET("/wrong_problem_set", GetWrongProblemSet)
+	special.GET("/favorite_problem_set", GetFavoriteProblemSet)
+
 	user := global.Router.Group("/user")
 	user.Use(global.CheckAuth)
 	user.GET("/info", GetUserInfo)
