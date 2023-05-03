@@ -174,8 +174,27 @@ func DeleteGroup(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	tx := global.Database.MustBegin()
+	// 删除小组成员关系
+	sqlString = `DELETE FROM group_member WHERE group_id = $1`
+	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
+		if err := tx.Rollback(); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
 	sqlString = `DELETE FROM "group" WHERE id = $1`
-	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
+		if err := tx.Rollback(); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -294,4 +313,47 @@ func RemoveUserFromGroup(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "移除成功")
+}
+
+// QuitGroup godoc
+// @Schemes http
+// @Description 退出小组
+// @Tags group
+// @Param id path int true "小组ID"
+// @Success 200 {string} string "退出成功"
+// @Failure 404 {string} string "小组不存在或用户未加入此小组"
+// @Failure 403 {string} string "创建者不能退出创建的小组"
+// @Failure default {string} string "服务器错误"
+// @Router /group/quit/{id} [delete]
+// @Security ApiKeyAuth
+func QuitGroup(c *gin.Context) {
+	userId := c.GetInt("UserId")
+	groupId := c.Param("id")
+	sqlString := `SELECT count(*) FROM "group_member" WHERE user_id = $1 AND group_id = $2`
+	var count int
+	if err := global.Database.Get(&count, sqlString, userId, groupId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count == 0 {
+		c.String(http.StatusNotFound, "小组不存在或用户未加入此小组")
+		return
+	}
+	// 如果是创建者，自己不能退出
+	sqlString = `SELECT user_id FROM "group" WHERE id = $1`
+	var groupUserId int
+	if err := global.Database.Get(&groupUserId, sqlString, groupId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupUserId == userId {
+		c.String(http.StatusForbidden, "创建者不能退出创建的小组")
+		return
+	}
+	sqlString = `DELETE FROM group_member WHERE user_id = $1 AND group_id = $2`
+	if _, err := global.Database.Exec(sqlString, userId, groupId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "退出成功")
 }
