@@ -188,3 +188,67 @@ func GetNoteReviews(c *gin.Context) {
 		NoteReviews: reviewResponses,
 	})
 }
+
+// LikeNoteReview godoc
+// @Schemes http
+// @Description 点赞评论
+// @Tags noteReview
+// @Param id path int true "评论id"
+// @Success 200 {string} string "点赞成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "评论不存在/评论所属的笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note_review/like/{id} [post]
+// @Security ApiKeyAuth
+func LikeNoteReview(c *gin.Context) {
+	sqlString := `SELECT * FROM note_review WHERE id = $1`
+	var noteReview model.NoteReview
+	if err := global.Database.Get(&noteReview, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "评论不存在")
+		return
+	}
+	sqlString = `SELECT * FROM note WHERE id = $1`
+	var note model.Note
+	if err := global.Database.Get(&note, sqlString, noteReview.NoteId); err != nil {
+		c.String(http.StatusNotFound, "评论所属的笔记不存在")
+		return
+	}
+	sqlString = `INSERT INTO user_like_note_review (user_id, note_review_id, created_at) VALUES ($1, $2, now())`
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "点赞成功")
+}
+
+// UnlikeNoteReview godoc
+// @Schemes http
+// @Description 取消点赞评论
+// @Tags noteReview
+// @Param id path int true "评论id"
+// @Success 200 {string} string "取消点赞成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "评论不存在/评论所属的笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note_review/unlike/{id} [post]
+// @Security ApiKeyAuth
+func UnlikeNoteReview(c *gin.Context) {
+	sqlString := `SELECT * FROM note_review WHERE id = $1`
+	var noteReview model.NoteReview
+	if err := global.Database.Get(&noteReview, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "评论不存在")
+		return
+	}
+	sqlString = `SELECT * FROM note WHERE id = $1`
+	var note model.Note
+	if err := global.Database.Get(&note, sqlString, noteReview.NoteId); err != nil {
+		c.String(http.StatusNotFound, "评论所属的笔记不存在")
+		return
+	}
+	sqlString = `DELETE FROM user_like_note_review WHERE user_id = $1 AND note_review_id = $2`
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "取消点赞成功")
+}

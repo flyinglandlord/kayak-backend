@@ -81,6 +81,8 @@ func InitRoute() {
 	noteReview.POST("/add", AddNoteReview)
 	noteReview.DELETE("/remove/:id", RemoveNoteReview)
 	noteReview.GET("/get", GetNoteReviews)
+	noteReview.POST("/like/:id", LikeNoteReview)
+	noteReview.POST("/unlike/:id", UnlikeNoteReview)
 
 	group := global.Router.Group("/group")
 	group.Use(global.CheckAuth)
