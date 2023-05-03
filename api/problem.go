@@ -28,8 +28,26 @@ func DeleteProblem(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	tx := global.Database.MustBegin()
+	sqlString = `DELETE FROM problem_in_problem_set WHERE problem_id = $1`
+	if _, err := tx.Exec(sqlString, problemId); err != nil {
+		if err := tx.Rollback(); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
 	sqlString = `DELETE FROM problem_type WHERE id = $1`
-	if _, err := global.Database.Exec(sqlString, problemId); err != nil {
+	if _, err := tx.Exec(sqlString, problemId); err != nil {
+		if err := tx.Rollback(); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -980,6 +998,13 @@ func GetJudgeProblemAnswer(c *gin.Context) {
 	var isCorrect bool
 	if err := global.Database.Get(&isCorrect, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "判断题不存在")
+		return
+	}
+	if problem.Analysis == nil {
+		c.JSON(http.StatusOK, JudgeProblemAnswerResponse{
+			IsCorrect: isCorrect,
+			Analysis:  "",
+		})
 		return
 	}
 	c.JSON(http.StatusOK, JudgeProblemAnswerResponse{

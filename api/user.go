@@ -72,9 +72,10 @@ func GetUserInfo(c *gin.Context) {
 }
 
 type UserInfoRequest struct {
-	Name  string  `json:"name"`
-	Email *string `json:"email"`
-	Phone *string `json:"phone"`
+	Name       *string `json:"name"`
+	Email      *string `json:"email"`
+	Phone      *string `json:"phone"`
+	AvatarPath *string `json:"avatar_path"`
 }
 
 // UpdateUserInfo godoc
@@ -89,12 +90,30 @@ type UserInfoRequest struct {
 // @Security ApiKeyAuth
 func UpdateUserInfo(c *gin.Context) {
 	user := UserInfoRequest{}
-	sqlString := `UPDATE "user" SET name = $1, email = $2, phone = $3 WHERE id = $4`
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.String(http.StatusBadRequest, "请求格式错误")
 		return
 	}
-	if _, err := global.Database.Exec(sqlString, user.Name, user.Email, user.Phone, c.GetInt("UserId")); err != nil {
+	sqlString := `SELECT name, email, phone, avatar_url FROM "user" WHERE id = $1`
+	formerUserInfo := model.User{}
+	if err := global.Database.Get(&formerUserInfo, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if user.AvatarPath == nil {
+		user.AvatarPath = &formerUserInfo.AvatarURL
+	}
+	if user.Email == nil {
+		user.Email = formerUserInfo.Email
+	}
+	if user.Phone == nil {
+		user.Phone = formerUserInfo.Phone
+	}
+	if user.Name == nil {
+		user.Name = &formerUserInfo.Name
+	}
+	sqlString = `UPDATE "user" SET name = $1, email = $2, phone = $3, avatar_url = $4 WHERE id = $5`
+	if _, err := global.Database.Exec(sqlString, user.Name, user.Email, user.Phone, user.AvatarPath, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
