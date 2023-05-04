@@ -15,6 +15,9 @@ type NoteFilter struct {
 	UserId     *int  `json:"user_id" form:"user_id"`
 	IsLiked    *bool `json:"is_liked" form:"is_liked"`
 	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
+	Offset     *int  `json:"offset" form:"offset"`
+	Limit      *int  `json:"limit" form:"limit"`
+	SortByLike *bool `json:"sort_by_like" form:"sort_by_like"`
 }
 type NoteResponse struct {
 	ID            int       `json:"id" db:"id"`
@@ -55,7 +58,7 @@ type NoteUpdateRequest struct {
 // @Router /note/all [get]
 // @Security ApiKeyAuth
 func GetNotes(c *gin.Context) {
-	sqlString := `SELECT * FROM note`
+	sqlString := `SELECT note.*, count(id) like_count FROM note, user_like_note WHERE note.id = user_like_note.note_id group by id`
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
 		sqlString += ` WHERE is_public = true`
@@ -88,6 +91,19 @@ func GetNotes(c *gin.Context) {
 	}
 	if filter.UserId != nil {
 		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
+	}
+	if filter.SortByLike != nil {
+		if *filter.SortByLike {
+			sqlString += ` ORDER BY like_count DESC`
+		} else {
+			sqlString += ` ORDER BY created_at DESC`
+		}
+	}
+	if filter.Limit != nil {
+		sqlString += ` LIMIT ` + strconv.Itoa(*filter.Limit)
+	}
+	if filter.Offset != nil {
+		sqlString += ` OFFSET ` + strconv.Itoa(*filter.Offset)
 	}
 	var notes []model.Note
 	if err := global.Database.Select(&notes, sqlString); err != nil {
