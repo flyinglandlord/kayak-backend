@@ -58,14 +58,22 @@ type NoteUpdateRequest struct {
 // @Router /note/all [get]
 // @Security ApiKeyAuth
 func GetNotes(c *gin.Context) {
-	sqlString := `SELECT note.*, count(id) like_count FROM note, user_like_note WHERE note.id = user_like_note.note_id`
+	sqlString := `SELECT note_table.id as id, title, content, user_id, created_at, updated_at, COALESCE(like_count,0) as like_count
+		FROM (
+			(SELECT * FROM note) as note_table
+			LEFT JOIN
+			(SELECT note.id, count(note.id) like_count
+			FROM note, user_like_note
+			WHERE note.id = user_like_note.note_id group by note.id) as like_count_table
+			ON note_table.id = like_count_table.id
+		)`
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString += ` AND is_public = true`
+		sqlString += ` WHERE is_public = true`
 	} else if role == global.USER {
-		sqlString += ` AND (is_public = true OR note.user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+		sqlString += ` WHERE (is_public = true OR user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 	} else {
-		sqlString += ` AND 1 = 1`
+		sqlString += ` WHERE 1 = 1`
 	}
 	var filter NoteFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
@@ -73,13 +81,13 @@ func GetNotes(c *gin.Context) {
 		return
 	}
 	if filter.ID != nil {
-		sqlString += ` AND id = ` + strconv.Itoa(*filter.ID)
+		sqlString += ` AND note_table.id = ` + strconv.Itoa(*filter.ID)
 	}
 	if filter.IsLiked != nil {
 		if *filter.IsLiked {
-			sqlString += ` AND id IN (SELECT note_id FROM user_like_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+			sqlString += ` AND note_table.id IN (SELECT note_id FROM user_like_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		} else {
-			sqlString += ` AND id NOT IN (SELECT note_id FROM user_like_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+			sqlString += ` AND note_table.id NOT IN (SELECT note_id FROM user_like_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		}
 	}
 	if filter.IsFavorite != nil {
@@ -92,7 +100,6 @@ func GetNotes(c *gin.Context) {
 	if filter.UserId != nil {
 		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
 	}
-	sqlString += ` group by id`
 	if filter.SortByLike != nil {
 		if *filter.SortByLike {
 			sqlString += ` ORDER BY like_count DESC`
