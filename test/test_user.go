@@ -1,12 +1,10 @@
 package test
 
 import (
-	"fmt"
 	"github.com/go-playground/assert/v2"
 	"kayak-backend/api"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func testUserInfo(t *testing.T) {
@@ -21,8 +19,8 @@ func testUserInfo(t *testing.T) {
 	token := loginRes.Token
 	userInfoRes := api.UserInfoResponse{}
 	code = Get("/user/info", token, map[string][]string{}, &userInfoRes)
-	fmt.Println(time.Now().Local())
-	fmt.Println(userInfoRes.CreateAt)
+	//fmt.Println(time.Now().Local())
+	//fmt.Println(userInfoRes.CreateAt)
 	assert.Equal(t, code, http.StatusOK)
 	assert.Equal(t, userInfoRes.UserId, 5)
 	assert.Equal(t, userInfoRes.UserName, initUser[4].Name)

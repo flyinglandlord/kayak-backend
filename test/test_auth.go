@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"github.com/go-playground/assert/v2"
 	"kayak-backend/api"
 	"net/http"
@@ -82,6 +81,5 @@ func testLogout(t *testing.T) {
 	var result string
 	code = Get("/logout", res.Token, nil, &result)
 	assert.Equal(t, code, http.StatusOK)
-	fmt.Println(result)
 	//assert.Equal(t, result, "退出成功")
 }
