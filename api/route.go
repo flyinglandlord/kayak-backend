@@ -76,6 +76,7 @@ func InitRoute() {
 	problemSet.Use(global.CheckAuth)
 	global.Router.GET("/problem_set/all", GetProblemSets)
 	problemSet.POST("/create", CreateProblemSet)
+	problemSet.PUT("/update", UpdateProblemSet)
 	problemSet.DELETE("/delete/:id", DeleteProblemSet)
 	problemSet.GET("/all_problem/:id", GetProblemsInProblemSet)
 	problemSet.POST("/add/:id", AddProblemToProblemSet)

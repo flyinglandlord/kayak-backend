@@ -30,7 +30,7 @@ type ProblemSetResponse struct {
 	IsPublic      bool      `json:"is_public" db:"is_public"`
 	GroupId       int       `json:"group_id" db:"group_id"`
 }
-type ProblemSetRequest struct {
+type ProblemSetCreateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsPublic    bool   `json:"is_public"`
@@ -39,6 +39,13 @@ type ProblemSetRequest struct {
 type AllProblemSetResponse struct {
 	TotalCount int                  `json:"total_count"`
 	ProblemSet []ProblemSetResponse `json:"problem_set"`
+}
+type ProblemSetUpdateRequest struct {
+	ID          int     `json:"id"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	IsPublic    *bool   `json:"is_public"`
+	GroupId     *int    `json:"group_id"`
 }
 
 // GetProblemSets godoc
@@ -135,14 +142,14 @@ func GetProblemSets(c *gin.Context) {
 // @Schemes http
 // @Description 创建题集
 // @Tags problemSet
-// @Param problem_set body ProblemSetRequest true "题集信息"
+// @Param problem_set body ProblemSetCreateRequest true "题集信息"
 // @Success 200 {object} ProblemSetResponse "题集信息"
-// @Failure 400 {string} string "Json格式错误"
+// @Failure 400 {string} string "请求错误"
 // @Failure default {string} string "服务器错误"
 // @Router /problem_set/create [post]
 // @Security ApiKeyAuth
 func CreateProblemSet(c *gin.Context) {
-	var request ProblemSetRequest
+	var request ProblemSetCreateRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return
@@ -185,6 +192,54 @@ func CreateProblemSet(c *gin.Context) {
 		IsPublic:      problemSet.IsPublic,
 		GroupId:       problemSet.GroupId,
 	})
+}
+
+// UpdateProblemSet godoc
+// @Schemes http
+// @Description 更新题集(只需传需要更改的)
+// @Tags problemSet
+// @Param problem_set body ProblemSetUpdateRequest true "题集信息"
+// @Success 200 {object} string "更新成功"
+// @Failure 400 {string} string "请求错误"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "题集不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /problem_set/update [put]
+// @Security ApiKeyAuth
+func UpdateProblemSet(c *gin.Context) {
+	var request ProblemSetUpdateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.String(http.StatusBadRequest, "请求错误")
+		return
+	}
+	var problemSet model.ProblemSet
+	sqlString := `SELECT * FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&problemSet, sqlString, request.ID); err != nil {
+		c.String(http.StatusNotFound, "题集不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && problemSet.UserId != c.GetInt("UserId") {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	if request.Name == nil {
+		request.Name = &problemSet.Name
+	}
+	if request.Description == nil {
+		request.Description = &problemSet.Description
+	}
+	if request.IsPublic == nil {
+		request.IsPublic = &problemSet.IsPublic
+	}
+	if request.GroupId == nil {
+		request.GroupId = &problemSet.GroupId
+	}
+	sqlString = `UPDATE problem_set SET name = $1, description = $2, updated_at = $3, is_public = $4, group_id = $5 WHERE id = $6`
+	if _, err := global.Database.Exec(sqlString, request.Name, request.Description, time.Now().Local(), request.IsPublic, request.GroupId, request.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "更新成功")
 }
 
 type ProblemInProblemSetFilter struct {
