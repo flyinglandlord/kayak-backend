@@ -3,9 +3,9 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"kayak-backend/global"
 	"kayak-backend/model"
+	"kayak-backend/utils"
 	"net/http"
 	"time"
 )
@@ -98,7 +98,7 @@ func CreateGroup(c *gin.Context) {
 	sqlString := `INSERT INTO "group" (name, description, invitation, user_id, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	var groupId int
 	if err := global.Database.Get(&groupId, sqlString, request.Name, request.Description,
-		uuid.New().String(), c.GetInt("UserId"), time.Now().Local()); err != nil {
+		utils.GenerateInvitationCode(4), c.GetInt("UserId"), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
