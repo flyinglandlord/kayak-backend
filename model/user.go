@@ -11,4 +11,5 @@ type User struct {
 	Password  string    `json:"password" db:"password"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	AvatarURL string    `json:"avatar_url" db:"avatar_url"`
+	NickName  string    `json:"nick_name" db:"nick_name"`
 }

@@ -137,6 +137,7 @@ func GetProblemSets(c *gin.Context) {
 // @Tags problemSet
 // @Param problem_set body ProblemSetRequest true "题集信息"
 // @Success 200 {object} ProblemSetResponse "题集信息"
+// @Failure 400 {string} string "Json格式错误"
 // @Failure default {string} string "服务器错误"
 // @Router /problem_set/create [post]
 // @Security ApiKeyAuth
@@ -182,6 +183,7 @@ func CreateProblemSet(c *gin.Context) {
 		FavoriteCount: 0,
 		UserId:        problemSet.UserId,
 		IsPublic:      problemSet.IsPublic,
+		GroupId:       problemSet.GroupId,
 	})
 }
 

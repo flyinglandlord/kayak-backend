@@ -15,6 +15,7 @@ type UserInfoResponse struct {
 	Phone      *string   `json:"phone"`
 	AvatarPath string    `json:"avatar_path"`
 	CreateAt   time.Time `json:"create_at"`
+	NickName   string    `json:"nick_name"`
 }
 
 // GetUserInfoById godoc
@@ -67,12 +68,13 @@ func GetUserInfo(c *gin.Context) {
 		Phone:      user.Phone,
 		AvatarPath: user.AvatarURL,
 		CreateAt:   user.CreatedAt,
+		NickName:   user.NickName,
 	}
 	c.JSON(http.StatusOK, userInfo)
 }
 
 type UserInfoRequest struct {
-	Name       *string `json:"name"`
+	NickName   *string `json:"nick_name"`
 	Email      *string `json:"email"`
 	Phone      *string `json:"phone"`
 	AvatarPath *string `json:"avatar_path"`
@@ -84,7 +86,7 @@ type UserInfoRequest struct {
 // @Tags user
 // @Param info body UserInfoRequest true "用户信息"
 // @Success 200 {string} string "更新成功"
-// @Failure 400 {string} string "请求解析失败"
+// @Failure 400 {string} string "请求格式错误"
 // @Failure default {string} string "服务器错误"
 // @Router /user/update [put]
 // @Security ApiKeyAuth
@@ -94,7 +96,7 @@ func UpdateUserInfo(c *gin.Context) {
 		c.String(http.StatusBadRequest, "请求格式错误")
 		return
 	}
-	sqlString := `SELECT name, email, phone, avatar_url FROM "user" WHERE id = $1`
+	sqlString := `SELECT nick_name, email, phone, avatar_url FROM "user" WHERE id = $1`
 	formerUserInfo := model.User{}
 	if err := global.Database.Get(&formerUserInfo, sqlString, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -109,11 +111,11 @@ func UpdateUserInfo(c *gin.Context) {
 	if user.Phone == nil {
 		user.Phone = formerUserInfo.Phone
 	}
-	if user.Name == nil {
-		user.Name = &formerUserInfo.Name
+	if user.NickName == nil {
+		user.NickName = &formerUserInfo.NickName
 	}
-	sqlString = `UPDATE "user" SET name = $1, email = $2, phone = $3, avatar_url = $4 WHERE id = $5`
-	if _, err := global.Database.Exec(sqlString, user.Name, user.Email, user.Phone, user.AvatarPath, c.GetInt("UserId")); err != nil {
+	sqlString = `UPDATE "user" SET nick_name = $1, email = $2, phone = $3, avatar_url = $4 WHERE id = $5`
+	if _, err := global.Database.Exec(sqlString, user.NickName, user.Email, user.Phone, user.AvatarPath, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

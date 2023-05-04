@@ -36,6 +36,9 @@ func InitRoute() {
 	note.POST("/unlike/:id", UnlikeNote)
 	note.POST("/favorite/:id", FavoriteNote)
 	note.DELETE("/unfavorite/:id", UnfavoriteNote)
+	note.POST("/add_problem/:id", AddProblemToNote)
+	note.DELETE("/remove_problem/:id", RemoveProblemFromNote)
+	note.GET("/problem_list/:id", GetNoteProblemList)
 
 	wrongRecord := global.Router.Group("/wrong_record")
 	wrongRecord.Use(global.CheckAuth)
