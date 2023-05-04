@@ -238,6 +238,7 @@ func GetUsersInGroup(c *gin.Context) {
 			Phone:      user.Phone,
 			AvatarPath: user.AvatarURL,
 			CreateAt:   user.CreatedAt,
+			NickName:   user.NickName,
 		})
 	}
 	c.JSON(http.StatusOK, AllUserResponse{

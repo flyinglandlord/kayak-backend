@@ -317,3 +317,111 @@ func UnlikeNote(c *gin.Context) {
 	}
 	c.String(http.StatusOK, "取消点赞成功")
 }
+
+// AddProblemToNote godoc
+// @Schemes http
+// @Description 将题目添加到笔记
+// @Tags note
+// @Param id path int true "笔记ID"
+// @Param problem_id query int true "题目ID"
+// @Success 200 {string} string "添加成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "笔记不存在或题目不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/add_problem/{id} [post]
+// @Security ApiKeyAuth
+func AddProblemToNote(c *gin.Context) {
+	sqlString := `SELECT * FROM note WHERE id = $1`
+	var note model.Note
+	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && note.UserId != c.GetInt("UserId") {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `SELECT * FROM problem_type WHERE id = $1`
+	var problem model.ProblemType
+	if err := global.Database.Get(&problem, sqlString, c.Query("problem_id")); err != nil {
+		c.String(http.StatusNotFound, "题目不存在")
+		return
+	}
+	sqlString = `INSERT INTO note_problem (note_id, problem_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (note_id, problem_id) do update set created_at = $3`
+	if _, err := global.Database.Exec(sqlString, c.Param("id"), c.Query("problem_id"), time.Now().Local()); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "添加成功")
+}
+
+// RemoveProblemFromNote godoc
+// @Schemes http
+// @Description 将题目从笔记中移除
+// @Tags note
+// @Param id path int true "笔记ID"
+// @Param problem_id query int true "题目ID"
+// @Success 200 {string} string "移除成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "笔记不存在或题目不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/remove_problem/{id} [delete]
+// @Security ApiKeyAuth
+func RemoveProblemFromNote(c *gin.Context) {
+	sqlString := `SELECT * FROM note WHERE id = $1`
+	var note model.Note
+	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && note.UserId != c.GetInt("UserId") {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `SELECT * FROM problem_type WHERE id = $1`
+	var problem model.ProblemType
+	if err := global.Database.Get(&problem, sqlString, c.Query("problem_id")); err != nil {
+		c.String(http.StatusNotFound, "题目不存在")
+		return
+	}
+	sqlString = `DELETE FROM note_problem WHERE note_id = $1 AND problem_id = $2`
+	if _, err := global.Database.Exec(sqlString, c.Param("id"), c.Query("problem_id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "移除成功")
+}
+
+// GetNoteProblemList godoc
+// @Schemes http
+// @Description 获取笔记中的题目列表
+// @Tags note
+// @Param id path int true "笔记ID"
+// @Param offset query int false "页数"
+// @Param limit query int false "每页数量"
+// @Success 200 {string} string "获取成功"
+// @Failure 404 {string} string "笔记不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /note/problem_list/{id} [get]
+// @Security ApiKeyAuth
+func GetNoteProblemList(c *gin.Context) {
+	sqlString := `SELECT * FROM note WHERE id = $1`
+	var note model.Note
+	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	sqlString = `SELECT * FROM problem_type WHERE id IN (SELECT problem_id FROM note_problem WHERE note_id = $1) ORDER BY id DESC`
+	if c.Query("limit") != "" {
+		sqlString += ` LIMIT ` + c.Query("limit")
+	}
+	if c.Query("offset") != "" {
+		sqlString += ` OFFSET ` + c.Query("offset")
+	}
+	var problems []model.ProblemType
+	if err := global.Database.Select(&problems, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.JSON(http.StatusOK, problems)
+}
