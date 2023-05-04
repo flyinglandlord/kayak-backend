@@ -36,6 +36,7 @@ type NoteCreateRequest struct {
 	Title    string `json:"title"`
 	Content  string `json:"content"`
 	IsPublic bool   `json:"is_public"`
+	Problems []int  `json:"problems"`
 }
 type NoteUpdateRequest struct {
 	ID       int     `json:"id"`
@@ -168,6 +169,14 @@ func CreateNote(c *gin.Context) {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	for _, problemId := range request.Problems {
+		sqlString = `INSERT INTO note_problem (note_id, problem_id, created_at) VALUES ($1, $2, $3)`
+		if _, err := tx.Exec(sqlString, noteId, problemId, time.Now().Local()); err != nil {
+			_ = tx.Rollback()
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
