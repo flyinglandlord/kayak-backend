@@ -58,14 +58,14 @@ type NoteUpdateRequest struct {
 // @Router /note/all [get]
 // @Security ApiKeyAuth
 func GetNotes(c *gin.Context) {
-	sqlString := `SELECT note.*, count(id) like_count FROM note, user_like_note WHERE note.id = user_like_note.note_id group by id`
+	sqlString := `SELECT note.*, count(id) like_count FROM note, user_like_note WHERE note.id = user_like_note.note_id`
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
-		sqlString += ` WHERE is_public = true`
+		sqlString += ` AND is_public = true`
 	} else if role == global.USER {
-		sqlString += ` WHERE (is_public = true OR user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+		sqlString += ` AND (is_public = true OR note.user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 	} else {
-		sqlString += ` WHERE 1 = 1`
+		sqlString += ` AND 1 = 1`
 	}
 	var filter NoteFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
@@ -92,6 +92,7 @@ func GetNotes(c *gin.Context) {
 	if filter.UserId != nil {
 		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
 	}
+	sqlString += ` group by id`
 	if filter.SortByLike != nil {
 		if *filter.SortByLike {
 			sqlString += ` ORDER BY like_count DESC`
@@ -437,6 +438,10 @@ func GetNoteProblemList(c *gin.Context) {
 	var problems []model.ProblemType
 	if err := global.Database.Select(&problems, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if len(problems) == 0 {
+		c.JSON(http.StatusOK, make([]model.ProblemType, 0))
 		return
 	}
 	c.JSON(http.StatusOK, problems)
