@@ -294,7 +294,7 @@ func CreateChoiceProblem(c *gin.Context) {
 
 // UpdateChoiceProblem godoc
 // @Schemes http
-// @Description 更新选择题（只需传需要修改的字段,传原值也行）(只有管理员和题目创建者可以更新题目)
+// @Description 更新选择题（只需传需要修改的字段,传原值也行）(只有管理员和题目创建者可以更新题目)(会直接清空原有选项)
 // @Tags problem
 // @Param problem body ChoiceProblemUpdateRequest true "选择题信息"
 // @Success 200 {string} string "更新成功"
@@ -333,6 +333,12 @@ func UpdateChoiceProblem(c *gin.Context) {
 	sqlString = `UPDATE problem_type SET description = $1, is_public = $2, updated_at = $3, analysis = $4 WHERE id = $5`
 	if _, err := global.Database.Exec(sqlString, request.Description,
 		request.IsPublic, time.Now().Local(), request.Analysis, request.ID); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `DELETE FROM problem_choice WHERE id = $1`
+	if _, err := global.Database.Exec(sqlString, request.ID); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return

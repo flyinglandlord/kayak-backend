@@ -101,9 +101,9 @@ func Register(c *gin.Context) {
 	}
 	userInfo.Email = registerRequest.Email
 	userInfo.Phone = registerRequest.Phone
-	sqlString = `INSERT INTO "user" (name, password, email, phone, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	sqlString = `INSERT INTO "user" (name, password, email, phone, created_at, nick_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	if err := global.Database.Get(&userInfo.ID, sqlString, userInfo.Name, userInfo.Password,
-		userInfo.Email, userInfo.Phone, time.Now().Local()); err != nil {
+		userInfo.Email, userInfo.Phone, time.Now().Local(), userInfo.Name); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
