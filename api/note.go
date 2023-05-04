@@ -439,5 +439,9 @@ func GetNoteProblemList(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
+	if len(problems) == 0 {
+		c.JSON(http.StatusOK, make([]model.ProblemType, 0))
+		return
+	}
 	c.JSON(http.StatusOK, problems)
 }
