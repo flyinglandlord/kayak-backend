@@ -30,7 +30,7 @@ type UserInfoResponse struct {
 // @Security ApiKeyAuth
 func GetUserInfoById(c *gin.Context) {
 	user := model.User{}
-	sqlString := `SELECT id, name, email, phone, avatar_url, created_at FROM "user" WHERE id = $1`
+	sqlString := `SELECT id, name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
 	if err := global.Database.Get(&user, sqlString, c.Param("user_id")); err != nil {
 		c.String(http.StatusNotFound, "用户不存在")
 		return
