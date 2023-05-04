@@ -9,188 +9,320 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 SET search_path = "public";
 SET TIME ZONE 'PRC';
 
-CREATE TABLE "user"
+create table "user"
 (
-    id         serial        NOT NULL,
+    id         serial
+        primary key,
     union_id   varchar(255),
-    name       varchar(255)  NOT NULL UNIQUE,
+    name       varchar(255)                                         not null
+        unique,
     email      varchar(255),
     phone      varchar(255),
-    password   varchar(255)  NOT NULL,
-    created_at timestamp     NOT NULL,
-    avatar_url VARCHAR(1024) NOT NULL DEFAULT '/public/user.png',
-    PRIMARY KEY ("id")
+    password   varchar(255)                                         not null,
+    created_at timestamp                                            not null,
+    avatar_url varchar(1024) default '/user.png'::character varying not null,
+    nick_name  varchar(255)                                         not null
 );
 
-CREATE TABLE problem_type
+alter table "user"
+    owner to postgres;
+
+create table problem_type
 (
-    "id"              serial    NOT NULL,
-    "description"     text      NOT NULL,
-    "created_at"      timestamp NOT NULL,
-    "updated_at"      timestamp NOT NULL,
-    "user_id"         integer   NOT NULL,
-    "problem_type_id" integer   NOT NULL,
-    "is_public"       boolean   NOT NULL,
-    "analysis"        text,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    id              serial
+        primary key,
+    description     text      not null,
+    created_at      timestamp not null,
+    updated_at      timestamp not null,
+    user_id         integer   not null
+        references "user",
+    problem_type_id integer   not null,
+    is_public       boolean   not null,
+    analysis        text
 );
 
-CREATE TABLE problem_choice
+alter table problem_type
+    owner to postgres;
+
+create table problem_choice
 (
-    "id"          integer      NOT NULL,
-    "choice"      varchar(255) NOT NULL,
-    "description" text         NOT NULL,
-    "is_correct"  boolean      NOT NULL,
-    PRIMARY KEY ("id", "choice"),
-    FOREIGN KEY ("id") REFERENCES problem_type ("id") ON DELETE CASCADE
+    id          integer      not null
+        references problem_type
+            on delete cascade,
+    choice      varchar(255) not null,
+    description text         not null,
+    is_correct  boolean      not null,
+    primary key (id, choice)
 );
 
-CREATE TABLE problem_answer
+alter table problem_choice
+    owner to postgres;
+
+create table problem_answer
 (
-    "id"     integer      NOT NULL,
-    "answer" varchar(255) NOT NULL,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
+    id     integer      not null
+        primary key
+        references problem_type
+            on delete cascade,
+    answer varchar(255) not null
 );
 
-CREATE TABLE problem_judge
+alter table problem_answer
+    owner to postgres;
+
+create table problem_set
 (
-    "id"         integer NOT NULL,
-    "is_correct" boolean NOT NULL,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("id") REFERENCES "problem_type" ("id") ON DELETE CASCADE
+    id          serial
+        primary key,
+    name        varchar(255)      not null,
+    description text              not null,
+    created_at  timestamp         not null,
+    updated_at  timestamp         not null,
+    user_id     integer           not null
+        references "user",
+    is_public   boolean           not null,
+    group_id    integer default 0 not null
 );
 
-CREATE TABLE problem_set
+alter table problem_set
+    owner to postgres;
+
+create table problem_in_problem_set
 (
-    "id"          serial       NOT NULL,
-    "name"        varchar(255) NOT NULL,
-    "description" text         NOT NULL,
-    "created_at"  timestamp    NOT NULL,
-    "updated_at"  timestamp    NOT NULL,
-    "user_id"     integer      NOT NULL,
-    "is_public"   boolean      NOT NULL,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id")
+    problem_set_id integer not null
+        references problem_set
+            on delete cascade,
+    problem_id     integer not null
+        references problem_type
+            on delete cascade,
+    primary key (problem_set_id, problem_id)
 );
 
-CREATE TABLE problem_in_problem_set
+alter table problem_in_problem_set
+    owner to postgres;
+
+create table user_favorite_problem
 (
-    "problem_set_id" integer NOT NULL,
-    "problem_id"     integer NOT NULL,
-    PRIMARY KEY ("problem_set_id", "problem_id"),
-    FOREIGN KEY ("problem_set_id") REFERENCES problem_set ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE
+    problem_id integer   not null
+        references problem_type
+            on delete cascade,
+    user_id    integer   not null
+        references "user"
+            on delete cascade,
+    created_at timestamp not null,
+    primary key (problem_id, user_id)
 );
 
-CREATE TABLE user_favorite_problem
+alter table user_favorite_problem
+    owner to postgres;
+
+create table user_favorite_problem_set
 (
-    "problem_id" integer   NOT NULL,
-    "user_id"    integer   NOT NULL,
-    "created_at" timestamp NOT NULL,
-    PRIMARY KEY ("problem_id", "user_id"),
-    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    problem_set_id integer   not null
+        references problem_set
+            on delete cascade,
+    user_id        integer   not null
+        references "user"
+            on delete cascade,
+    created_at     timestamp not null,
+    primary key (problem_set_id, user_id)
 );
 
-CREATE TABLE user_favorite_problem_set
+alter table user_favorite_problem_set
+    owner to postgres;
+
+create table user_wrong_record
 (
-    "problem_set_id" integer   NOT NULL,
-    "user_id"        integer   NOT NULL,
-    "created_at"     timestamp NOT NULL,
-    PRIMARY KEY ("problem_set_id", "user_id"),
-    FOREIGN KEY ("problem_set_id") REFERENCES problem_set ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    problem_id integer   not null
+        references problem_type
+            on delete cascade,
+    user_id    integer   not null
+        references "user"
+            on delete cascade,
+    count      integer   not null,
+    created_at timestamp not null,
+    updated_at timestamp not null,
+    primary key (problem_id, user_id)
 );
 
-CREATE TABLE user_wrong_record
+alter table user_wrong_record
+    owner to postgres;
+
+create table note
 (
-    "problem_id" integer   NOT NULL,
-    "user_id"    integer   NOT NULL,
-    "count"      integer   NOT NULL,
-    "created_at" timestamp NOT NULL,
-    "updated_at" timestamp NOT NULL,
-    PRIMARY KEY ("problem_id", "user_id"),
-    FOREIGN KEY ("problem_id") REFERENCES problem_type ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    id         serial
+        primary key,
+    title      varchar(255) not null,
+    content    text         not null,
+    created_at timestamp    not null,
+    updated_at timestamp    not null,
+    user_id    integer      not null
+        references "user"
+            on delete cascade,
+    is_public  boolean      not null
 );
 
-CREATE TABLE note
+alter table note
+    owner to postgres;
+
+create table note_review
 (
-    "id"         serial       NOT NULL,
-    "title"      varchar(255) NOT NULL,
-    "content"    text         NOT NULL,
-    "created_at" timestamp    NOT NULL,
-    "updated_at" timestamp    NOT NULL,
-    "user_id"    integer      NOT NULL,
-    "is_public"  boolean      NOT NULL,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    id         serial
+        primary key,
+    title      varchar(255) not null,
+    content    text         not null,
+    created_at timestamp    not null,
+    updated_at timestamp    not null,
+    user_id    integer      not null
+        references "user"
+            on delete cascade,
+    note_id    integer      not null
+        references note
+            on delete cascade
 );
 
-CREATE TABLE note_review
+alter table note_review
+    owner to postgres;
+
+create table user_like_note_review
 (
-    "id"         serial       NOT NULL,
-    "title"      varchar(255) NOT NULL,
-    "content"    text         NOT NULL,
-    "created_at" timestamp    NOT NULL,
-    "updated_at" timestamp    NOT NULL,
-    "user_id"    integer      NOT NULL,
-    "note_id"    integer      NOT NULL,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE
+    note_review_id integer   not null
+        references note_review
+            on delete cascade,
+    user_id        integer   not null
+        references "user"
+            on delete cascade,
+    created_at     timestamp not null,
+    primary key (note_review_id, user_id)
 );
 
-CREATE TABLE user_like_note_review
+alter table user_like_note_review
+    owner to postgres;
+
+create table user_like_note
 (
-    "note_review_id" integer   NOT NULL,
-    "user_id"        integer   NOT NULL,
-    "created_at"     timestamp NOT NULL,
-    PRIMARY KEY ("note_review_id", "user_id"),
-    FOREIGN KEY ("note_review_id") REFERENCES note_review ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    note_id    integer   not null
+        references note
+            on delete cascade,
+    user_id    integer   not null
+        references "user"
+            on delete cascade,
+    created_at timestamp not null,
+    primary key (note_id, user_id)
 );
 
-CREATE TABLE user_like_note
+alter table user_like_note
+    owner to postgres;
+
+create table user_favorite_note
 (
-    "note_id"    integer   NOT NULL,
-    "user_id"    integer   NOT NULL,
-    "created_at" timestamp NOT NULL,
-    PRIMARY KEY ("note_id", "user_id"),
-    FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    note_id    integer   not null
+        references note
+            on delete cascade,
+    user_id    integer   not null
+        references "user"
+            on delete cascade,
+    created_at timestamp not null,
+    primary key (note_id, user_id)
 );
 
-CREATE TABLE user_favorite_note
+alter table user_favorite_note
+    owner to postgres;
+
+create table problem_judge
 (
-    "note_id"    integer   NOT NULL,
-    "user_id"    integer   NOT NULL,
-    "created_at" timestamp NOT NULL,
-    PRIMARY KEY ("note_id", "user_id"),
-    FOREIGN KEY ("note_id") REFERENCES note ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    id         integer not null
+        primary key
+        references problem_type
+            on delete cascade,
+    is_correct boolean not null
 );
 
-CREATE TABLE "group"
+alter table problem_judge
+    owner to postgres;
+
+create table "group"
 (
-    "id"          serial       NOT NULL,
-    "name"        varchar(255) NOT NULL,
-    "description" text         NOT NULL,
-    "invitation"  varchar(255) NOT NULL,
-    "created_at"  timestamp    NOT NULL,
-    "user_id"     integer      NOT NULL,
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    id          serial
+        primary key,
+    name        varchar(255) not null,
+    description text         not null,
+    invitation  varchar(255) not null,
+    created_at  timestamp    not null,
+    user_id     integer      not null
+        references "user"
+            on delete cascade
 );
 
-CREATE TABLE "group_member"
+alter table "group"
+    owner to postgres;
+
+create table group_member
 (
-    "group_id"   integer   NOT NULL,
-    "user_id"    integer   NOT NULL,
-    "created_at" timestamp NOT NULL,
-    PRIMARY KEY ("group_id", "user_id"),
-    FOREIGN KEY ("group_id") REFERENCES "group" ("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
+    group_id   integer   not null
+        references "group"
+            on delete cascade,
+    user_id    integer   not null
+        references "user"
+            on delete cascade,
+    created_at timestamp not null,
+    primary key (group_id, user_id)
 );
+
+alter table group_member
+    owner to postgres;
+
+create table discussion
+(
+    id         serial
+        primary key,
+    title      varchar(255) not null,
+    content    text         not null,
+    created_at timestamp    not null,
+    updated_at timestamp    not null,
+    user_id    integer      not null
+        references "user"
+            on delete cascade,
+    group_id   integer      not null
+        references "group"
+            on delete cascade,
+    is_public  boolean      not null
+);
+
+alter table discussion
+    owner to postgres;
+
+create table discussion_review
+(
+    id            serial
+        primary key,
+    title         varchar(255) not null,
+    content       text         not null,
+    created_at    timestamp    not null,
+    updated_at    timestamp    not null,
+    user_id       integer      not null
+        references "user"
+            on delete cascade,
+    discussion_id integer      not null
+        references discussion
+            on delete cascade
+);
+
+alter table discussion_review
+    owner to postgres;
+
+create table note_problem
+(
+    note_id    integer not null
+        references note
+            on delete cascade,
+    problem_id integer not null
+        references problem_type
+            on delete cascade,
+    created_at timestamp default now(),
+    primary key (note_id, problem_id)
+);
+
+alter table note_problem
+    owner to postgres;
+

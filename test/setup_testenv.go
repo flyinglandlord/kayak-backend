@@ -18,14 +18,14 @@ import (
 )
 
 var initUser = []model.User{
-	{Name: "test1", CreatedAt: time.Now()},
-	{Name: "test2", CreatedAt: time.Now()},
-	{Name: "test3", CreatedAt: time.Now()},
-	{Name: "test4", CreatedAt: time.Now()},
-	{Name: "test5", CreatedAt: time.Now()},
-	{Name: "test6", CreatedAt: time.Now()},
-	{Name: "test7", CreatedAt: time.Now()},
-	{Name: "test8", CreatedAt: time.Now()},
+	{Name: "test1", CreatedAt: time.Now(), NickName: "test1"},
+	{Name: "test2", CreatedAt: time.Now(), NickName: "test2"},
+	{Name: "test3", CreatedAt: time.Now(), NickName: "test3"},
+	{Name: "test4", CreatedAt: time.Now(), NickName: "test4"},
+	{Name: "test5", CreatedAt: time.Now(), NickName: "test5"},
+	{Name: "test6", CreatedAt: time.Now(), NickName: "test6"},
+	{Name: "test7", CreatedAt: time.Now(), NickName: "test7"},
+	{Name: "test8", CreatedAt: time.Now(), NickName: "test8"},
 }
 
 var initProblemType = []model.ProblemType{
@@ -160,11 +160,11 @@ func readConfig() {
 }
 
 func InitUserTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO "user" (name, created_at, password) VALUES ($1, now(), $2)`
+	sqlString := `INSERT INTO "user" (name, created_at, password, nick_name) VALUES ($1, now(), $2, $3)`
 	for i := range initUser {
 		initUser[i].Password = fmt.Sprintf("%s-pwd", initUser[i].Name)
 		encryptPassword, _ := utils.EncryptPassword(initUser[i].Password)
-		if _, err := tx.Exec(sqlString, initUser[i].Name, encryptPassword); err != nil {
+		if _, err := tx.Exec(sqlString, initUser[i].Name, encryptPassword, initUser[i].NickName); err != nil {
 			return err
 		}
 	}
