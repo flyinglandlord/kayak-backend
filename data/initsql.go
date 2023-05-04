@@ -61,7 +61,7 @@ type DanxuanQuestion struct {
 type PanduanQuestion struct {
 	Description string `json:"description"`
 	Answer      string `json:"answer"`
-	Type        string `json:"type"`
+	// Type        string `json:"type"`
 }
 
 type DuoxuanQuestion struct {
@@ -77,7 +77,7 @@ type DuoxuanQuestion struct {
 
 func loadDanxuanQuestion(problemSetId int) {
 	// 读取单选题
-	jsonFile, err := os.Open("danxuan_question.json")
+	jsonFile, err := os.Open("computer_basic_danxuan.json")
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +125,7 @@ func loadDanxuanQuestion(problemSetId int) {
 }
 
 func loadPanduanQuestion(problemSetId int) {
-	jsonFile, err := os.Open("panduan_question.json")
+	jsonFile, err := os.Open("computer_basic_panduan.json")
 	if err != nil {
 		panic(err)
 	}
@@ -162,7 +162,7 @@ func loadPanduanQuestion(problemSetId int) {
 }
 
 func loadDuoxuanQuestion(problemSetId int) {
-	jsonFile, err := os.Open("duoxuan_question.json")
+	jsonFile, err := os.Open("computer_basic_duoxuan.json")
 	if err != nil {
 		panic(err)
 	}
@@ -208,15 +208,16 @@ func loadDuoxuanQuestion(problemSetId int) {
 }
 
 func main() {
-	InitSql("123.249.3.32", 5432, "postgres", "lz6aktZ/mIVOMxHI/N6rODU4nxMnsViCgq", "b4s-develop")
+	// Init Database
+	// **************************************************************(secret)
 	sqlString := `INSERT INTO "user" (id, name, password, created_at, nick_name) VALUES ($1, $2, $3, $4, $5)`
-	if _, err := DB.Exec(sqlString, 0, "problem_set_maker", "123456", time.Now(), "problem_set_maker"); err != nil {
+	/*if _, err := DB.Exec(sqlString, 0, "problem_set_maker", "123456", time.Now(), "problem_set_maker"); err != nil {
 		panic(err)
-	}
+	}*/
 
 	sqlString = "INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
 	var problemSetId int
-	if err := DB.Get(&problemSetId, sqlString, "内置题库", "内置题库", time.Now(), time.Now(), 0, true, 0); err != nil {
+	if err := DB.Get(&problemSetId, sqlString, "计算机基础", "计算机基础题库", time.Now(), time.Now(), 0, true, 0); err != nil {
 		panic(err)
 	}
 	fmt.Println(problemSetId)
