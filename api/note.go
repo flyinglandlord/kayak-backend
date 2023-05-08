@@ -433,6 +433,7 @@ func RemoveProblemFromNote(c *gin.Context) {
 // @Param offset query int false "页数"
 // @Param limit query int false "每页数量"
 // @Success 200 {string} string "获取成功"
+// @Failure 403 {string} string "没有权限"
 // @Failure 404 {string} string "笔记不存在"
 // @Failure default {string} string "服务器错误"
 // @Router /note/problem_list/{id} [get]
@@ -442,6 +443,10 @@ func GetNoteProblemList(c *gin.Context) {
 	var note model.Note
 	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "笔记不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && note.UserId != c.GetInt("UserId") && !note.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `SELECT * FROM problem_type WHERE id IN (SELECT problem_id FROM note_problem WHERE note_id = $1) ORDER BY id DESC`
