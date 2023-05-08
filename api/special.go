@@ -82,7 +82,7 @@ func GetWrongProblemSet(c *gin.Context) {
 
 // GetFavoriteProblemSet godoc
 // @Schemes http
-// @Description 获取收藏题集
+// @Description 获取含有收藏题目的题集
 // @Tags special
 // @Param offset query int false "偏移量"
 // @Param limit query int false "数量"

@@ -60,19 +60,30 @@ type ProblemSetUpdateRequest struct {
 // @Router /problem_set/all [get]
 // @Security ApiKeyAuth
 func GetProblemSets(c *gin.Context) {
-	sqlString := `SELECT * FROM problem_set`
-	role, _ := c.Get("Role")
-	if role == global.GUEST {
-		sqlString += ` WHERE is_public = true`
-	} else if role == global.USER {
-		sqlString += ` WHERE (is_public = true OR user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
-	} else {
-		sqlString += ` WHERE 1 = 1`
-	}
 	var filter ProblemSetFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
+	}
+	sqlString := `SELECT * FROM problem_set`
+	role, _ := c.Get("Role")
+	if filter.GroupId == nil {
+		if role == global.GUEST {
+			sqlString += ` WHERE is_public = true`
+		} else if role == global.USER {
+			sqlString += ` WHERE (is_public = true OR user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
+		} else {
+			sqlString += ` WHERE 1 = 1`
+		}
+	} else {
+		if role == global.GUEST {
+			sqlString += ` WHERE is_public = true `
+		} else if role == global.USER {
+			sqlString += ` WHERE (is_public = true OR user_id IN (SELECT user_id FROM group_member WHERE group_id = ` + fmt.Sprintf("%d", *filter.GroupId) + `))`
+		} else {
+			sqlString += ` WHERE 1 = 1`
+		}
+		sqlString += ` AND group_id = ` + fmt.Sprintf("%d", *filter.GroupId)
 	}
 	if filter.ID != nil {
 		sqlString += fmt.Sprintf(` AND id = %d`, *filter.ID)
@@ -89,9 +100,6 @@ func GetProblemSets(c *gin.Context) {
 	}
 	if filter.Contain != nil {
 		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
-	}
-	if filter.GroupId != nil {
-		sqlString += ` AND group_id = ` + fmt.Sprintf("%d", *filter.GroupId)
 	}
 	var problemSets []model.ProblemSet
 	if err := global.Database.Select(&problemSets, sqlString); err != nil {
