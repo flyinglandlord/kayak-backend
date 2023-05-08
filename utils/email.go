@@ -26,7 +26,7 @@ func SendEmailValidate(recipient string) (string, error) {
 		</div>
 	</div>
 	`, recipient, time.Now().Format("2006-01-02 15:04:05"), vCode)
-	e.Text = []byte(content)
+	e.HTML = []byte(content)
 	err := e.Send("smtp.163.com:25", global.SMTPAuth)
 	return vCode, err
 }
