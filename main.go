@@ -16,6 +16,7 @@ import (
 	"kayak-backend/docs"
 	"kayak-backend/global"
 	"log"
+	"net/smtp"
 	"os"
 )
 
@@ -73,6 +74,10 @@ func InitMinio(Addr string, Port int, AccessKey string, SecretKey string, UseSSL
 
 }
 
+func InitSMTP(Addr string, Username string, Password string) {
+	global.SMTPAuth = smtp.PlainAuth("", Username, Password, Addr)
+}
+
 func LoadConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -90,6 +95,7 @@ func LoadConfig() {
 	InitMinio(viper.GetString("MinioHost"), viper.GetInt("MinioPort"),
 		viper.GetString("MinioAccessKey"), viper.GetString("MinioSecretKey"),
 		false)
+	InitSMTP(viper.GetString("SMTPHost"), viper.GetString("SMTPUsername"), viper.GetString("SMTPPassword"))
 	docs.SwaggerInfo.BasePath = viper.GetString("DocsPath")
 }
 
