@@ -11,7 +11,7 @@ import (
 type UserInfoResponse struct {
 	UserId     int       `json:"user_id"`
 	UserName   string    `json:"user_name"`
-	Email      *string   `json:"email"`
+	Email      string    `json:"email"`
 	Phone      *string   `json:"phone"`
 	AvatarPath string    `json:"avatar_path"`
 	CreateAt   time.Time `json:"create_at"`
@@ -107,7 +107,7 @@ func UpdateUserInfo(c *gin.Context) {
 		user.AvatarPath = &formerUserInfo.AvatarURL
 	}
 	if user.Email == nil {
-		user.Email = formerUserInfo.Email
+		user.Email = &formerUserInfo.Email
 	}
 	if user.Phone == nil {
 		user.Phone = formerUserInfo.Phone

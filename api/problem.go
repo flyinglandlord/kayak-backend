@@ -16,7 +16,6 @@ const (
 )
 
 func DeleteProblem(c *gin.Context) {
-	userId := c.GetInt("UserId")
 	problemId := c.Param("id")
 	sqlString := `SELECT user_id FROM problem_type WHERE id = $1`
 	var problemUserId int
@@ -24,9 +23,35 @@ func DeleteProblem(c *gin.Context) {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); userId != problemUserId && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, problemId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && problemUserId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	tx := global.Database.MustBegin()
 	sqlString = `DELETE FROM problem_in_problem_set WHERE problem_id = $1`
@@ -316,9 +341,35 @@ func UpdateChoiceProblem(c *gin.Context) {
 		c.String(http.StatusNotFound, "选择题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); choiceProblem.UserId != c.GetInt("UserId") && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, request.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && choiceProblem.UserId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	tx := global.Database.MustBegin()
 	if request.Description == nil {
@@ -404,9 +455,35 @@ func GetChoiceProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); choiceProblem.UserId != c.GetInt("UserId") && role != global.ADMIN && !choiceProblem.IsPublic {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && choiceProblem.UserId != c.GetInt("UserId") && !choiceProblem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 && !choiceProblem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	sqlString = `SELECT * FROM problem_choice WHERE id = $1`
 	var choices []model.ProblemChoice
@@ -624,9 +701,35 @@ func UpdateBlankProblem(c *gin.Context) {
 		c.String(http.StatusNotFound, "填空题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); c.GetInt("UserId") != blankProblem.UserId && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, request.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && blankProblem.UserId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	if request.Description == nil {
 		request.Description = &blankProblem.Description
@@ -706,9 +809,35 @@ func GetBlankProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "填空题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); c.GetInt("UserId") != problem.UserId && role != global.ADMIN && !problem.IsPublic {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && problem.UserId != c.GetInt("UserId") && !problem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 && !problem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	sqlString = `SELECT answer FROM problem_answer WHERE id = $1`
 	var answer string
@@ -917,9 +1046,35 @@ func UpdateJudgeProblem(c *gin.Context) {
 		c.String(http.StatusNotFound, "判断题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); c.GetInt("UserId") != judgeProblem.UserId && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, request.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && judgeProblem.UserId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	if request.Description == nil {
 		request.Description = &judgeProblem.Description
@@ -999,9 +1154,35 @@ func GetJudgeProblemAnswer(c *gin.Context) {
 		c.String(http.StatusNotFound, "判断题不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); c.GetInt("UserId") != problem.UserId && role != global.ADMIN && !problem.IsPublic {
-		c.String(http.StatusForbidden, "没有权限")
+	role, _ := c.Get("Role")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && problem.UserId != c.GetInt("UserId") && !problem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 && !problem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	sqlString = `SELECT is_correct FROM problem_judge WHERE id = $1`
 	var isCorrect bool
