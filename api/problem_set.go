@@ -226,9 +226,23 @@ func UpdateProblemSet(c *gin.Context) {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); role != global.ADMIN && problemSet.UserId != c.GetInt("UserId") {
-		c.String(http.StatusForbidden, "没有权限")
-		return
+	role, _ := c.Get("Role")
+	if problemSet.GroupId == 0 {
+		if role != global.ADMIN && problemSet.UserId != c.GetInt("UserId") {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, problemSet.GroupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	if request.Name == nil {
 		request.Name = &problemSet.Name
@@ -241,6 +255,17 @@ func UpdateProblemSet(c *gin.Context) {
 	}
 	if request.GroupId == nil {
 		request.GroupId = &problemSet.GroupId
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, request.GroupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	sqlString = `UPDATE problem_set SET name = $1, description = $2, updated_at = $3, is_public = $4, group_id = $5 WHERE id = $6`
 	if _, err := global.Database.Exec(sqlString, request.Name, request.Description, time.Now().Local(), request.IsPublic, request.GroupId, request.ID); err != nil {
@@ -293,9 +318,23 @@ func GetProblemsInProblemSet(c *gin.Context) {
 		c.String(http.StatusNotFound, "题集不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); role != global.ADMIN && problemSet.UserId != c.GetInt("UserId") && !problemSet.IsPublic {
-		c.String(http.StatusForbidden, "没有权限")
-		return
+	role, _ := c.Get("Role")
+	if problemSet.GroupId == 0 {
+		if role != global.ADMIN && problemSet.UserId != c.GetInt("UserId") && !problemSet.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, problemSet.GroupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	var filter ProblemInProblemSetFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
