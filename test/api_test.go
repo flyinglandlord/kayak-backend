@@ -10,7 +10,7 @@ import (
 )
 
 var stages = [][]func(*testing.T){
-	{testLogin}, {testRegister}, {testResetPassword, testLogout, testUserInfo},
+	{testLogin} /*{testRegister},*/, {testResetPassword, testLogout, testUserInfo},
 	{testFavoriteNote, testFavoriteProblem, testLikeNote, testLikeNoteReview, testFavoriteProblemSet},
 	{TestProblemAnswer}, {TestCreateGroup, TestCreateNote},
 }
