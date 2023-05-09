@@ -93,9 +93,9 @@ func GetNotes(c *gin.Context) {
 	}
 	if filter.IsFavorite != nil {
 		if *filter.IsFavorite {
-			sqlString += ` AND id IN (SELECT note_id FROM user_favorite_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+			sqlString += ` AND note_table.id IN (SELECT note_id FROM user_favorite_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		} else {
-			sqlString += ` AND id NOT IN (SELECT note_id FROM user_favorite_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
+			sqlString += ` AND note_table.id NOT IN (SELECT note_id FROM user_favorite_note WHERE user_id = ` + strconv.Itoa(c.GetInt("UserId")) + `)`
 		}
 	}
 	if filter.UserId != nil {

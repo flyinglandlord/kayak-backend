@@ -91,7 +91,7 @@ func GetProblemSets(c *gin.Context) {
 		sqlString += fmt.Sprintf(` AND id = %d`, *filter.ID)
 	}
 	if filter.UserId != nil {
-		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.UserId)
+		sqlString += fmt.Sprintf(` AND ((group_id = 0 AND user_id = %d) OR (user_id IN (SELECT user_id FROM group_member WHERE group_member.group_id = problem_set.group_id)))`, *filter.UserId)
 	}
 	if filter.IsFavorite != nil {
 		if *filter.IsFavorite {
