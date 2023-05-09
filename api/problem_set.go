@@ -18,17 +18,18 @@ type ProblemSetFilter struct {
 	Contain    *int  `json:"contain" form:"contain"`
 }
 type ProblemSetResponse struct {
-	ID            int       `json:"id" db:"id"`
-	Name          string    `json:"name" db:"name"`
-	Description   string    `json:"description" db:"description"`
-	CreatedAt     time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
-	ProblemCount  int       `json:"problem_count" db:"problem_count"`
-	IsFavorite    bool      `json:"is_favorite" db:"is_favorite"`
-	FavoriteCount int       `json:"favorite_count" db:"favorite_count"`
-	UserId        int       `json:"user_id" db:"user_id"`
-	IsPublic      bool      `json:"is_public" db:"is_public"`
-	GroupId       int       `json:"group_id" db:"group_id"`
+	ID            int              `json:"id" db:"id"`
+	Name          string           `json:"name" db:"name"`
+	Description   string           `json:"description" db:"description"`
+	CreatedAt     time.Time        `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time        `json:"updated_at" db:"updated_at"`
+	ProblemCount  int              `json:"problem_count" db:"problem_count"`
+	IsFavorite    bool             `json:"is_favorite" db:"is_favorite"`
+	FavoriteCount int              `json:"favorite_count" db:"favorite_count"`
+	UserId        int              `json:"user_id" db:"user_id"`
+	UserInfo      UserInfoResponse `json:"user_info" db:"user_info"`
+	IsPublic      bool             `json:"is_public" db:"is_public"`
+	GroupId       int              `json:"group_id" db:"group_id"`
 }
 type ProblemSetCreateRequest struct {
 	Name        string `json:"name"`
@@ -128,6 +129,21 @@ func GetProblemSets(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		user := model.User{}
+		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		if err := global.Database.Get(&user, sqlString, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		userInfo := UserInfoResponse{
+			UserId:     c.GetInt("UserId"),
+			UserName:   user.Name,
+			Email:      user.Email,
+			Phone:      user.Phone,
+			AvatarPath: user.AvatarURL,
+			CreateAt:   user.CreatedAt,
+			NickName:   user.NickName,
+		}
 		problemSetResponses = append(problemSetResponses, ProblemSetResponse{
 			ID:            problemSet.ID,
 			Name:          problemSet.Name,
@@ -138,6 +154,7 @@ func GetProblemSets(c *gin.Context) {
 			IsFavorite:    isFavorite > 0,
 			FavoriteCount: favoriteCount,
 			UserId:        problemSet.UserId,
+			UserInfo:      userInfo,
 			IsPublic:      problemSet.IsPublic,
 			GroupId:       problemSet.GroupId,
 		})

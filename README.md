@@ -1,6 +1,7 @@
 # kayak-backend
 
-[![Docker Image CI](https://github.com/FreelyCoding/kayak-backend/actions/workflows/docker-image.yml/badge.svg?branch=master)](https://github.com/FreelyCoding/kayak-backend/actions/workflows/docker-image.yml)
+[![Develop Test](https://github.com/FreelyCoding/kayak-backend/actions/workflows/develop.yml/badge.svg?branch=dev)](https://github.com/FreelyCoding/kayak-backend/actions/workflows/develop.yml)
+[![Production Test-Deploy](https://github.com/FreelyCoding/kayak-backend/actions/workflows/production.yml/badge.svg?branch=master)](https://github.com/FreelyCoding/kayak-backend/actions/workflows/production.yml)
 
 学舟刷题软件配套的后端，使用Golang编写
 
