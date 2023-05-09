@@ -527,7 +527,7 @@ func MigrateProblemToProblemSet(c *gin.Context) {
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

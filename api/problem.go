@@ -26,13 +26,13 @@ func DeleteProblem(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, problemId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -344,13 +344,13 @@ func UpdateChoiceProblem(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, request.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -458,13 +458,13 @@ func GetChoiceProblemAnswer(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -704,13 +704,13 @@ func UpdateBlankProblem(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, request.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -812,13 +812,13 @@ func GetBlankProblemAnswer(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -1049,13 +1049,13 @@ func UpdateJudgeProblem(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, request.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -1157,13 +1157,13 @@ func GetJudgeProblemAnswer(c *gin.Context) {
 	role, _ := c.Get("Role")
 	var problemSetIds []int
 	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
-	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupId int
 	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
-	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+	if err := global.Database.Get(&groupId, sqlString, problemSetIds[0]); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
