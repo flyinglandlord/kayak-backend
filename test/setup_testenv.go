@@ -18,14 +18,25 @@ import (
 )
 
 var initUser = []model.User{
-	{Name: "test1", CreatedAt: time.Now(), NickName: "test1"},
-	{Name: "test2", CreatedAt: time.Now(), NickName: "test2"},
-	{Name: "test3", CreatedAt: time.Now(), NickName: "test3"},
-	{Name: "test4", CreatedAt: time.Now(), NickName: "test4"},
-	{Name: "test5", CreatedAt: time.Now(), NickName: "test5"},
-	{Name: "test6", CreatedAt: time.Now(), NickName: "test6"},
-	{Name: "test7", CreatedAt: time.Now(), NickName: "test7"},
-	{Name: "test8", CreatedAt: time.Now(), NickName: "test8"},
+	{Name: "test1", CreatedAt: time.Now(), NickName: "test1", Email: "test1@boat4study.com"},
+	{Name: "test2", CreatedAt: time.Now(), NickName: "test2", Email: "test2@boat4study.com"},
+	{Name: "test3", CreatedAt: time.Now(), NickName: "test3", Email: "test3@boat4study.com"},
+	{Name: "test4", CreatedAt: time.Now(), NickName: "test4", Email: "test4@boat4study.com"},
+	{Name: "test5", CreatedAt: time.Now(), NickName: "test5", Email: "test5@boat4study.com"},
+	{Name: "test6", CreatedAt: time.Now(), NickName: "test6", Email: "test6@boat4study.com"},
+	{Name: "test7", CreatedAt: time.Now(), NickName: "test7", Email: "test7@boat4study.com"},
+	{Name: "test8", CreatedAt: time.Now(), NickName: "test8", Email: "test8@boat4study.com"},
+}
+
+var initProblemInProblemSet = []model.ProblemInProblemSet{
+	{ProblemSetId: 1, ProblemId: 1},
+	{ProblemSetId: 2, ProblemId: 2},
+	{ProblemSetId: 3, ProblemId: 3},
+	{ProblemSetId: 4, ProblemId: 4},
+	{ProblemSetId: 5, ProblemId: 5},
+	{ProblemSetId: 6, ProblemId: 6},
+	{ProblemSetId: 7, ProblemId: 7},
+	{ProblemSetId: 8, ProblemId: 8},
 }
 
 var initProblemType = []model.ProblemType{
@@ -160,11 +171,21 @@ func readConfig() {
 }
 
 func InitUserTable(tx *sqlx.Tx) error {
-	sqlString := `INSERT INTO "user" (name, created_at, password, nick_name) VALUES ($1, now(), $2, $3)`
+	sqlString := `INSERT INTO "user" (name, created_at, password, nick_name, email) VALUES ($1, now(), $2, $3, $4)`
 	for i := range initUser {
 		initUser[i].Password = fmt.Sprintf("%s-pwd", initUser[i].Name)
 		encryptPassword, _ := utils.EncryptPassword(initUser[i].Password)
-		if _, err := tx.Exec(sqlString, initUser[i].Name, encryptPassword, initUser[i].NickName); err != nil {
+		if _, err := tx.Exec(sqlString, initUser[i].Name, encryptPassword, initUser[i].NickName, initUser[i].Email); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func InitProblemInProblemSetTable(tx *sqlx.Tx) error {
+	sqlString := `INSERT INTO problem_in_problem_set (problem_id, problem_set_id) VALUES ($1, $2)`
+	for i := range initProblemInProblemSet {
+		if _, err := tx.Exec(sqlString, initProblemInProblemSet[i].ProblemId, initProblemInProblemSet[i].ProblemSetId); err != nil {
 			return err
 		}
 	}
@@ -252,6 +273,8 @@ var initFuncList = []func(tx *sqlx.Tx) error{
 	InitProblemChoiceTable,
 	InitProblemAnswerTable,
 	InitProblemSetTable,
+	InitProblemTypeTable,
+	InitProblemInProblemSetTable,
 	InitNoteTable,
 	InitNoteReviewTable,
 	InitWrongRecord,

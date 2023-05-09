@@ -16,7 +16,7 @@ create table "user"
     union_id   varchar(255),
     name       varchar(255)                                         not null
         unique,
-    email      varchar(255),
+    email      varchar(255)                                         not null,
     phone      varchar(255),
     password   varchar(255)                                         not null,
     created_at timestamp                                            not null,
