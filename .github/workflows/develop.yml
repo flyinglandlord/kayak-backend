@@ -1,0 +1,16 @@
+name: Develop Test
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Test
+      run:
+        echo "${{ secrets.TEST_CONFIG }}" > ./config_test.yaml && 
+        go test -v kayak-backend/test
