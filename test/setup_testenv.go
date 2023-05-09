@@ -28,6 +28,17 @@ var initUser = []model.User{
 	{Name: "test8", CreatedAt: time.Now(), NickName: "test8", Email: "test8@boat4study.com"},
 }
 
+var initProblemInProblemSet = []model.ProblemInProblemSet{
+	{ProblemSetId: 1, ProblemId: 1},
+	{ProblemSetId: 2, ProblemId: 2},
+	{ProblemSetId: 3, ProblemId: 3},
+	{ProblemSetId: 4, ProblemId: 4},
+	{ProblemSetId: 5, ProblemId: 5},
+	{ProblemSetId: 6, ProblemId: 6},
+	{ProblemSetId: 7, ProblemId: 7},
+	{ProblemSetId: 8, ProblemId: 8},
+}
+
 var initProblemType = []model.ProblemType{
 	{ID: 1, Description: "problem1", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 1, ProblemTypeId: 0, IsPublic: true},
 	{ID: 2, Description: "problem2", CreatedAt: time.Now(), UpdatedAt: time.Now(), UserId: 2, ProblemTypeId: 1, IsPublic: true},
@@ -171,6 +182,16 @@ func InitUserTable(tx *sqlx.Tx) error {
 	return nil
 }
 
+func InitProblemInProblemSetTable(tx *sqlx.Tx) error {
+	sqlString := `INSERT INTO problem_in_problem_set (problem_id, problem_set_id) VALUES ($1, $2)`
+	for i := range initProblemInProblemSet {
+		if _, err := tx.Exec(sqlString, initProblemInProblemSet[i].ProblemId, initProblemInProblemSet[i].ProblemSetId); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func InitProblemTypeTable(tx *sqlx.Tx) error {
 	sqlString := `INSERT INTO problem_type (description, created_at, updated_at, user_id, problem_type_id, is_public) VALUES ($1, now(), now(), $2, $3, $4)`
 	for i := range initProblemType {
@@ -252,6 +273,8 @@ var initFuncList = []func(tx *sqlx.Tx) error{
 	InitProblemChoiceTable,
 	InitProblemAnswerTable,
 	InitProblemSetTable,
+	InitProblemTypeTable,
+	InitProblemInProblemSetTable,
 	InitNoteTable,
 	InitNoteReviewTable,
 	InitWrongRecord,
