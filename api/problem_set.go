@@ -75,7 +75,7 @@ func GetProblemSets(c *gin.Context) {
 		} else {
 			sqlString += ` WHERE 1 = 1`
 		}
-	} else {
+	} else if *filter.GroupId != 0 {
 		if role == global.GUEST {
 			sqlString += ` WHERE is_public = true `
 		} else if role == global.USER {
@@ -84,6 +84,8 @@ func GetProblemSets(c *gin.Context) {
 			sqlString += ` WHERE 1 = 1`
 		}
 		sqlString += ` AND group_id = ` + fmt.Sprintf("%d", *filter.GroupId)
+	} else {
+		sqlString += ` WHERE group_id = 0`
 	}
 	if filter.ID != nil {
 		sqlString += fmt.Sprintf(` AND id = %d`, *filter.ID)
@@ -269,7 +271,7 @@ func UpdateProblemSet(c *gin.Context) {
 	}
 	if request.GroupId == nil {
 		request.GroupId = &problemSet.GroupId
-	} else {
+	} else if *request.GroupId != 0 {
 		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 		var count int
 		if err := global.Database.Get(&count, sqlString, request.GroupId, c.GetInt("UserId")); err != nil {
@@ -517,9 +519,34 @@ func MigrateProblemToProblemSet(c *gin.Context) {
 		c.String(http.StatusNotFound, "题目不存在")
 		return
 	}
-	if role != global.ADMIN && problem.UserId != c.GetInt("UserId") && !problem.IsPublic {
-		c.String(http.StatusForbidden, "没有权限")
+	var problemSetIds []int
+	sqlString = `SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = $1`
+	if err := global.Database.Select(&problemSetIds, sqlString, c.Query("problem_id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
 		return
+	}
+	var groupId int
+	sqlString = `SELECT group_id FROM problem_set WHERE id = $1`
+	if err := global.Database.Get(&groupId, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if groupId == 0 {
+		if role != global.ADMIN && problem.UserId != c.GetInt("UserId") && !problem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
+	} else {
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		var count int
+		if err := global.Database.Get(&count, sqlString, groupId, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		if role != global.ADMIN && count == 0 && !problem.IsPublic {
+			c.String(http.StatusForbidden, "没有权限")
+			return
+		}
 	}
 	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO problem_type (description, created_at, updated_at, user_id, 
