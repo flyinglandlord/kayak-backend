@@ -130,3 +130,182 @@ func GetFavoriteProblemSet(c *gin.Context) {
 	allFavoriteProblemSet.TotalCount = len(allFavoriteProblemSet.ProblemSets)
 	c.JSON(http.StatusOK, allFavoriteProblemSet)
 }
+
+// GetFeaturedProblemSet godoc
+// @Schemes http
+// @Description 获取精选题集
+// @Tags special
+// @Success 200 {object} AllProblemSetResponse "题集列表"
+// @Failure default {string} string "服务器错误"
+// @Router /special/featured_problem_set [get]
+// @Security ApiKeyAuth
+func GetFeaturedProblemSet(c *gin.Context) {
+	sqlString := `SELECT ps.id, ps.name, ps.description, ps.created_at, ps.updated_at, ps.user_id, ps.is_public, ps.group_id
+		FROM problem_set ps JOIN user_favorite_problem_set ufps ON ps.id = ufps.problem_set_id WHERE ps.user_id = $1 GROUP BY ps.id ORDER BY count(*) DESC LIMIT 6`
+	var problemSets []model.ProblemSet
+	if err := global.Database.Select(&problemSets, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusBadRequest, "服务器错误")
+		return
+	}
+	var problemSetResponses []ProblemSetResponse
+	for _, problemSet := range problemSets {
+		var problemCount int
+		sqlString = `SELECT COUNT(*) FROM problem_in_problem_set WHERE problem_set_id = $1`
+		if err := global.Database.Get(&problemCount, sqlString, problemSet.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem_set WHERE problem_set_id = $1 AND user_id = $2`
+		var isFavorite int
+		if err := global.Database.Get(&isFavorite, sqlString, problemSet.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		var favoriteCount int
+		sqlString = `SELECT COUNT(*) FROM user_favorite_problem_set WHERE problem_set_id = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, problemSet.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		user := model.User{}
+		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		if err := global.Database.Get(&user, sqlString, problemSet.UserId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		userInfo := UserInfoResponse{
+			UserId:     user.ID,
+			AvatarPath: user.AvatarURL,
+			NickName:   user.NickName,
+		}
+		problemSetResponses = append(problemSetResponses, ProblemSetResponse{
+			ID:            problemSet.ID,
+			Name:          problemSet.Name,
+			Description:   problemSet.Description,
+			CreatedAt:     problemSet.CreatedAt,
+			UpdatedAt:     problemSet.UpdatedAt,
+			ProblemCount:  problemCount,
+			IsFavorite:    isFavorite > 0,
+			FavoriteCount: favoriteCount,
+			UserId:        problemSet.UserId,
+			UserInfo:      userInfo,
+			IsPublic:      problemSet.IsPublic,
+			GroupId:       problemSet.GroupId,
+		})
+	}
+	c.JSON(http.StatusOK, AllProblemSetResponse{
+		TotalCount: len(problemSetResponses),
+		ProblemSet: problemSetResponses,
+	})
+}
+
+// GetFeaturedNote godoc
+// @Schemes http
+// @Description 获取精选笔记
+// @Tags special
+// @Success 200 {object} AllNoteResponse "笔记列表"
+// @Failure default {string} string "服务器错误"
+// @Router /special/featured_note [get]
+// @Security ApiKeyAuth
+func GetFeaturedNote(c *gin.Context) {
+	sqlString := `SELECT n.id, n.title, n.content, n.created_at, n.updated_at, n.user_id, n.is_public 
+		FROM note n JOIN user_favorite_note ufn ON n.id = ufn.note_id WHERE n.user_id = $1 GROUP BY n.id ORDER BY count(*) DESC LIMIT 6`
+	var notes []model.Note
+	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var noteResponses []NoteResponse
+	for _, note := range notes {
+		var isLiked, isFavorite int
+		var likeCount, favoriteCount int
+		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1 AND user_id = $2`
+		if err := global.Database.Get(&isLiked, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_like_note WHERE note_id = $1`
+		if err := global.Database.Get(&likeCount, sqlString, note.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_favorite_note WHERE note_id = $1 AND user_id = $2`
+		if err := global.Database.Get(&isFavorite, sqlString, note.ID, c.GetInt("UserId")); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		sqlString = `SELECT COUNT(*) FROM user_favorite_note WHERE note_id = $1`
+		if err := global.Database.Get(&favoriteCount, sqlString, note.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		noteResponses = append(noteResponses, NoteResponse{
+			ID:            note.ID,
+			UserId:        note.UserId,
+			Title:         note.Title,
+			Content:       note.Content,
+			CreatedAt:     note.CreatedAt,
+			IsLiked:       isLiked > 0,
+			LikeCount:     likeCount,
+			IsFavorite:    isFavorite > 0,
+			FavoriteCount: favoriteCount,
+			IsPublic:      note.IsPublic,
+		})
+	}
+	c.JSON(http.StatusOK, AllNoteResponse{
+		TotalCount: len(noteResponses),
+		Notes:      noteResponses,
+	})
+}
+
+// GetFeaturedGroup godoc
+// @Schemes http
+// @Description 获取精选小组
+// @Tags special
+// @Success 200 {object} AllGroupResponse "小组列表"
+// @Failure default {string} string "服务器错误"
+// @Router /special/featured_group [get]
+// @Security ApiKeyAuth
+func GetFeaturedGroup(c *gin.Context) {
+	sqlString := `SELECT g.id, g.name, g.description, g.created_at, g.user_id
+		FROM "group" g JOIN group_member gm ON g.id = gm.group_id 
+		WHERE g.id IN (SELECT group_id FROM group_member WHERE user_id = $1) GROUP BY g.id ORDER BY count(*) DESC LIMIT 6`
+	var groups []model.Group
+	if err := global.Database.Select(&groups, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var groupResponses []GroupResponse
+	for _, group := range groups {
+		user := model.User{}
+		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		if err := global.Database.Get(&user, sqlString, group.UserId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		userInfo := UserInfoResponse{
+			UserId:     user.ID,
+			AvatarPath: user.AvatarURL,
+			NickName:   user.NickName,
+		}
+		var count int
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1`
+		if err := global.Database.Get(&count, sqlString, group.Id); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		groupResponses = append(groupResponses, GroupResponse{
+			Id:          group.Id,
+			Name:        group.Name,
+			Description: group.Description,
+			UserId:      group.UserId,
+			UserInfo:    userInfo,
+			MemberCount: count,
+			CreatedAt:   group.CreatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, AllGroupResponse{
+		TotalCount: len(groupResponses),
+		Group:      groupResponses,
+	})
+}

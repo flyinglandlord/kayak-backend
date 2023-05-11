@@ -136,12 +136,8 @@ func GetProblemSets(c *gin.Context) {
 			return
 		}
 		userInfo := UserInfoResponse{
-			UserId:     c.GetInt("UserId"),
-			UserName:   user.Name,
-			Email:      user.Email,
-			Phone:      user.Phone,
+			UserId:     user.ID,
 			AvatarPath: user.AvatarURL,
-			CreateAt:   user.CreatedAt,
 			NickName:   user.NickName,
 		}
 		problemSetResponses = append(problemSetResponses, ProblemSetResponse{
