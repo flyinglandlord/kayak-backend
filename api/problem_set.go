@@ -131,17 +131,13 @@ func GetProblemSets(c *gin.Context) {
 		}
 		user := model.User{}
 		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
-		if err := global.Database.Get(&user, sqlString, c.GetInt("UserId")); err != nil {
+		if err := global.Database.Get(&user, sqlString, problemSet.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
 		userInfo := UserInfoResponse{
-			UserId:     c.GetInt("UserId"),
-			UserName:   user.Name,
-			Email:      user.Email,
-			Phone:      user.Phone,
+			UserId:     user.ID,
 			AvatarPath: user.AvatarURL,
-			CreateAt:   user.CreatedAt,
 			NickName:   user.NickName,
 		}
 		problemSetResponses = append(problemSetResponses, ProblemSetResponse{

@@ -14,6 +14,9 @@ func InitRoute() {
 	special.Use(global.CheckAuth)
 	special.GET("/wrong_problem_set", GetWrongProblemSet)
 	special.GET("/favorite_problem_set", GetFavoriteProblemSet)
+	special.GET("/featured_problem_set", GetFeaturedProblemSet)
+	special.GET("/featured_note", GetFeaturedNote)
+	special.GET("/featured_group", GetFeaturedGroup)
 
 	user := global.Router.Group("/user")
 	user.Use(global.CheckAuth)

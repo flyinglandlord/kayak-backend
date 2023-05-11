@@ -16,12 +16,14 @@ type GroupFilter struct {
 	OwnerId *int `json:"owner_id" form:"owner_id"`
 }
 type GroupResponse struct {
-	Id          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Invitation  string    `json:"invitation"`
-	UserId      int       `json:"owner_id"`
-	CreatedAt   time.Time `json:"created_at"`
+	Id          int              `json:"id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Invitation  string           `json:"invitation"`
+	UserId      int              `json:"owner_id"`
+	UserInfo    UserInfoResponse `json:"user_info"`
+	MemberCount int              `json:"member_count"`
+	CreatedAt   time.Time        `json:"created_at"`
 }
 type GroupCreateRequest struct {
 	Name        string `json:"name"`
@@ -65,11 +67,30 @@ func GetGroups(c *gin.Context) {
 	}
 	var groupResponses []GroupResponse
 	for _, group := range groups {
+		user := model.User{}
+		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		if err := global.Database.Get(&user, sqlString, group.UserId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		userInfo := UserInfoResponse{
+			UserId:     user.ID,
+			AvatarPath: user.AvatarURL,
+			NickName:   user.NickName,
+		}
+		var count int
+		sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1`
+		if err := global.Database.Get(&count, sqlString, group.Id); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 		groupResponses = append(groupResponses, GroupResponse{
 			Id:          group.Id,
 			Name:        group.Name,
 			Description: group.Description,
 			UserId:      group.UserId,
+			UserInfo:    userInfo,
+			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
 		})
 	}

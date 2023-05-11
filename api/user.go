@@ -37,11 +37,7 @@ func GetUserInfoById(c *gin.Context) {
 	}
 	userInfo := UserInfoResponse{
 		UserId:     user.ID,
-		UserName:   user.Name,
-		Email:      user.Email,
-		Phone:      user.Phone,
 		AvatarPath: user.AvatarURL,
-		CreateAt:   user.CreatedAt,
 		NickName:   user.NickName,
 	}
 	c.JSON(http.StatusOK, userInfo)
