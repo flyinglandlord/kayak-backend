@@ -372,10 +372,21 @@ func GetProblemsInProblemSet(c *gin.Context) {
 	}
 	sqlString = `SELECT * FROM problem_type` + fmt.Sprintf(" WHERE id IN (SELECT problem_id FROM problem_in_problem_set WHERE problem_set_id = %d)", problemSet.ID)
 	if filter.IsFavorite != nil {
-		sqlString += fmt.Sprintf(" AND id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = %d)", c.GetInt("UserId"))
+		if *filter.IsFavorite {
+			sqlString += fmt.Sprintf(" AND id IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = %d)", c.GetInt("UserId"))
+		} else {
+			sqlString += fmt.Sprintf(" AND id NOT IN (SELECT problem_id FROM user_favorite_problem WHERE user_id = %d)", c.GetInt("UserId"))
+		}
 	}
 	if filter.ProblemTypeId != nil {
 		sqlString += fmt.Sprintf(" AND problem_type_id = %d", *filter.ProblemTypeId)
+	}
+	if filter.IsWrong != nil {
+		if *filter.IsWrong {
+			sqlString += fmt.Sprintf(` AND id IN (SELECT problem_id FROM user_wrong_record WHERE user_id = %d)`, c.GetInt("UserId"))
+		} else {
+			sqlString += fmt.Sprintf(` AND id NOT IN (SELECT problem_id FROM user_wrong_record WHERE user_id = %d)`, c.GetInt("UserId"))
+		}
 	}
 	if filter.Limit != nil {
 		sqlString += ` LIMIT ` + strconv.Itoa(*filter.Limit)
@@ -401,20 +412,6 @@ func GetProblemsInProblemSet(c *gin.Context) {
 		if err := global.Database.Get(&favoriteCount, sqlString, problem.ID); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
-		}
-		if filter.IsWrong != nil {
-			sqlString = `SELECT COUNT(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id = $2`
-			var count int
-			if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), problem.ID); err != nil {
-				c.String(http.StatusInternalServerError, "服务器错误")
-				return
-			}
-			if *filter.IsWrong && count == 0 {
-				continue
-			}
-			if !(*filter.IsWrong) && count > 0 {
-				continue
-			}
 		}
 		problemResponses = append(problemResponses, ProblemResponse{
 			ID:            problem.ID,
