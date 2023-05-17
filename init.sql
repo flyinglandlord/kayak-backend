@@ -74,14 +74,15 @@ create table problem_set
 (
     id          serial
         primary key,
-    name        varchar(255)      not null,
-    description text              not null,
-    created_at  timestamp         not null,
-    updated_at  timestamp         not null,
-    user_id     integer           not null
+    name        varchar(255)        not null,
+    description text                not null,
+    created_at  timestamp           not null,
+    updated_at  timestamp           not null,
+    user_id     integer             not null
         references "user",
-    is_public   boolean           not null,
-    group_id    integer default 0 not null
+    is_public   boolean             not null,
+    group_id    integer default 0   not null,
+    area_id     integer default 100 not null
 );
 
 alter table problem_set
@@ -245,13 +246,14 @@ create table "group"
 (
     id          serial
         primary key,
-    name        varchar(255) not null,
-    description text         not null,
-    invitation  varchar(255) not null,
-    created_at  timestamp    not null,
-    user_id     integer      not null
+    name        varchar(255)        not null,
+    description text                not null,
+    invitation  varchar(255)        not null,
+    created_at  timestamp           not null,
+    user_id     integer             not null
         references "user"
-            on delete cascade
+            on delete cascade,
+    area_id     integer default 100 not null
 );
 
 alter table "group"

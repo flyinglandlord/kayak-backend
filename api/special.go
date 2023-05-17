@@ -191,6 +191,7 @@ func GetFeaturedProblemSet(c *gin.Context) {
 			UserInfo:      userInfo,
 			IsPublic:      problemSet.IsPublic,
 			GroupId:       problemSet.GroupId,
+			AreaId:        problemSet.AreaId,
 		})
 	}
 	c.JSON(http.StatusOK, AllProblemSetResponse{
@@ -302,6 +303,7 @@ func GetFeaturedGroup(c *gin.Context) {
 			UserInfo:    userInfo,
 			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
+			AreaId:      group.AreaId,
 		})
 	}
 	c.JSON(http.StatusOK, AllGroupResponse{

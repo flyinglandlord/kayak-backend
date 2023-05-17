@@ -16,6 +16,7 @@ type ProblemSetFilter struct {
 	GroupId    *int  `json:"group_id" form:"group_id"`
 	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
 	Contain    *int  `json:"contain" form:"contain"`
+	AreaId     *int  `json:"area_id" form:"area_id"`
 }
 type ProblemSetResponse struct {
 	ID            int              `json:"id" db:"id"`
@@ -30,12 +31,14 @@ type ProblemSetResponse struct {
 	UserInfo      UserInfoResponse `json:"user_info" db:"user_info"`
 	IsPublic      bool             `json:"is_public" db:"is_public"`
 	GroupId       int              `json:"group_id" db:"group_id"`
+	AreaId        int              `json:"area_id" db:"area_id"`
 }
 type ProblemSetCreateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsPublic    bool   `json:"is_public"`
 	GroupId     *int   `json:"group_id"`
+	AreaId      *int   `json:"area_id"`
 }
 type AllProblemSetResponse struct {
 	TotalCount int                  `json:"total_count"`
@@ -47,6 +50,7 @@ type ProblemSetUpdateRequest struct {
 	Description *string `json:"description"`
 	IsPublic    *bool   `json:"is_public"`
 	GroupId     *int    `json:"group_id"`
+	AreaId      *int    `json:"area_id"`
 }
 
 // GetProblemSets godoc
@@ -90,6 +94,9 @@ func GetProblemSets(c *gin.Context) {
 	}
 	if filter.ID != nil {
 		sqlString += fmt.Sprintf(` AND id = %d`, *filter.ID)
+	}
+	if filter.AreaId != nil {
+		sqlString += fmt.Sprintf(` AND area_id = %d`, *filter.AreaId)
 	}
 	if filter.UserId != nil {
 		sqlString += fmt.Sprintf(` AND ((group_id = 0 AND user_id = %d) OR (user_id IN (SELECT user_id FROM group_member WHERE group_member.group_id = problem_set.group_id)))`, *filter.UserId)
@@ -153,6 +160,7 @@ func GetProblemSets(c *gin.Context) {
 			UserInfo:      userInfo,
 			IsPublic:      problemSet.IsPublic,
 			GroupId:       problemSet.GroupId,
+			AreaId:        problemSet.AreaId,
 		})
 	}
 	c.JSON(http.StatusOK, AllProblemSetResponse{
@@ -179,8 +187,8 @@ func CreateProblemSet(c *gin.Context) {
 		return
 	}
 	tx := global.Database.MustBegin()
-	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id, area_id) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	var problemSetId int
 	if request.GroupId == nil {
 		request.GroupId = new(int)
@@ -199,8 +207,12 @@ func CreateProblemSet(c *gin.Context) {
 			return
 		}
 	}
-	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description,
-		time.Now().Local(), time.Now().Local(), c.GetInt("UserId"), request.IsPublic, request.GroupId); err != nil {
+	if request.AreaId == nil {
+		request.AreaId = new(int)
+		*request.AreaId = 100
+	}
+	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description, time.Now().Local(),
+		time.Now().Local(), c.GetInt("UserId"), request.IsPublic, request.GroupId, request.AreaId); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -228,6 +240,7 @@ func CreateProblemSet(c *gin.Context) {
 		UserId:        problemSet.UserId,
 		IsPublic:      problemSet.IsPublic,
 		GroupId:       problemSet.GroupId,
+		AreaId:        problemSet.AreaId,
 	})
 }
 
@@ -296,8 +309,12 @@ func UpdateProblemSet(c *gin.Context) {
 			return
 		}
 	}
-	sqlString = `UPDATE problem_set SET name = $1, description = $2, updated_at = $3, is_public = $4, group_id = $5 WHERE id = $6`
-	if _, err := global.Database.Exec(sqlString, request.Name, request.Description, time.Now().Local(), request.IsPublic, request.GroupId, request.ID); err != nil {
+	if request.AreaId == nil {
+		request.AreaId = &problemSet.AreaId
+	}
+	sqlString = `UPDATE problem_set SET name = $1, description = $2, updated_at = $3, is_public = $4, group_id = $5, area_id = $6 WHERE id = $7`
+	if _, err := global.Database.Exec(sqlString, request.Name, request.Description,
+		time.Now().Local(), request.IsPublic, request.GroupId, request.AreaId, request.ID); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
