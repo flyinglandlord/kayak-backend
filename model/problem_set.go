@@ -11,4 +11,5 @@ type ProblemSet struct {
 	UserId      int       `json:"user_id" db:"user_id"`
 	IsPublic    bool      `json:"is_public" db:"is_public"`
 	GroupId     int       `json:"group_id" db:"group_id"`
+	AreaId      int       `json:"area_id" db:"area_id"`
 }

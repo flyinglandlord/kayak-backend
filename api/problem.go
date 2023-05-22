@@ -129,7 +129,7 @@ type ChoiceRequest struct {
 // GetChoiceProblems godoc
 // @Schemes http
 // @Description 获取符合filter要求的当前用户视角下的所有选择题
-// @Tags problem
+// @Tags Problem
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} []ChoiceProblemResponse "选择题列表"
 // @Failure 400 {string} string "请求解析失败"
@@ -242,7 +242,7 @@ func GetChoiceProblems(c *gin.Context) {
 // CreateChoiceProblem godoc
 // @Schemes http
 // @Description 创建选择题
-// @Tags problem
+// @Tags Problem
 // @Param problem body ChoiceProblemCreateRequest true "选择题信息"
 // @Success 200 {object} ChoiceProblemResponse "选择题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -320,7 +320,7 @@ func CreateChoiceProblem(c *gin.Context) {
 // UpdateChoiceProblem godoc
 // @Schemes http
 // @Description 更新选择题（只需传需要修改的字段,传原值也行）(只有管理员和题目创建者可以更新题目)(会直接清空原有选项)
-// @Tags problem
+// @Tags Problem
 // @Param problem body ChoiceProblemUpdateRequest true "选择题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -414,7 +414,7 @@ func UpdateChoiceProblem(c *gin.Context) {
 // DeleteChoiceProblem godoc
 // @Schemes http
 // @Description 删除选择题（只有管理员和题目创建者可以删除题目）
-// @Tags problem
+// @Tags Problem
 // @Param id path int true "选择题ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -440,7 +440,7 @@ type ChoiceProblemAnswerResponse struct {
 // GetChoiceProblemAnswer godoc
 // @Schemes http
 // @Description 获取选择题答案
-// @Tags problem
+// @Tags Problem
 // @Param id path int true "选择题ID"
 // @Success 200 {object} ChoiceProblemAnswerResponse "答案信息"
 // @Failure 403 {string} string "没有权限"
@@ -537,7 +537,7 @@ type BlankProblemUpdateRequest struct {
 // GetBlankProblems godoc
 // @Schemes http
 // @Description 获取符合要求的当前用户视角下的所有填空题
-// @Tags problem
+// @Tags Problem
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllBlankProblemResponse "填空题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -629,7 +629,7 @@ func GetBlankProblems(c *gin.Context) {
 // CreateBlankProblem godoc
 // @Schemes http
 // @Description 创建填空题
-// @Tags problem
+// @Tags Problem
 // @Param problem body BlankProblemCreateRequest true "填空题信息"
 // @Success 200 {object} BlankProblemResponse "创建成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -680,7 +680,7 @@ func CreateBlankProblem(c *gin.Context) {
 // UpdateBlankProblem godoc
 // @Schemes http
 // @Description 更新填空题（只有管理员和题目创建者可以更新题目）
-// @Tags problem
+// @Tags Problem
 // @Param problem body BlankProblemUpdateRequest true "填空题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -774,7 +774,7 @@ func UpdateBlankProblem(c *gin.Context) {
 // DeleteBlankProblem godoc
 // @Schemes http
 // @Description 删除填空题（只有管理员和题目创建者可以删除题目）
-// @Tags problem
+// @Tags Problem
 // @Param id path int true "填空题ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -794,7 +794,7 @@ type BlankProblemAnswerResponse struct {
 // GetBlankProblemAnswer godoc
 // @Schemes http
 // @Description 获取填空题答案
-// @Tags problem
+// @Tags Problem
 // @Param id path int true "填空题ID"
 // @Success 200 {string} BlankProblemAnswerResponse "答案"
 // @Failure 403 {string} string "没有权限"
@@ -882,7 +882,7 @@ type JudgeProblemUpdateRequest struct {
 // GetJudgeProblems godoc
 // @Schemes http
 // @Description 获取符合要求的当前用户视角下的所有判断题
-// @Tags problem
+// @Tags Problem
 // @Param filter query ProblemFilter false "筛选条件"
 // @Success 200 {object} AllJudgeProblemResponse "判断题信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -974,7 +974,7 @@ func GetJudgeProblems(c *gin.Context) {
 // CreateJudgeProblem godoc
 // @Schemes http
 // @Description 创建判断题
-// @Tags problem
+// @Tags Problem
 // @Param problem body JudgeProblemCreateRequest true "判断题信息"
 // @Success 200 {object} JudgeProblemResponse "创建成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -1025,7 +1025,7 @@ func CreateJudgeProblem(c *gin.Context) {
 // UpdateJudgeProblem godoc
 // @Schemes http
 // @Description 更新判断题（只有管理员和题目创建者可以更新题目）
-// @Tags problem
+// @Tags Problem
 // @Param problem body JudgeProblemUpdateRequest true "判断题信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
@@ -1119,7 +1119,7 @@ func UpdateJudgeProblem(c *gin.Context) {
 // DeleteJudgeProblem godoc
 // @Schemes http
 // @Description 删除判断题（只有管理员和题目创建者可以删除题目）
-// @Tags problem
+// @Tags Problem
 // @Param id path int true "判断题ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -1139,7 +1139,7 @@ type JudgeProblemAnswerResponse struct {
 // GetJudgeProblemAnswer godoc
 // @Schemes http
 // @Description 获取判断题答案
-// @Tags problem
+// @Tags Problem
 // @Param id path int true "判断题ID"
 // @Success 200 {string} string "答案"
 // @Failure 403 {string} string "没有权限"

@@ -8,7 +8,7 @@ import (
 // Ping godoc
 // @Schemes http
 // @Description 测试服务器是否正常运行
-// @Tags auth
+// @Tags Availability
 // @Success 200 {string} string "pong"
 // @Failure default {string} string "服务器错误"
 // @Router /ping [get]

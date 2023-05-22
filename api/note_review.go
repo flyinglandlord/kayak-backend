@@ -32,7 +32,7 @@ type AllNoteReviewResponse struct {
 // AddNoteReview godoc
 // @Schemes http
 // @Description 添加评论
-// @Tags noteReview
+// @Tags NoteReview
 // @Param review body NoteReviewCreateRequest true "评论信息"
 // @Success 200 {string} NoteReviewResponse "评论信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -94,7 +94,7 @@ func AddNoteReview(c *gin.Context) {
 // RemoveNoteReview godoc
 // @Schemes http
 // @Description 删除评论
-// @Tags noteReview
+// @Tags NoteReview
 // @Param id path int true "评论id"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -131,7 +131,7 @@ func RemoveNoteReview(c *gin.Context) {
 // GetNoteReviews godoc
 // @Schemes http
 // @Description 获取笔记的评论
-// @Tags noteReview
+// @Tags NoteReview
 // @Param note_id query int true "笔记id"
 // @Success 200 {object} AllNoteReviewResponse "评论列表"
 // @Failure 403 {string} string "没有权限"
@@ -192,7 +192,7 @@ func GetNoteReviews(c *gin.Context) {
 // LikeNoteReview godoc
 // @Schemes http
 // @Description 点赞评论
-// @Tags noteReview
+// @Tags NoteReview
 // @Param id path int true "评论id"
 // @Success 200 {string} string "点赞成功"
 // @Failure 403 {string} string "没有权限"
@@ -224,7 +224,7 @@ func LikeNoteReview(c *gin.Context) {
 // UnlikeNoteReview godoc
 // @Schemes http
 // @Description 取消点赞评论
-// @Tags noteReview
+// @Tags NoteReview
 // @Param id path int true "评论id"
 // @Success 200 {string} string "取消点赞成功"
 // @Failure 403 {string} string "没有权限"

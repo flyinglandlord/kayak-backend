@@ -14,6 +14,7 @@ type GroupFilter struct {
 	ID      *int `json:"id" form:"id"`
 	UserId  *int `json:"user_id" form:"user_id"`
 	OwnerId *int `json:"owner_id" form:"owner_id"`
+	AreaId  *int `json:"area_id" form:"area_id"`
 }
 type GroupResponse struct {
 	Id          int              `json:"id"`
@@ -24,10 +25,12 @@ type GroupResponse struct {
 	UserInfo    UserInfoResponse `json:"user_info"`
 	MemberCount int              `json:"member_count"`
 	CreatedAt   time.Time        `json:"created_at"`
+	AreaId      int              `json:"area_id"`
 }
 type GroupCreateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	AreaId      *int   `json:"area_id"`
 }
 type AllGroupResponse struct {
 	TotalCount int             `json:"total_count"`
@@ -37,7 +40,7 @@ type AllGroupResponse struct {
 // GetGroups godoc
 // @Schemes http
 // @Description 获取符合filter要求的小组列表
-// @Tags group
+// @Tags Group
 // @Param filter query GroupFilter false "筛选条件"
 // @Success 200 {object} AllGroupResponse "小组列表"
 // @Failure 400 {string} string "请求解析失败"
@@ -60,6 +63,9 @@ func GetGroups(c *gin.Context) {
 	}
 	if filter.OwnerId != nil {
 		sqlString += fmt.Sprintf(` AND user_id = %d`, *filter.OwnerId)
+	}
+	if filter.AreaId != nil {
+		sqlString += fmt.Sprintf(` AND area_id = %d`, *filter.AreaId)
 	}
 	if err := global.Database.Select(&groups, sqlString, 1); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
@@ -92,6 +98,7 @@ func GetGroups(c *gin.Context) {
 			UserInfo:    userInfo,
 			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
+			AreaId:      group.AreaId,
 		})
 	}
 	c.JSON(http.StatusOK, AllGroupResponse{
@@ -103,7 +110,7 @@ func GetGroups(c *gin.Context) {
 // CreateGroup godoc
 // @Schemes http
 // @Description 创建小组
-// @Tags group
+// @Tags Group
 // @Param group body GroupCreateRequest true "小组信息"
 // @Success 200 {object} GroupResponse "小组信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -116,10 +123,14 @@ func CreateGroup(c *gin.Context) {
 		c.String(http.StatusBadRequest, "请求解析失败")
 		return
 	}
-	sqlString := `INSERT INTO "group" (name, description, invitation, user_id, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	if request.AreaId == nil {
+		request.AreaId = new(int)
+		*request.AreaId = 100
+	}
+	sqlString := `INSERT INTO "group" (name, description, invitation, user_id, created_at, area_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	var groupId int
 	if err := global.Database.Get(&groupId, sqlString, request.Name, request.Description,
-		utils.GenerateInvitationCode(4), c.GetInt("UserId"), time.Now().Local()); err != nil {
+		utils.GenerateInvitationCode(4), c.GetInt("UserId"), time.Now().Local(), request.AreaId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -141,13 +152,14 @@ func CreateGroup(c *gin.Context) {
 		Invitation:  group.Invitation,
 		UserId:      group.UserId,
 		CreatedAt:   group.CreatedAt,
+		AreaId:      group.AreaId,
 	})
 }
 
 // GetGroupInvitation godoc
 // @Schemes http
 // @Description 获取小组邀请码
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组id"
 // @Success 200 {string} string "邀请码"
 // @Failure 403 {string} string "没有权限"
@@ -176,7 +188,7 @@ func GetGroupInvitation(c *gin.Context) {
 // DeleteGroup godoc
 // @Schemes http
 // @Description 删除小组
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -230,7 +242,7 @@ type AllUserResponse struct {
 // GetUsersInGroup godoc
 // @Schemes http
 // @Description 获取小组成员
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Success 200 {object} AllUserResponse "用户信息"
 // @Failure 404 {string} string "小组不存在"
@@ -271,7 +283,7 @@ func GetUsersInGroup(c *gin.Context) {
 // AddUserToGroup godoc
 // @Schemes http
 // @Description 添加用户到小组
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Param user_id query int true "用户ID"
 // @Param invitation query string true "邀请码"
@@ -309,7 +321,7 @@ func AddUserToGroup(c *gin.Context) {
 // RemoveUserFromGroup godoc
 // @Schemes http
 // @Description 从小组移除用户
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Param user_id query int true "用户ID"
 // @Success 200 {string} string "移除成功"
@@ -340,7 +352,7 @@ func RemoveUserFromGroup(c *gin.Context) {
 // QuitGroup godoc
 // @Schemes http
 // @Description 退出小组
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Success 200 {string} string "退出成功"
 // @Failure 404 {string} string "小组不存在或用户未加入此小组"
@@ -381,15 +393,16 @@ func QuitGroup(c *gin.Context) {
 }
 
 type UpdateGroupInfoRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Invitation  string `json:"invitation"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	Invitation  *string `json:"invitation"`
+	AreaId      *int    `json:"area_id"`
 }
 
 // UpdateGroupInfo godoc
 // @Schemes http
 // @Description 编辑小组信息
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Param group body UpdateGroupInfoRequest true "编辑信息，如果希望不改变的字段传入原值"
 // @Success 200 {string} string "编辑成功"
@@ -399,13 +412,13 @@ type UpdateGroupInfoRequest struct {
 // @Router /group/update/{id} [put]
 // @Security ApiKeyAuth
 func UpdateGroupInfo(c *gin.Context) {
-	sqlString := `SELECT user_id FROM "group" WHERE id = $1`
-	var userId int
-	if err := global.Database.Get(&userId, sqlString, c.Param("id")); err != nil {
+	var group model.Group
+	sqlString := `SELECT * FROM "group" WHERE id = $1`
+	if err := global.Database.Get(&group, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "小组不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); userId != c.GetInt("UserId") && role != global.ADMIN {
+	if role, _ := c.Get("Role"); group.UserId != c.GetInt("UserId") && role != global.ADMIN {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -414,8 +427,21 @@ func UpdateGroupInfo(c *gin.Context) {
 		c.String(http.StatusBadRequest, "参数错误")
 		return
 	}
-	sqlString = `UPDATE "group" SET name = $1, description = $2, invitation = $3 WHERE id = $4`
-	if _, err := global.Database.Exec(sqlString, request.Name, request.Description, request.Invitation, c.Param("id")); err != nil {
+	if request.Name == nil {
+		request.Name = &group.Name
+	}
+	if request.Description == nil {
+		request.Description = &group.Description
+	}
+	if request.Invitation == nil {
+		request.Invitation = &group.Invitation
+	}
+	if request.AreaId == nil {
+		request.AreaId = &group.AreaId
+	}
+	sqlString = `UPDATE "group" SET name = $1, description = $2, invitation = $3, area_id = $4 WHERE id = $5`
+	if _, err := global.Database.Exec(sqlString, request.Name, request.Description,
+		request.Invitation, request.AreaId, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

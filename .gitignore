@@ -6,3 +6,4 @@
 /.idea/
 /log/log
 /log/gin_log
+/data/*.json
