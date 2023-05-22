@@ -40,7 +40,7 @@ type AllGroupResponse struct {
 // GetGroups godoc
 // @Schemes http
 // @Description 获取符合filter要求的小组列表
-// @Tags group
+// @Tags Group
 // @Param filter query GroupFilter false "筛选条件"
 // @Success 200 {object} AllGroupResponse "小组列表"
 // @Failure 400 {string} string "请求解析失败"
@@ -110,7 +110,7 @@ func GetGroups(c *gin.Context) {
 // CreateGroup godoc
 // @Schemes http
 // @Description 创建小组
-// @Tags group
+// @Tags Group
 // @Param group body GroupCreateRequest true "小组信息"
 // @Success 200 {object} GroupResponse "小组信息"
 // @Failure 400 {string} string "请求解析失败"
@@ -159,7 +159,7 @@ func CreateGroup(c *gin.Context) {
 // GetGroupInvitation godoc
 // @Schemes http
 // @Description 获取小组邀请码
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组id"
 // @Success 200 {string} string "邀请码"
 // @Failure 403 {string} string "没有权限"
@@ -188,7 +188,7 @@ func GetGroupInvitation(c *gin.Context) {
 // DeleteGroup godoc
 // @Schemes http
 // @Description 删除小组
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Success 200 {string} string "删除成功"
 // @Failure 403 {string} string "没有权限"
@@ -242,7 +242,7 @@ type AllUserResponse struct {
 // GetUsersInGroup godoc
 // @Schemes http
 // @Description 获取小组成员
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Success 200 {object} AllUserResponse "用户信息"
 // @Failure 404 {string} string "小组不存在"
@@ -283,7 +283,7 @@ func GetUsersInGroup(c *gin.Context) {
 // AddUserToGroup godoc
 // @Schemes http
 // @Description 添加用户到小组
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Param user_id query int true "用户ID"
 // @Param invitation query string true "邀请码"
@@ -321,7 +321,7 @@ func AddUserToGroup(c *gin.Context) {
 // RemoveUserFromGroup godoc
 // @Schemes http
 // @Description 从小组移除用户
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Param user_id query int true "用户ID"
 // @Success 200 {string} string "移除成功"
@@ -352,7 +352,7 @@ func RemoveUserFromGroup(c *gin.Context) {
 // QuitGroup godoc
 // @Schemes http
 // @Description 退出小组
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Success 200 {string} string "退出成功"
 // @Failure 404 {string} string "小组不存在或用户未加入此小组"
@@ -402,7 +402,7 @@ type UpdateGroupInfoRequest struct {
 // UpdateGroupInfo godoc
 // @Schemes http
 // @Description 编辑小组信息
-// @Tags group
+// @Tags Group
 // @Param id path int true "小组ID"
 // @Param group body UpdateGroupInfoRequest true "编辑信息，如果希望不改变的字段传入原值"
 // @Success 200 {string} string "编辑成功"

@@ -32,7 +32,7 @@ type AllFavoriteProblemSet struct {
 // GetWrongProblemSet godoc
 // @Schemes http
 // @Description 获取错题集
-// @Tags special
+// @Tags Special
 // @Param offset query int false "偏移量"
 // @Param limit query int false "数量"
 // @Success 200 {object} AllWrongProblemSet "错题集"
@@ -83,7 +83,7 @@ func GetWrongProblemSet(c *gin.Context) {
 // GetFavoriteProblemSet godoc
 // @Schemes http
 // @Description 获取含有收藏题目的题集
-// @Tags special
+// @Tags Special
 // @Param offset query int false "偏移量"
 // @Param limit query int false "数量"
 // @Success 200 {object} AllFavoriteProblemSet "收藏题集"
@@ -134,7 +134,7 @@ func GetFavoriteProblemSet(c *gin.Context) {
 // GetFeaturedProblemSet godoc
 // @Schemes http
 // @Description 获取精选题集
-// @Tags special
+// @Tags Special
 // @Success 200 {object} AllProblemSetResponse "题集列表"
 // @Failure default {string} string "服务器错误"
 // @Router /special/featured_problem_set [get]
@@ -203,7 +203,7 @@ func GetFeaturedProblemSet(c *gin.Context) {
 // GetFeaturedNote godoc
 // @Schemes http
 // @Description 获取精选笔记
-// @Tags special
+// @Tags Special
 // @Success 200 {object} AllNoteResponse "笔记列表"
 // @Failure default {string} string "服务器错误"
 // @Router /special/featured_note [get]
@@ -262,7 +262,7 @@ func GetFeaturedNote(c *gin.Context) {
 // GetFeaturedGroup godoc
 // @Schemes http
 // @Description 获取精选小组
-// @Tags special
+// @Tags Special
 // @Success 200 {object} AllGroupResponse "小组列表"
 // @Failure default {string} string "服务器错误"
 // @Router /special/featured_group [get]
