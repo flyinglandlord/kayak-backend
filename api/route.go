@@ -120,6 +120,14 @@ func InitRoute() {
 	discussion.POST("/like/:id", LikeDiscussion)
 	discussion.POST("/unlike/:id", UnlikeDiscussion)
 
+	discussionReview := global.Router.Group("/discussion_review")
+	discussionReview.Use(global.CheckAuth)
+	discussionReview.POST("/add", AddDiscussionReview)
+	discussionReview.DELETE("/remove/:id", RemoveDiscussionReview)
+	discussionReview.GET("/get", GetDiscussionReviews)
+	discussionReview.POST("/like/:id", LikeDiscussionReview)
+	discussionReview.POST("/unlike/:id", UnlikeDiscussionReview)
+
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
 	global.Router.GET("/problem/choice/:id", GetChoiceProblem)

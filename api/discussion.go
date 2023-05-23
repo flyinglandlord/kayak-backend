@@ -251,7 +251,7 @@ func UpdateDiscussion(c *gin.Context) {
 
 // DeleteDiscussion godoc
 // @Schemes http
-// @Description 删除讨论（只有创建者可以删除）
+// @Description 删除讨论（只有创建者和群主可以删除）
 // @Tags Discussion
 // @Param id path int true "讨论ID"
 // @Success 200 {string} string "删除成功"
@@ -261,13 +261,19 @@ func UpdateDiscussion(c *gin.Context) {
 // @Router /discussion/delete/{id} [delete]
 // @Security ApiKeyAuth
 func DeleteDiscussion(c *gin.Context) {
-	sqlString := `SELECT user_id FROM discussion WHERE id = $1`
-	var discussionUserId int
-	if err := global.Database.Get(&discussionUserId, sqlString, c.Param("id")); err != nil {
+	sqlString := `SELECT * FROM discussion WHERE id = $1`
+	var discussion model.Discussion
+	if err := global.Database.Get(&discussion, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusNotFound, "讨论不存在")
 		return
 	}
-	if role, _ := c.Get("Role"); c.GetInt("UserId") != discussionUserId && role != global.ADMIN {
+	sqlString = `SELECT count(*) FROM "group" WHERE id = $1 AND user_id = $2`
+	var count int
+	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("user_id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if role, _ := c.Get("Role"); c.GetInt("UserId") != discussion.UserId && role != global.ADMIN && count == 0 {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -316,6 +322,11 @@ func LikeDiscussion(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
+	sqlString = `UPDATE discussion SET like_count = like_count + 1 WHERE id = $1`
+	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
 	c.String(http.StatusOK, "点赞成功")
 }
 
@@ -338,6 +349,11 @@ func UnlikeDiscussion(c *gin.Context) {
 	}
 	sqlString = `DELETE FROM user_like_note WHERE user_id = $1 AND note_id = $2`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `UPDATE discussion SET like_count = like_count - 1 WHERE id = $1`
+	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

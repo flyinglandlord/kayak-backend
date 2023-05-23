@@ -213,7 +213,8 @@ func LikeNoteReview(c *gin.Context) {
 		c.String(http.StatusNotFound, "评论所属的笔记不存在")
 		return
 	}
-	sqlString = `INSERT INTO user_like_note_review (user_id, note_review_id, created_at) VALUES ($1, $2, now())`
+	sqlString = `INSERT INTO user_like_note_review (user_id, note_review_id, created_at) VALUES ($1, $2, now())
+		ON CONFLICT (user_id, note_review_id) DO UPDATE SET created_at = now()`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
