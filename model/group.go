@@ -10,4 +10,5 @@ type Group struct {
 	UserId      int       `json:"user_id" db:"user_id"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	AreaId      int       `json:"area_id" db:"area_id"`
+	AvatarURL   string    `json:"avatar_url" db:"avatar_url"`
 }

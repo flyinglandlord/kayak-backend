@@ -26,6 +26,7 @@ type GroupResponse struct {
 	MemberCount int              `json:"member_count"`
 	CreatedAt   time.Time        `json:"created_at"`
 	AreaId      int              `json:"area_id"`
+	AvatarURL   string           `json:"avatar_url"`
 }
 type GroupCreateRequest struct {
 	Name        string `json:"name"`
@@ -99,6 +100,7 @@ func GetGroups(c *gin.Context) {
 			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
 			AreaId:      group.AreaId,
+			AvatarURL:   group.AvatarURL,
 		})
 	}
 	c.JSON(http.StatusOK, AllGroupResponse{
@@ -134,7 +136,7 @@ func CreateGroup(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	sqlString = `INSERT INTO group_member (group_id, user_id, created_at) VALUES ($1, $2, $3)`
+	sqlString = `INSERT INTO group_member (group_id, user_id, created_at, is_admin, is_owner) VALUES ($1, $2, $3, true, true)`
 	if _, err := global.Database.Exec(sqlString, groupId, c.GetInt("UserId"), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -153,6 +155,7 @@ func CreateGroup(c *gin.Context) {
 		UserId:      group.UserId,
 		CreatedAt:   group.CreatedAt,
 		AreaId:      group.AreaId,
+		AvatarURL:   group.AvatarURL,
 	})
 }
 

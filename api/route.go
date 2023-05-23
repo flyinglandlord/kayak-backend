@@ -28,7 +28,8 @@ func InitRoute() {
 	upload := global.Router.Group("/upload")
 	upload.Use(global.CheckAuth)
 	upload.POST("/public", UploadPublicFile)
-	upload.POST("/avatar", UploadAvatar)
+	upload.POST("/avatar", UploadUserAvatar)
+	upload.POST("/group_avatar", UploadGroupAvatar)
 
 	note := global.Router.Group("/note")
 	note.Use(global.CheckAuth)

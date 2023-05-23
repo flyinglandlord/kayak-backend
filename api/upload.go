@@ -74,7 +74,7 @@ func UploadPublicFile(c *gin.Context) {
 	})
 }
 
-// UploadAvatar godoc
+// UploadUserAvatar godoc
 // @Schemes http
 // @Description 上传用户头像
 // @Tags Upload
@@ -85,13 +85,51 @@ func UploadPublicFile(c *gin.Context) {
 // @Failure default {string} string "服务器错误"
 // @Router /upload/avatar [post]
 // @Security ApiKeyAuth
-func UploadAvatar(c *gin.Context) {
+func UploadUserAvatar(c *gin.Context) {
 	status, url := DoUploadPublic(c)
 	UserId := c.GetInt("UserId")
 	if status == http.StatusOK {
 		// 更新数据库
 		sqlString := `UPDATE "user" SET avatar_url = $1 WHERE id = $2`
 		if _, err := global.Database.Exec(sqlString, url, UserId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.String(http.StatusOK, "头像设置成功")
+		return
+	}
+	c.String(status, "头像设置失败")
+}
+
+// UploadGroupAvatar godoc
+// @Schemes http
+// @Description 上传小组头像
+// @Tags Upload
+// @Param file formData file true "头像"
+// @Param group_id query int true "小组 ID"
+// @Success 200 {string} string
+// @Failure 400 {string} string "请求解析失败"
+// @Failure 403 {string} string "请求被禁止"
+// @Failure default {string} string "服务器错误"
+// @Router /upload/group_avatar [post]
+// @Security ApiKeyAuth
+func UploadGroupAvatar(c *gin.Context) {
+	// 检查是否有权限修改小组头像
+	UserId := c.GetInt("UserId")
+	GroupId := c.Query("group_id")
+	sqlString := `SELECT user_id FROM "group_member" WHERE group_id = $1 AND user_id = $2 AND (is_admin = true OR is_owner = true)`
+	var ProcessUserId int
+	if err := global.Database.QueryRow(sqlString, GroupId, UserId).Scan(&ProcessUserId); err != nil {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+
+	status, url := DoUploadPublic(c)
+
+	if status == http.StatusOK {
+		// 更新数据库
+		sqlString := `UPDATE "group" SET avatar_url = $1 WHERE id = $2`
+		if _, err := global.Database.Exec(sqlString, url, GroupId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
