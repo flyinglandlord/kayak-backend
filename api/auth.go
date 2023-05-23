@@ -193,12 +193,12 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 	userInfo := model.User{}
-	sqlString := `SELECT id FROM "user" WHERE name = $1`
-	if err := global.Database.Get(&userInfo, sqlString, resetPasswordInfo.UserName); err == nil {
+	sqlString := `SELECT * FROM "user" WHERE name = $1`
+	if err := global.Database.Get(&userInfo, sqlString, resetPasswordInfo.UserName); err != nil {
 		c.String(409, "修改密码失败")
 		return
 	}
-	rawCode := global.Redis.Get(c, resetPasswordInfo.VerifyCode)
+	rawCode := global.Redis.Get(c, userInfo.Email)
 	if rawCode.Err() != nil {
 		c.String(http.StatusBadRequest, "修改密码失败")
 		return
@@ -206,7 +206,7 @@ func ResetPassword(c *gin.Context) {
 		c.String(http.StatusBadRequest, "修改密码失败")
 		return
 	} else {
-		global.Redis.Del(c, resetPasswordInfo.VerifyCode)
+		global.Redis.Del(c, userInfo.Email)
 	}
 	var err error
 	userInfo.Password, err = utils.EncryptPassword(resetPasswordInfo.NewPassword)

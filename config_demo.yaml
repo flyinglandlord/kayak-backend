@@ -14,5 +14,10 @@ MinioSecretKey: # MinioSecretKey
 MiniProgramAppID: # 小程序AppID
 MiniProgramAppSecret: # 小程序AppSecret
 
+SMTPHost: # SMTP地址
+SMTPPort: # SMTP端口
+SMTPUsername: # SMTP用户名
+SMTPPassword: # SMTP密码
+
 LogPath: # 日志路径
-DocsPath: # 文档路径
+DocsPath: # Swagger Base URL
