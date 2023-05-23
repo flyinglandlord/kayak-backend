@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
+	"log"
 	"net/http"
 	"time"
 )
@@ -132,9 +133,21 @@ func FavoriteNote(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO user_favorite_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, note_id) do update set created_at = $3`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
+	if _, err := tx.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
+		if err := tx.Rollback(); err != nil {
+			log.Println(err)
+		}
+		return
+	}
+	sqlString = `UPDATE note SET favorite_count = favorite_count + 1 WHERE id = $1`
+	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		if err := tx.Rollback(); err != nil {
+			log.Println(err)
+		}
 		return
 	}
 	c.String(http.StatusOK, "收藏成功")
@@ -157,9 +170,21 @@ func UnfavoriteNote(c *gin.Context) {
 		c.String(http.StatusNotFound, "笔记不存在")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `DELETE FROM user_favorite_note WHERE user_id = $1 AND note_id = $2`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+	if _, err := tx.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
+		if err := tx.Rollback(); err != nil {
+			log.Println(err)
+		}
+		return
+	}
+	sqlString = `UPDATE note SET favorite_count = favorite_count - 1 WHERE id = $1`
+	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		if err := tx.Rollback(); err != nil {
+			log.Println(err)
+		}
 		return
 	}
 	c.String(http.StatusOK, "取消收藏成功")

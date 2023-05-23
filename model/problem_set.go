@@ -12,4 +12,5 @@ type ProblemSet struct {
 	IsPublic    bool      `json:"is_public" db:"is_public"`
 	GroupId     int       `json:"group_id" db:"group_id"`
 	AreaId      int       `json:"area_id" db:"area_id"`
+	LikeCount   int       `json:"like_count" db:"like_count"`
 }
