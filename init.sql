@@ -9,7 +9,7 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 SET search_path = "public";
 SET TIME ZONE 'PRC';
 
-create table "user"
+create table if not exists "user"
 (
     id         serial
         primary key,
@@ -27,7 +27,7 @@ create table "user"
 alter table "user"
     owner to postgres;
 
-create table problem_type
+create table if not exists problem_type
 (
     id              serial
         primary key,
@@ -44,7 +44,7 @@ create table problem_type
 alter table problem_type
     owner to postgres;
 
-create table problem_choice
+create table if not exists problem_choice
 (
     id          integer      not null
         references problem_type
@@ -58,7 +58,7 @@ create table problem_choice
 alter table problem_choice
     owner to postgres;
 
-create table problem_answer
+create table if not exists problem_answer
 (
     id     integer      not null
         primary key
@@ -70,7 +70,7 @@ create table problem_answer
 alter table problem_answer
     owner to postgres;
 
-create table problem_set
+create table if not exists problem_set
 (
     id          serial
         primary key,
@@ -88,7 +88,7 @@ create table problem_set
 alter table problem_set
     owner to postgres;
 
-create table problem_in_problem_set
+create table if not exists problem_in_problem_set
 (
     problem_set_id integer not null
         references problem_set
@@ -102,7 +102,7 @@ create table problem_in_problem_set
 alter table problem_in_problem_set
     owner to postgres;
 
-create table user_favorite_problem
+create table if not exists user_favorite_problem
 (
     problem_id integer   not null
         references problem_type
@@ -117,7 +117,7 @@ create table user_favorite_problem
 alter table user_favorite_problem
     owner to postgres;
 
-create table user_favorite_problem_set
+create table if not exists user_favorite_problem_set
 (
     problem_set_id integer   not null
         references problem_set
@@ -132,7 +132,7 @@ create table user_favorite_problem_set
 alter table user_favorite_problem_set
     owner to postgres;
 
-create table user_wrong_record
+create table if not exists user_wrong_record
 (
     problem_id integer   not null
         references problem_type
@@ -149,7 +149,7 @@ create table user_wrong_record
 alter table user_wrong_record
     owner to postgres;
 
-create table note
+create table if not exists note
 (
     id         serial
         primary key,
@@ -166,7 +166,7 @@ create table note
 alter table note
     owner to postgres;
 
-create table note_review
+create table if not exists note_review
 (
     id         serial
         primary key,
@@ -185,7 +185,7 @@ create table note_review
 alter table note_review
     owner to postgres;
 
-create table user_like_note_review
+create table if not exists user_like_note_review
 (
     note_review_id integer   not null
         references note_review
@@ -200,7 +200,7 @@ create table user_like_note_review
 alter table user_like_note_review
     owner to postgres;
 
-create table user_like_note
+create table if not exists user_like_note
 (
     note_id    integer   not null
         references note
@@ -215,7 +215,7 @@ create table user_like_note
 alter table user_like_note
     owner to postgres;
 
-create table user_favorite_note
+create table if not exists user_favorite_note
 (
     note_id    integer   not null
         references note
@@ -230,7 +230,7 @@ create table user_favorite_note
 alter table user_favorite_note
     owner to postgres;
 
-create table problem_judge
+create table if not exists problem_judge
 (
     id         integer not null
         primary key
@@ -242,39 +242,42 @@ create table problem_judge
 alter table problem_judge
     owner to postgres;
 
-create table "group"
+create table if not exists "group"
 (
     id          serial
         primary key,
-    name        varchar(255)        not null,
-    description text                not null,
-    invitation  varchar(255)        not null,
-    created_at  timestamp           not null,
-    user_id     integer             not null
+    name        varchar(255)              not null,
+    description text                      not null,
+    invitation  varchar(255)              not null,
+    created_at  timestamp                 not null,
+    user_id     integer                   not null
         references "user"
             on delete cascade,
-    area_id     integer default 100 not null
+    area_id     integer       default 100 not null,
+    avatar_url  varchar(1024) default '/user.png'::character varying
 );
 
 alter table "group"
     owner to postgres;
 
-create table group_member
+create table if not exists group_member
 (
-    group_id   integer   not null
+    group_id   integer               not null
         references "group"
             on delete cascade,
-    user_id    integer   not null
+    user_id    integer               not null
         references "user"
             on delete cascade,
-    created_at timestamp not null,
+    created_at timestamp             not null,
+    is_admin   boolean default false not null,
+    is_owner   boolean default false,
     primary key (group_id, user_id)
 );
 
 alter table group_member
     owner to postgres;
 
-create table discussion
+create table if not exists discussion
 (
     id         serial
         primary key,
@@ -295,7 +298,7 @@ create table discussion
 alter table discussion
     owner to postgres;
 
-create table discussion_review
+create table if not exists discussion_review
 (
     id            serial
         primary key,
@@ -315,7 +318,22 @@ create table discussion_review
 alter table discussion_review
     owner to postgres;
 
-create table user_like_discussion_review
+create table if not exists note_problem
+(
+    note_id    integer not null
+        references note
+            on delete cascade,
+    problem_id integer not null
+        references problem_type
+            on delete cascade,
+    created_at timestamp default now(),
+    primary key (note_id, problem_id)
+);
+
+alter table note_problem
+    owner to postgres;
+
+create table if not exists user_like_discussion_review
 (
     discussion_review_id integer   not null
         references discussion_review
@@ -330,7 +348,7 @@ create table user_like_discussion_review
 alter table user_like_discussion_review
     owner to postgres;
 
-create table user_like_discussion
+create table if not exists user_like_discussion
 (
     discussion_id integer   not null
         references discussion
@@ -343,20 +361,5 @@ create table user_like_discussion
 );
 
 alter table user_like_discussion
-    owner to postgres;
-
-create table note_problem
-(
-    note_id    integer not null
-        references note
-            on delete cascade,
-    problem_id integer not null
-        references problem_type
-            on delete cascade,
-    created_at timestamp default now(),
-    primary key (note_id, problem_id)
-);
-
-alter table note_problem
     owner to postgres;
 

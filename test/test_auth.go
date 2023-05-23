@@ -39,7 +39,7 @@ func testRegister(t *testing.T) {
 	//assert.NotEqual(t, res, "注册成功")
 }
 
-func testResetPassword(t *testing.T) {
+func testChangePassword(t *testing.T) {
 	// 先登录
 	res := api.LoginResponse{}
 	code := Post("/login", "", &api.LoginInfo{
@@ -50,19 +50,19 @@ func testResetPassword(t *testing.T) {
 	assert.NotEqual(t, res.Token, "")
 	// 再重置密码
 	var result string
-	code = Post("/reset-password", res.Token, &api.RegisterResponse{
+	code = Post("/change-password", res.Token, &api.RegisterResponse{
 		OldPassword: initUser[2].Password + initUser[2].Password,
 		NewPassword: initUser[2].Password,
 	}, &result)
 	assert.Equal(t, code, http.StatusBadRequest)
 	//assert.Equal(t, result, "旧密码错误")
-	code = Post("/reset-password", res.Token, &api.RegisterResponse{
+	code = Post("/change-password", res.Token, &api.RegisterResponse{
 		OldPassword: initUser[2].Password,
 		NewPassword: initUser[2].Password + initUser[2].Password,
 	}, &result)
 	assert.Equal(t, code, http.StatusOK)
 	//assert.Equal(t, result, "修改成功")
-	code = Post("/reset-password", res.Token, &api.RegisterResponse{
+	code = Post("/change-password", res.Token, &api.RegisterResponse{
 		OldPassword: initUser[2].Password + initUser[2].Password,
 		NewPassword: initUser[2].Password,
 	}, &result)

@@ -1,13 +1,17 @@
 package api
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"kayak-backend/utils"
 	"net/http"
 	"time"
+)
+
+const (
+	lastSentTimesKey = "last_sent_times"
 )
 
 type LoginInfo struct {
@@ -29,6 +33,12 @@ type RegisterInfo struct {
 
 type RegisterResponse struct {
 	OldPassword string `json:"old_password" bind:"required"`
+	NewPassword string `json:"new_password" bind:"required,min=6,max=20"`
+}
+
+type ResetPasswordInfo struct {
+	UserName    string `json:"username" bind:"required"`
+	VerifyCode  string `json:"verify_code" bind:"required"`
 	NewPassword string `json:"new_password" bind:"required,min=6,max=20"`
 }
 
@@ -122,7 +132,7 @@ func Register(c *gin.Context) {
 	c.String(http.StatusOK, "注册成功")
 }
 
-// ResetPassword godoc
+// ChangePassword godoc
 // @Schemes http
 // @Description 用户修改密码
 // @Tags Authentication
@@ -131,9 +141,9 @@ func Register(c *gin.Context) {
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 409 {string} string "用户不存在"
 // @Failure default {string} string "服务器错误"
-// @Router /reset-password [post]
+// @Router /change-password [post]
 // @Security ApiKeyAuth
-func ResetPassword(c *gin.Context) {
+func ChangePassword(c *gin.Context) {
 	registerRequest := RegisterResponse{}
 	if err := c.ShouldBindJSON(&registerRequest); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
@@ -143,15 +153,63 @@ func ResetPassword(c *gin.Context) {
 	userInfo := model.User{}
 	sqlString := `SELECT id, password FROM "user" WHERE id = $1`
 	if err := global.Database.Get(&userInfo, sqlString, userId); err != nil {
-		c.String(409, "用户不存在")
+		c.String(409, "修改密码失败")
 		return
 	}
 	if !utils.VerifyPassword(userInfo.Password, registerRequest.OldPassword) {
-		c.String(http.StatusBadRequest, "旧密码错误")
+		c.String(http.StatusBadRequest, "修改密码失败")
 		return
 	}
 	var err error
 	userInfo.Password, err = utils.EncryptPassword(registerRequest.NewPassword)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `UPDATE "user" SET password = $1 WHERE id = $2`
+	if _, err := global.Database.Exec(sqlString, userInfo.Password, userInfo.ID); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "修改成功")
+}
+
+// ResetPassword godoc
+// @Schemes http
+// @Description 用户重置密码，需要先向邮箱发送一封邮件
+// @Tags Authentication
+// @Param info body ResetPasswordInfo true "用户修改密码信息"
+// @Success 200 {string} string "修改成功"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure 409 {string} string "用户不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /reset-password [post]
+// @Security ApiKeyAuth
+func ResetPassword(c *gin.Context) {
+	// 验证Redis内的邮箱验证码是否正确，然后修改密码
+	resetPasswordInfo := ResetPasswordInfo{}
+	if err := c.ShouldBindJSON(&resetPasswordInfo); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	userInfo := model.User{}
+	sqlString := `SELECT id FROM "user" WHERE name = $1`
+	if err := global.Database.Get(&userInfo, sqlString, resetPasswordInfo.UserName); err == nil {
+		c.String(409, "修改密码失败")
+		return
+	}
+	rawCode := global.Redis.Get(c, resetPasswordInfo.VerifyCode)
+	if rawCode.Err() != nil {
+		c.String(http.StatusBadRequest, "修改密码失败")
+		return
+	} else if rawCode.Val() != resetPasswordInfo.VerifyCode {
+		c.String(http.StatusBadRequest, "修改密码失败")
+		return
+	} else {
+		global.Redis.Del(c, resetPasswordInfo.VerifyCode)
+	}
+	var err error
+	userInfo.Password, err = utils.EncryptPassword(resetPasswordInfo.NewPassword)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -190,16 +248,31 @@ func Logout(c *gin.Context) {
 // @Failure default {string} string "服务器错误"
 // @Router /send-email [post]
 func SendEmail(c *gin.Context) {
-	fmt.Println(c.Query("email"))
-	vCode, err := utils.SendEmailValidate(c.Query("email"))
-	if err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
+	// fmt.Println(c.Query("email"))
+	email := c.Query("email")
+	currentTime := time.Now()
+	lastSentTimeStr, err := global.Redis.ZScore(c, lastSentTimesKey, email).Result()
+	if err == redis.Nil || (err == nil && currentTime.Sub(time.Unix(int64(lastSentTimeStr), 0)) >= time.Minute) {
+		vCode, err := utils.SendEmailValidate(c.Query("email"))
+		if err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		err = global.Redis.ZAdd(c, lastSentTimesKey, &redis.Z{
+			Score:  float64(currentTime.Unix()),
+			Member: email,
+		}).Err()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "验证码存储失败")
+			return
+		}
+		err = global.Redis.Set(c, email, vCode, time.Minute*5).Err()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "验证码存储失败")
+			return
+		}
+		c.String(http.StatusOK, "发送成功")
+	} else {
+		c.String(http.StatusBadRequest, "发送过于频繁")
 	}
-	err = global.Redis.Set(c, c.Query("email"), vCode, time.Minute*5).Err()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "验证码存储失败")
-		return
-	}
-	c.String(http.StatusOK, "发送成功")
 }

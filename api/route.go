@@ -7,6 +7,7 @@ func InitRoute() {
 	global.Router.GET("/logout", Logout)
 	global.Router.POST("/login", Login)
 	global.Router.POST("/register", Register)
+	global.Router.POST("/change-password", ChangePassword)
 	global.Router.POST("/reset-password", ResetPassword)
 	global.Router.POST("/send-email", SendEmail)
 
