@@ -110,6 +110,15 @@ func InitRoute() {
 	group.DELETE("/quit/:id", QuitGroup)
 	group.PUT("/update/:id", UpdateGroupInfo)
 
+	discussion := global.Router.Group("/discussion")
+	discussion.Use(global.CheckAuth)
+	discussion.GET("/all", GetDiscussions)
+	discussion.POST("/create", CreateDiscussion)
+	discussion.PUT("/update", UpdateDiscussion)
+	discussion.DELETE("/delete/:id", DeleteDiscussion)
+	discussion.POST("/like/:id", LikeDiscussion)
+	discussion.POST("/unlike/:id", UnlikeDiscussion)
+
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
 	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
