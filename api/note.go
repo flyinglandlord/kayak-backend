@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -60,7 +59,15 @@ type NoteUpdateRequest struct {
 // @Router /note/all [get]
 // @Security ApiKeyAuth
 func GetNotes(c *gin.Context) {
-	sqlString := `SELECT id, title, content, user_id, created_at, updated_at, like_count, favorite_count FROM note`
+	sqlString := `SELECT note_table.id as id, title, content, user_id, created_at, updated_at, COALESCE(like_count,0) as like_count
+		FROM (
+			(SELECT * FROM note) as note_table
+			LEFT JOIN
+			(SELECT note.id, count(note.id) like_count
+			FROM note, user_like_note
+			WHERE note.id = user_like_note.note_id group by note.id) as like_count_table
+			ON note_table.id = like_count_table.id
+		)`
 	role, _ := c.Get("Role")
 	if role == global.GUEST {
 		sqlString += ` WHERE is_public = true`
@@ -311,24 +318,8 @@ func LikeNote(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
-	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO user_like_note (user_id, note_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, note_id) do update set created_at = $3`
-	if _, err := tx.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
-		}
-		return
-	}
-	sqlString = `UPDATE note SET like_count = like_count + 1 WHERE id = $1`
-	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
-		}
-		return
-	}
-	if err := tx.Commit(); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -352,21 +343,9 @@ func UnlikeNote(c *gin.Context) {
 		c.String(http.StatusNotFound, "笔记不存在")
 		return
 	}
-	tx := global.Database.MustBegin()
 	sqlString = `DELETE FROM user_like_note WHERE user_id = $1 AND note_id = $2`
-	if _, err := tx.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
-		}
-		return
-	}
-	sqlString = `UPDATE note SET like_count = like_count - 1 WHERE id = $1`
-	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
-		}
 		return
 	}
 	c.String(http.StatusOK, "取消点赞成功")

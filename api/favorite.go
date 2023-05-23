@@ -142,12 +142,8 @@ func FavoriteNote(c *gin.Context) {
 		}
 		return
 	}
-	sqlString = `UPDATE note SET favorite_count = favorite_count + 1 WHERE id = $1`
-	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
-		}
 		return
 	}
 	c.String(http.StatusOK, "收藏成功")
@@ -179,12 +175,8 @@ func UnfavoriteNote(c *gin.Context) {
 		}
 		return
 	}
-	sqlString = `UPDATE note SET favorite_count = favorite_count - 1 WHERE id = $1`
-	if _, err := tx.Exec(sqlString, c.Param("id")); err != nil {
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
-		if err := tx.Rollback(); err != nil {
-			log.Println(err)
-		}
 		return
 	}
 	c.String(http.StatusOK, "取消收藏成功")
