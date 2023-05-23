@@ -84,7 +84,7 @@ func GetProblemSets(c *gin.Context) {
 		if role == global.GUEST {
 			sqlString += ` WHERE is_public = true `
 		} else if role == global.USER {
-			sqlString += ` WHERE (is_public = true OR user_id IN (SELECT user_id FROM group_member WHERE group_id = ` + fmt.Sprintf("%d", *filter.GroupId) + `))`
+			sqlString += fmt.Sprint(` WHERE (is_public = true OR`, c.GetInt("UserId"), ` IN (SELECT user_id FROM group_member WHERE group_id = `, *filter.GroupId, `))`)
 		} else {
 			sqlString += ` WHERE 1 = 1`
 		}
@@ -99,7 +99,7 @@ func GetProblemSets(c *gin.Context) {
 		sqlString += fmt.Sprintf(` AND area_id = %d`, *filter.AreaId)
 	}
 	if filter.UserId != nil {
-		sqlString += fmt.Sprintf(` AND ((group_id = 0 AND user_id = %d) OR (user_id IN (SELECT user_id FROM group_member WHERE group_member.group_id = problem_set.group_id)))`, *filter.UserId)
+		sqlString += fmt.Sprintf(` AND group_id = 0 AND user_id = %d`, *filter.UserId)
 	}
 	if filter.IsFavorite != nil {
 		if *filter.IsFavorite {

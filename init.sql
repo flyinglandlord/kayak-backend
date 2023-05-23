@@ -278,17 +278,18 @@ create table discussion
 (
     id         serial
         primary key,
-    title      varchar(255) not null,
-    content    text         not null,
-    created_at timestamp    not null,
-    updated_at timestamp    not null,
-    user_id    integer      not null
+    title      varchar(255)      not null,
+    content    text              not null,
+    created_at timestamp         not null,
+    updated_at timestamp         not null,
+    user_id    integer           not null
         references "user"
             on delete cascade,
-    group_id   integer      not null
+    group_id   integer           not null
         references "group"
             on delete cascade,
-    is_public  boolean      not null
+    is_public  boolean           not null,
+    like_count integer default 0 not null
 );
 
 alter table discussion
@@ -298,19 +299,50 @@ create table discussion_review
 (
     id            serial
         primary key,
-    title         varchar(255) not null,
-    content       text         not null,
-    created_at    timestamp    not null,
-    updated_at    timestamp    not null,
-    user_id       integer      not null
+    title         varchar(255)      not null,
+    content       text              not null,
+    created_at    timestamp         not null,
+    updated_at    timestamp         not null,
+    user_id       integer           not null
         references "user"
             on delete cascade,
-    discussion_id integer      not null
+    discussion_id integer           not null
         references discussion
-            on delete cascade
+            on delete cascade,
+    like_count    integer default 0 not null
 );
 
 alter table discussion_review
+    owner to postgres;
+
+create table user_like_discussion_review
+(
+    discussion_review_id integer   not null
+        references discussion_review
+            on delete cascade,
+    user_id              integer   not null
+        references "user"
+            on delete cascade,
+    created_at           timestamp not null,
+    primary key (discussion_review_id, user_id)
+);
+
+alter table user_like_discussion_review
+    owner to postgres;
+
+create table user_like_discussion
+(
+    discussion_id integer   not null
+        references discussion
+            on delete cascade,
+    user_id       integer   not null
+        references "user"
+            on delete cascade,
+    created_at    timestamp not null,
+    primary key (discussion_id, user_id)
+);
+
+alter table user_like_discussion
     owner to postgres;
 
 create table note_problem
