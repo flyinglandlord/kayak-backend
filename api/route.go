@@ -7,6 +7,7 @@ func InitRoute() {
 	global.Router.GET("/logout", Logout)
 	global.Router.POST("/login", Login)
 	global.Router.POST("/register", Register)
+	global.Router.POST("/change-password", ChangePassword)
 	global.Router.POST("/reset-password", ResetPassword)
 	global.Router.POST("/send-email", SendEmail)
 
@@ -28,7 +29,8 @@ func InitRoute() {
 	upload := global.Router.Group("/upload")
 	upload.Use(global.CheckAuth)
 	upload.POST("/public", UploadPublicFile)
-	upload.POST("/avatar", UploadAvatar)
+	upload.POST("/avatar", UploadUserAvatar)
+	upload.POST("/group_avatar", UploadGroupAvatar)
 
 	note := global.Router.Group("/note")
 	note.Use(global.CheckAuth)
@@ -108,6 +110,15 @@ func InitRoute() {
 	group.DELETE("/remove/:id", RemoveUserFromGroup)
 	group.DELETE("/quit/:id", QuitGroup)
 	group.PUT("/update/:id", UpdateGroupInfo)
+
+	discussion := global.Router.Group("/discussion")
+	discussion.Use(global.CheckAuth)
+	discussion.GET("/all", GetDiscussions)
+	discussion.POST("/create", CreateDiscussion)
+	discussion.PUT("/update", UpdateDiscussion)
+	discussion.DELETE("/delete/:id", DeleteDiscussion)
+	discussion.POST("/like/:id", LikeDiscussion)
+	discussion.POST("/unlike/:id", UnlikeDiscussion)
 
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
