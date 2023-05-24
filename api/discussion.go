@@ -317,13 +317,20 @@ func LikeDiscussion(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO user_like_discussion (user_id, discussion_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, discussion_id) do update set created_at = $3`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `UPDATE discussion SET like_count = like_count + 1 WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -347,13 +354,20 @@ func UnlikeDiscussion(c *gin.Context) {
 		c.String(http.StatusNotFound, "笔记不存在")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `DELETE FROM user_like_note WHERE user_id = $1 AND note_id = $2`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `UPDATE discussion SET like_count = like_count - 1 WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}

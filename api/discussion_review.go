@@ -265,13 +265,20 @@ func LikeDiscussionReview(c *gin.Context) {
 		c.String(http.StatusOK, "点赞成功")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO user_like_discussion_review (user_id, discussion_review_id, created_at) VALUES ($1, $2, now())`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("user_id"), c.Param("id")); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `UPDATE discussion_review SET like_count = like_count + 1 WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -302,13 +309,20 @@ func UnlikeDiscussionReview(c *gin.Context) {
 		c.String(http.StatusNotFound, "讨论不存在")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `DELETE FROM user_like_discussion_review WHERE user_id = $1 AND discussion_review_id = $2`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("user_id"), c.Param("id")); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `UPDATE discussion_review SET like_count = like_count - 1 WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
