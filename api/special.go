@@ -168,7 +168,7 @@ func GetFeaturedProblemSet(c *gin.Context) {
 			return
 		}
 		user := model.User{}
-		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, problemSet.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
@@ -279,7 +279,7 @@ func GetFeaturedGroup(c *gin.Context) {
 	var groupResponses []GroupResponse
 	for _, group := range groups {
 		user := model.User{}
-		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, group.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return

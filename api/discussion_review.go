@@ -85,7 +85,7 @@ func AddDiscussionReview(c *gin.Context) {
 		return
 	}
 	user := model.User{}
-	sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+	sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 	if err := global.Database.Get(&user, sqlString, discussion.UserId); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -188,7 +188,7 @@ func GetDiscussionReviews(c *gin.Context) {
 	var reviewResponses []DiscussionReviewResponse
 	for _, review := range reviews {
 		user := model.User{}
-		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, review.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
