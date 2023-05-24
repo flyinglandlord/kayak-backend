@@ -84,7 +84,7 @@ func GetProblemSets(c *gin.Context) {
 		if role == global.GUEST {
 			sqlString += ` WHERE is_public = true `
 		} else if role == global.USER {
-			sqlString += fmt.Sprint(` WHERE (is_public = true OR`, c.GetInt("UserId"), ` IN (SELECT user_id FROM group_member WHERE group_id = `, *filter.GroupId, `))`)
+			sqlString += fmt.Sprint(` WHERE (is_public = true OR `, c.GetInt("UserId"), ` IN (SELECT user_id FROM group_member WHERE group_id = `, *filter.GroupId, `))`)
 		} else {
 			sqlString += ` WHERE 1 = 1`
 		}
@@ -138,7 +138,7 @@ func GetProblemSets(c *gin.Context) {
 			return
 		}
 		user := model.User{}
-		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, problemSet.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return

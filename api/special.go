@@ -141,9 +141,9 @@ func GetFavoriteProblemSet(c *gin.Context) {
 // @Security ApiKeyAuth
 func GetFeaturedProblemSet(c *gin.Context) {
 	sqlString := `SELECT ps.id, ps.name, ps.description, ps.created_at, ps.updated_at, ps.user_id, ps.is_public, ps.group_id
-		FROM problem_set ps JOIN user_favorite_problem_set ufps ON ps.id = ufps.problem_set_id WHERE ps.user_id = $1 GROUP BY ps.id ORDER BY count(*) DESC LIMIT 6`
+		FROM problem_set ps LEFT JOIN user_favorite_problem_set ufps ON ps.id = ufps.problem_set_id WHERE ps.is_public = true GROUP BY ps.id ORDER BY count(*) DESC LIMIT 6`
 	var problemSets []model.ProblemSet
-	if err := global.Database.Select(&problemSets, sqlString, c.GetInt("UserId")); err != nil {
+	if err := global.Database.Select(&problemSets, sqlString); err != nil {
 		c.String(http.StatusBadRequest, "服务器错误")
 		return
 	}
@@ -168,7 +168,7 @@ func GetFeaturedProblemSet(c *gin.Context) {
 			return
 		}
 		user := model.User{}
-		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, problemSet.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
@@ -210,9 +210,9 @@ func GetFeaturedProblemSet(c *gin.Context) {
 // @Security ApiKeyAuth
 func GetFeaturedNote(c *gin.Context) {
 	sqlString := `SELECT n.id, n.title, n.content, n.created_at, n.updated_at, n.user_id, n.is_public 
-		FROM note n JOIN user_favorite_note ufn ON n.id = ufn.note_id WHERE n.user_id = $1 GROUP BY n.id ORDER BY count(*) DESC LIMIT 6`
+		FROM note n LEFT JOIN user_favorite_note ufn ON n.id = ufn.note_id WHERE n.is_public = true GROUP BY n.id ORDER BY count(*) DESC LIMIT 6`
 	var notes []model.Note
-	if err := global.Database.Select(&notes, sqlString, c.GetInt("UserId")); err != nil {
+	if err := global.Database.Select(&notes, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -268,18 +268,17 @@ func GetFeaturedNote(c *gin.Context) {
 // @Router /special/featured_group [get]
 // @Security ApiKeyAuth
 func GetFeaturedGroup(c *gin.Context) {
-	sqlString := `SELECT g.id, g.name, g.description, g.created_at, g.user_id
-		FROM "group" g JOIN group_member gm ON g.id = gm.group_id 
-		WHERE g.id IN (SELECT group_id FROM group_member WHERE user_id = $1) GROUP BY g.id ORDER BY count(*) DESC LIMIT 6`
+	sqlString := `SELECT g.id, g.name, g.description, g.created_at, g.user_id FROM "group" g LEFT JOIN group_member gm 
+    	ON g.id = gm.group_id GROUP BY g.id ORDER BY count(*) DESC LIMIT 6`
 	var groups []model.Group
-	if err := global.Database.Select(&groups, sqlString, c.GetInt("UserId")); err != nil {
+	if err := global.Database.Select(&groups, sqlString); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	var groupResponses []GroupResponse
 	for _, group := range groups {
 		user := model.User{}
-		sqlString = `SELECT name, email, phone, avatar_url, created_at, nick_name FROM "user" WHERE id = $1`
+		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, group.UserId); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
