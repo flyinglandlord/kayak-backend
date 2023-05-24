@@ -499,3 +499,41 @@ func GetBlankProblem(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, blankProblemResponse)
 }
+
+// AddUserToGroup godoc
+// @Schemes http
+// @Description 添加用户到小组
+// @Tags Group
+// @Param id path int true "小组ID"
+// @Param user_id query int true "用户ID"
+// @Param invitation query string true "邀请码"
+// @Success 200 {string} string "添加成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "小组不存在"/"用户不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/add/{id} [post]
+// @Security ApiKeyAuth
+func AddUserToGroup(c *gin.Context) {
+	sqlString := `SELECT invitation FROM "group" WHERE id = $1`
+	var invitation string
+	if err := global.Database.Get(&invitation, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	sqlString = `SELECT id FROM "user" WHERE id = $1`
+	var userId int
+	if err := global.Database.Get(&userId, sqlString, c.Query("user_id")); err != nil {
+		c.String(http.StatusNotFound, "用户不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); invitation != c.Query("invitation") && role != global.ADMIN {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `INSERT INTO group_member (user_id, group_id, created_at) VALUES ($1, $2, $3)`
+	if _, err := global.Database.Exec(sqlString, c.Query("user_id"), c.Param("id"), time.Now().Local()); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "添加成功")
+}

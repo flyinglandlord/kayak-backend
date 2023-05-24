@@ -11,6 +11,7 @@ type ProblemType struct {
 	ProblemTypeId int       `json:"problem_type_id" db:"problem_type_id"`
 	IsPublic      bool      `json:"is_public" db:"is_public"`
 	Analysis      *string   `json:"analysis" db:"analysis"`
+	ImageURL      *string   `json:"image_url" db:"image_url"`
 }
 
 type ProblemChoice struct {
