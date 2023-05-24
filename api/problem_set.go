@@ -84,7 +84,7 @@ func GetProblemSets(c *gin.Context) {
 		if role == global.GUEST {
 			sqlString += ` WHERE is_public = true `
 		} else if role == global.USER {
-			sqlString += fmt.Sprint(` WHERE (is_public = true OR`, c.GetInt("UserId"), ` IN (SELECT user_id FROM group_member WHERE group_id = `, *filter.GroupId, `))`)
+			sqlString += fmt.Sprint(` WHERE (is_public = true OR `, c.GetInt("UserId"), ` IN (SELECT user_id FROM group_member WHERE group_id = `, *filter.GroupId, `))`)
 		} else {
 			sqlString += ` WHERE 1 = 1`
 		}

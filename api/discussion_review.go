@@ -55,12 +55,12 @@ func AddDiscussionReview(c *gin.Context) {
 	}
 	sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 	var count int
-	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("user_id")); err != nil {
+	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	if role, _ := c.Get("Role"); role != global.ADMIN && (count == 0 ||
-		discussion.UserId != c.GetInt("user_id") && !discussion.IsPublic) {
+		discussion.UserId != c.GetInt("UserId") && !discussion.IsPublic) {
 		c.String(http.StatusForbidden, "没有权限")
 	}
 	tx := global.Database.MustBegin()
@@ -68,7 +68,7 @@ func AddDiscussionReview(c *gin.Context) {
 		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	var reviewId int
 	if err := global.Database.Get(&reviewId, sqlString, request.Title, request.Content, time.Now().Local(),
-		time.Now().Local(), request.DiscussionId, c.GetInt("user_id")); err != nil {
+		time.Now().Local(), request.DiscussionId, c.GetInt("UserId")); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
@@ -134,11 +134,11 @@ func RemoveDiscussionReview(c *gin.Context) {
 	}
 	sqlString = `SELECT count(*) FROM "group" WHERE id = $1 AND user_id = $2`
 	var count int
-	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("user_id")); err != nil {
+	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	if role, _ := c.Get("Role"); role != global.ADMIN && count == 0 && discussion.UserId != c.GetInt("user_id") {
+	if role, _ := c.Get("Role"); role != global.ADMIN && count == 0 && discussion.UserId != c.GetInt("UserId") {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -171,12 +171,12 @@ func GetDiscussionReviews(c *gin.Context) {
 	}
 	sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 	var count int
-	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("user_id")); err != nil {
+	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	if role, _ := c.Get("Role"); role != global.ADMIN && (count == 0 ||
-		discussion.UserId != c.GetInt("user_id") && !discussion.IsPublic) {
+		discussion.UserId != c.GetInt("UserId") && !discussion.IsPublic) {
 		c.String(http.StatusForbidden, "没有权限")
 	}
 	sqlString = `SELECT * FROM discussion_review WHERE discussion_id = $1`
@@ -200,7 +200,7 @@ func GetDiscussionReviews(c *gin.Context) {
 		}
 		sqlString = `SELECT count(*) FROM user_like_discussion_review WHERE discussion_review_id = $1 AND user_id = $2`
 		var isLiked int
-		if err := global.Database.Get(&isLiked, sqlString, review.ID, c.GetInt("user_id")); err != nil {
+		if err := global.Database.Get(&isLiked, sqlString, review.ID, c.GetInt("UserId")); err != nil {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
@@ -248,16 +248,16 @@ func LikeDiscussionReview(c *gin.Context) {
 	}
 	sqlString = `SELECT count(*) FROM "group" WHERE id = $1 AND user_id = $2`
 	var count int
-	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("user_id")); err != nil {
+	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	if role, _ := c.Get("Role"); role != global.ADMIN && (count == 0 ||
-		discussion.UserId != c.GetInt("user_id") && !discussion.IsPublic) {
+		discussion.UserId != c.GetInt("UserId") && !discussion.IsPublic) {
 		c.String(http.StatusForbidden, "没有权限")
 	}
 	sqlString = `SELECT count(*) FROM user_like_discussion_review WHERE user_id = $1 AND discussion_review_id = $2`
-	if err := global.Database.Get(&count, sqlString, c.GetInt("user_id"), c.Param("id")); err != nil {
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -265,13 +265,20 @@ func LikeDiscussionReview(c *gin.Context) {
 		c.String(http.StatusOK, "点赞成功")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO user_like_discussion_review (user_id, discussion_review_id, created_at) VALUES ($1, $2, now())`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("user_id"), c.Param("id")); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `UPDATE discussion_review SET like_count = like_count + 1 WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
@@ -302,13 +309,20 @@ func UnlikeDiscussionReview(c *gin.Context) {
 		c.String(http.StatusNotFound, "讨论不存在")
 		return
 	}
+	tx := global.Database.MustBegin()
 	sqlString = `DELETE FROM user_like_discussion_review WHERE user_id = $1 AND discussion_review_id = $2`
-	if _, err := global.Database.Exec(sqlString, c.GetInt("user_id"), c.Param("id")); err != nil {
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
 	sqlString = `UPDATE discussion_review SET like_count = like_count - 1 WHERE id = $1`
 	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
