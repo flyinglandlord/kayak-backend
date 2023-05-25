@@ -303,6 +303,7 @@ func GetFeaturedGroup(c *gin.Context) {
 			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
 			AreaId:      group.AreaId,
+			AvatarURL:   group.AvatarURL,
 		})
 	}
 	c.JSON(http.StatusOK, AllGroupResponse{
