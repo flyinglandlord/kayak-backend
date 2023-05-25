@@ -390,4 +390,23 @@ create table if not exists area
 alter table area
     owner to postgres;
 
-insert into area (id, name) values (100, '其它');
+INSERT INTO area (id, name) VALUES (2, '计算机');
+INSERT INTO area (id, name) VALUES (3, '经济金融');
+INSERT INTO area (id, name) VALUES (4, '电子信息');
+INSERT INTO area (id, name) VALUES (5, '数学');
+INSERT INTO area (id, name) VALUES (6, '生物');
+INSERT INTO area (id, name) VALUES (7, '医学');
+INSERT INTO area (id, name) VALUES (8, '物理');
+INSERT INTO area (id, name) VALUES (9, '化学');
+INSERT INTO area (id, name) VALUES (10, '历史');
+INSERT INTO area (id, name) VALUES (11, '建筑');
+INSERT INTO area (id, name) VALUES (12, '交通');
+INSERT INTO area (id, name) VALUES (13, '人文社科');
+INSERT INTO area (id, name) VALUES (14, '外语');
+INSERT INTO area (id, name) VALUES (15, '体育健康');
+INSERT INTO area (id, name) VALUES (16, '公务员');
+INSERT INTO area (id, name) VALUES (17, '教师');
+INSERT INTO area (id, name) VALUES (18, '天文学');
+INSERT INTO area (id, name) VALUES (19, '地理');
+INSERT INTO area (id, name) VALUES (20, '政治');
+INSERT INTO area (id, name) VALUES (100, '其他');
