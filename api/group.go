@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+const (
+	Pending = iota
+	Accepted
+	Rejected
+)
+
 type GroupFilter struct {
 	ID      *int `json:"id" form:"id"`
 	UserId  *int `json:"user_id" form:"user_id"`
@@ -283,44 +289,6 @@ func GetUsersInGroup(c *gin.Context) {
 	})
 }
 
-// AddUserToGroup godoc
-// @Schemes http
-// @Description 添加用户到小组
-// @Tags Group
-// @Param id path int true "小组ID"
-// @Param user_id query int true "用户ID"
-// @Param invitation query string true "邀请码"
-// @Success 200 {string} string "添加成功"
-// @Failure 403 {string} string "没有权限"
-// @Failure 404 {string} string "小组不存在"/"用户不存在"
-// @Failure default {string} string "服务器错误"
-// @Router /group/add/{id} [post]
-// @Security ApiKeyAuth
-func AddUserToGroup(c *gin.Context) {
-	sqlString := `SELECT invitation FROM "group" WHERE id = $1`
-	var invitation string
-	if err := global.Database.Get(&invitation, sqlString, c.Param("id")); err != nil {
-		c.String(http.StatusNotFound, "小组不存在")
-		return
-	}
-	sqlString = `SELECT id FROM "user" WHERE id = $1`
-	var userId int
-	if err := global.Database.Get(&userId, sqlString, c.Query("user_id")); err != nil {
-		c.String(http.StatusNotFound, "用户不存在")
-		return
-	}
-	if role, _ := c.Get("Role"); invitation != c.Query("invitation") && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
-		return
-	}
-	sqlString = `INSERT INTO group_member (user_id, group_id, created_at) VALUES ($1, $2, $3)`
-	if _, err := global.Database.Exec(sqlString, c.Query("user_id"), c.Param("id"), time.Now().Local()); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	c.String(http.StatusOK, "添加成功")
-}
-
 // RemoveUserFromGroup godoc
 // @Schemes http
 // @Description 从小组移除用户
@@ -449,4 +417,215 @@ func UpdateGroupInfo(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "编辑成功")
+}
+
+type ApplyToJoinGroupRequest struct {
+	Message *string `json:"message"`
+	GroupId int     `json:"group_id"`
+}
+
+// ApplyToJoinGroup godoc
+// @Schemes http
+// @Description 申请加入小组
+// @Tags Group
+// @Param apply body ApplyToJoinGroupRequest true "申请信息"
+// @Success 200 {string} string "申请成功"
+// @Failure 403 {string} string "已经加入此小组或已经申请过"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/apply [post]
+// @Security ApiKeyAuth
+func ApplyToJoinGroup(c *gin.Context) {
+	var request ApplyToJoinGroupRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	var group model.Group
+	sqlString := `SELECT * FROM "group" WHERE id = $1`
+	if err := global.Database.Get(&group, sqlString, request.GroupId); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	userId := c.GetInt("UserId")
+	sqlString = `SELECT count(*) FROM group_member WHERE user_id = $1 AND group_id = $2`
+	var count int
+	if err := global.Database.Get(&count, sqlString, userId, request.GroupId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count != 0 {
+		c.String(http.StatusForbidden, "已经加入此小组或已经申请过")
+		return
+	}
+	sqlString = `SELECT count(*) FROM group_application WHERE user_id = $1 AND group_id = $2 AND status = $3`
+	if err := global.Database.Get(&count, sqlString, userId, request.GroupId, Pending); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count != 0 {
+		c.String(http.StatusForbidden, "已经加入此小组或已经申请过")
+		return
+	}
+	sqlString = `INSERT INTO group_application (user_id, group_id, message, status, created_at) VALUES ($1, $2, $3, $4, $5)`
+	if _, err := global.Database.Exec(sqlString, userId, request.GroupId, request.Message, Pending, time.Now()); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "申请成功")
+}
+
+type GroupApplicationEntry struct {
+	Application model.GroupApplication `json:"application"`
+	UserInfo    UserInfoResponse       `json:"user_info"`
+}
+
+type GroupApplicationResponse struct {
+	TotalCount   int                     `json:"total_count"`
+	Applications []GroupApplicationEntry `json:"applications"`
+}
+
+// GetGroupApplication godoc
+// @Schemes http
+// @Description 获取小组申请列表
+// @Tags Group
+// @Param id path int true "小组ID"
+// @Param offset query int false "页数"
+// @Param limit query int false "每页大小"
+// @Param status query int false "申请状态, 0: 待处理, 1: 已通过, 2: 已拒绝"
+// @Success 200 {object} GroupApplicationResponse "申请列表"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "小组不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/application/{id} [get]
+// @Security ApiKeyAuth
+func GetGroupApplication(c *gin.Context) {
+	// 检查当前用户是否有获取小组申请列表的权限
+	var group model.Group
+	sqlString := `SELECT * FROM "group" WHERE id = $1`
+	if err := global.Database.Get(&group, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "小组不存在")
+		return
+	}
+	// 检查当前用户是否是小组管理员/创建者
+	sqlString = `SELECT count(*) FROM group_member WHERE user_id = $1 AND group_id = $2 AND (is_admin = true OR is_owner = true)`
+	var count int
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count == 0 {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	// 获取申请列表
+	var request model.GroupApplication
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	limit := c.Query("limit")
+	offset := c.Query("offset")
+	status := c.Query("status")
+	if status != "1" && status != "2" && status != "0" {
+		status = ""
+	}
+	sqlString = `SELECT * FROM group_application WHERE group_id = $1`
+	if status != "" {
+		sqlString += ` AND status = ` + status
+	}
+	if offset != "" {
+		sqlString += ` OFFSET ` + offset
+	}
+	if limit != "" {
+		sqlString += ` LIMIT ` + limit
+	}
+	sqlString += ` ORDER BY created_at DESC`
+	var applications []model.GroupApplication
+	if err := global.Database.Select(&applications, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	var response GroupApplicationResponse
+	response.TotalCount = len(applications)
+	for _, application := range applications {
+		var user model.User
+		if err := global.Database.Get(&user, `SELECT * FROM "user" WHERE id = $1`, application.UserId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		response.Applications = append(response.Applications, GroupApplicationEntry{
+			Application: application,
+			UserInfo: UserInfoResponse{
+				UserId:     user.ID,
+				UserName:   user.Name,
+				NickName:   user.NickName,
+				AvatarPath: user.AvatarURL,
+				Email:      user.Email,
+				Phone:      user.Phone,
+			},
+		})
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+type HandleGroupApplicationRequest struct {
+	Status        int `json:"status" binding:"required"`
+	ApplicationId int `json:"application_id" binding:"required"`
+}
+
+// HandleGroupApplication godoc
+// @Schemes http
+// @Description 处理小组申请
+// @Tags Group
+// @Param handle_group_application body HandleGroupApplicationRequest true "处理申请请求"
+// @Success 200 {string} string "处理成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "申请不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /group/application [put]
+// @Security ApiKeyAuth
+func HandleGroupApplication(c *gin.Context) {
+	var handleRequest HandleGroupApplicationRequest
+	if err := c.ShouldBindJSON(&handleRequest); err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	// 检查当前用户是否有处理小组申请的权限
+	var application model.GroupApplication
+	sqlString := `SELECT * FROM group_application WHERE id = $1`
+	if err := global.Database.Get(&application, sqlString, handleRequest.ApplicationId); err != nil {
+		c.String(http.StatusNotFound, "申请不存在")
+		return
+	}
+	sqlString = `SELECT count(*) FROM group_member WHERE user_id = $1 AND group_id = $2 AND (is_admin = true OR is_owner = true)`
+	var count int
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), application.GroupId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count == 0 {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	// 检查该申请的状态是否是Pending
+	if application.Status != Pending {
+		c.String(http.StatusBadRequest, "该申请已被处理")
+		return
+	}
+	// 更新申请状态
+	sqlString = `UPDATE group_application SET status = $1 WHERE id = $2`
+	if _, err := global.Database.Exec(sqlString, handleRequest.Status, handleRequest.ApplicationId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	// 如果申请被通过, 则添加用户到小组成员列表
+	if handleRequest.Status == Accepted {
+		sqlString = `INSERT INTO group_member (user_id, group_id, is_admin, is_owner, created_at) VALUES ($1, $2, false, false, $3)`
+		if _, err := global.Database.Exec(sqlString, application.UserId, application.GroupId, time.Now()); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+	}
+	c.String(http.StatusOK, "处理成功")
 }

@@ -110,6 +110,9 @@ func InitRoute() {
 	group.DELETE("/remove/:id", RemoveUserFromGroup)
 	group.DELETE("/quit/:id", QuitGroup)
 	group.PUT("/update/:id", UpdateGroupInfo)
+	group.POST("/apply", ApplyToJoinGroup)
+	group.GET("/application/:id", GetGroupApplication)
+	group.PUT("/application", HandleGroupApplication)
 
 	discussion := global.Router.Group("/discussion")
 	discussion.Use(global.CheckAuth)

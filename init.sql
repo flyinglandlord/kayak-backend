@@ -254,7 +254,7 @@ create table if not exists "group"
         references "user"
             on delete cascade,
     area_id     integer       default 100 not null,
-    avatar_url  varchar(1024) default '/user.png'::character varying
+    avatar_url  varchar(1024) default '/group.png'::character varying
 );
 
 alter table "group"
@@ -281,18 +281,18 @@ create table if not exists discussion
 (
     id         serial
         primary key,
-    title      varchar(255)      not null,
-    content    text              not null,
-    created_at timestamp         not null,
-    updated_at timestamp         not null,
-    user_id    integer           not null
+    title      varchar(255) not null,
+    content    text         not null,
+    created_at timestamp    not null,
+    updated_at timestamp    not null,
+    user_id    integer      not null
         references "user"
             on delete cascade,
-    group_id   integer           not null
+    group_id   integer      not null
         references "group"
             on delete cascade,
-    is_public  boolean           not null,
-    like_count integer default 0 not null
+    is_public  boolean      not null,
+    like_count integer default 0
 );
 
 alter table discussion
@@ -302,17 +302,17 @@ create table if not exists discussion_review
 (
     id            serial
         primary key,
-    title         varchar(255)      not null,
-    content       text              not null,
-    created_at    timestamp         not null,
-    updated_at    timestamp         not null,
-    user_id       integer           not null
+    title         varchar(255) not null,
+    content       text         not null,
+    created_at    timestamp    not null,
+    updated_at    timestamp    not null,
+    user_id       integer      not null
         references "user"
             on delete cascade,
-    discussion_id integer           not null
+    discussion_id integer      not null
         references discussion
             on delete cascade,
-    like_count    integer default 0 not null
+    like_count    integer default 0
 );
 
 alter table discussion_review
@@ -363,3 +363,20 @@ create table if not exists user_like_discussion
 alter table user_like_discussion
     owner to postgres;
 
+create table if not exists group_application
+(
+    id         serial
+        primary key,
+    user_id    integer   not null
+        references "user"
+            on delete cascade,
+    group_id   integer   not null
+        references "group"
+            on delete cascade,
+    created_at timestamp not null,
+    status     integer   not null,
+    message    text
+);
+
+alter table group_application
+    owner to postgres;
