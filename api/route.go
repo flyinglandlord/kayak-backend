@@ -10,6 +10,9 @@ func InitRoute() {
 	global.Router.POST("/change-password", ChangePassword)
 	global.Router.POST("/reset-password", ResetPassword)
 	global.Router.POST("/send-email", SendEmail)
+	global.Router.POST("/weixin-login", WeixinLogin)
+	global.Router.POST("/weixin-bind", WeixinBind)
+	global.Router.POST("/weixin-complete", WeixinComplete)
 
 	special := global.Router.Group("/special")
 	special.Use(global.CheckAuth)
