@@ -134,6 +134,12 @@ func InitRoute() {
 	discussionReview.POST("/like/:id", LikeDiscussionReview)
 	discussionReview.POST("/unlike/:id", UnlikeDiscussionReview)
 
+	search := global.Router.Group("/search")
+	search.Use(global.CheckAuth)
+	search.GET("/problem_set", SearchProblemSets)
+	search.GET("/group", SearchGroups)
+	search.GET("/note", SearchNotes)
+
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
 	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
