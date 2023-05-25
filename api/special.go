@@ -294,6 +294,12 @@ func GetFeaturedGroup(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		var area string
+		sqlString = `SELECT name FROM area WHERE id = $1`
+		if err := global.Database.Get(&area, sqlString, group.AreaId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 		groupResponses = append(groupResponses, GroupResponse{
 			Id:          group.Id,
 			Name:        group.Name,
@@ -302,7 +308,7 @@ func GetFeaturedGroup(c *gin.Context) {
 			UserInfo:    userInfo,
 			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
-			AreaId:      group.AreaId,
+			AreaName:    area,
 			AvatarURL:   group.AvatarURL,
 		})
 	}
