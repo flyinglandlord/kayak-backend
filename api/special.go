@@ -268,7 +268,7 @@ func GetFeaturedNote(c *gin.Context) {
 // @Router /special/featured_group [get]
 // @Security ApiKeyAuth
 func GetFeaturedGroup(c *gin.Context) {
-	sqlString := `SELECT g.id, g.name, g.description, g.created_at, g.user_id, g.area_id FROM "group" g LEFT JOIN group_member gm 
+	sqlString := `SELECT g.* FROM "group" g LEFT JOIN group_member gm 
     	ON g.id = gm.group_id GROUP BY g.id ORDER BY count(*) DESC LIMIT 6`
 	var groups []model.Group
 	if err := global.Database.Select(&groups, sqlString); err != nil {
