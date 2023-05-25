@@ -552,7 +552,7 @@ func GetGroupApplication(c *gin.Context) {
 	if limit != "" {
 		sqlString += ` LIMIT ` + limit
 	}
-	sqlString += fmt.Sprint(` ORDER BY created_at DESC`)
+	sqlString += fmt.Sprintf(` ORDER BY created_at DESC`)
 	var applications []model.GroupApplication
 	if err := global.Database.Select(&applications, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
