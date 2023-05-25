@@ -389,3 +389,5 @@ create table if not exists area
 
 alter table area
     owner to postgres;
+
+insert into area (id, name) values (100, '其它');

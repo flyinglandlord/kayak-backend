@@ -23,6 +23,7 @@ func TestCreateGroup(t *testing.T) {
 	code = Post("/group/create", res.Token, &api.GroupCreateRequest{
 		Name:        "test group",
 		Description: "test group",
+		AreaId:      nil,
 	}, &result)
 	assert.Equal(t, code, http.StatusOK)
 
