@@ -306,7 +306,7 @@ type WeixinLoginResponse struct {
 // @Schemes http
 // @Description 微信登录
 // @Tags Authentication
-// @Param code query WeixinLoginInfo true "微信登录信息"
+// @Param code body WeixinLoginInfo true "微信登录信息"
 // @Success 200 {object} WeixinLoginResponse "用户登陆反馈"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 409 {string} string "用户不存在"
@@ -386,7 +386,7 @@ func WeixinLogin(c *gin.Context) {
 // @Schemes http
 // @Description 微信绑定
 // @Tags Authentication
-// @Param code query WeixinLoginInfo true "微信登录信息"
+// @Param code body WeixinLoginInfo true "微信登录信息"
 // @Success 200 {string} string "绑定成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
@@ -455,7 +455,7 @@ type WeixinCompleteInfo struct {
 // @Schemes http
 // @Description 微信完善信息
 // @Tags Authentication
-// @Param body WeixinCompleteInfo true "微信完善信息"
+// @Param info body WeixinCompleteInfo true "微信完善信息"
 // @Success 200 {string} string "完善成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
