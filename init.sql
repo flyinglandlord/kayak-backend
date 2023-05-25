@@ -380,3 +380,14 @@ create table if not exists group_application
 
 alter table group_application
     owner to postgres;
+
+create table if not exists area
+(
+    id   integer primary key,
+    name varchar(255) not null
+);
+
+alter table area
+    owner to postgres;
+
+insert into area (id, name) values (100, '其它');

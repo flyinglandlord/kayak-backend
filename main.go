@@ -97,6 +97,8 @@ func LoadConfig() {
 		false)
 	InitSMTP(viper.GetString("SMTPHost"), viper.GetString("SMTPUsername"), viper.GetString("SMTPPassword"))
 	docs.SwaggerInfo.BasePath = viper.GetString("DocsPath")
+	global.AppID = viper.GetString("MiniProgramAppID")
+	global.AppSecret = viper.GetString("MiniProgramAppSecret")
 }
 
 // @title Kayak Backend API

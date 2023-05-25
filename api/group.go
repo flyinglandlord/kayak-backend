@@ -31,7 +31,7 @@ type GroupResponse struct {
 	UserInfo    UserInfoResponse `json:"user_info"`
 	MemberCount int              `json:"member_count"`
 	CreatedAt   time.Time        `json:"created_at"`
-	AreaId      int              `json:"area_id"`
+	AreaName    string           `json:"area_name"`
 	AvatarURL   string           `json:"avatar_url"`
 }
 type GroupCreateRequest struct {
@@ -97,6 +97,12 @@ func GetGroups(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		var area string
+		sqlString = `SELECT name FROM area WHERE id = $1`
+		if err := global.Database.Get(&area, sqlString, group.AreaId); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 		groupResponses = append(groupResponses, GroupResponse{
 			Id:          group.Id,
 			Name:        group.Name,
@@ -105,7 +111,7 @@ func GetGroups(c *gin.Context) {
 			UserInfo:    userInfo,
 			MemberCount: count,
 			CreatedAt:   group.CreatedAt,
-			AreaId:      group.AreaId,
+			AreaName:    area,
 			AvatarURL:   group.AvatarURL,
 		})
 	}
@@ -153,6 +159,12 @@ func CreateGroup(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
+	var area string
+	sqlString = `SELECT name FROM area WHERE id = $1`
+	if err := global.Database.Get(&area, sqlString, group.AreaId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
 	c.JSON(http.StatusOK, GroupResponse{
 		Id:          group.Id,
 		Name:        group.Name,
@@ -160,7 +172,7 @@ func CreateGroup(c *gin.Context) {
 		Invitation:  group.Invitation,
 		UserId:      group.UserId,
 		CreatedAt:   group.CreatedAt,
-		AreaId:      group.AreaId,
+		AreaName:    area,
 		AvatarURL:   group.AvatarURL,
 	})
 }
@@ -540,7 +552,7 @@ func GetGroupApplication(c *gin.Context) {
 	if limit != "" {
 		sqlString += ` LIMIT ` + limit
 	}
-	sqlString += ` ORDER BY created_at DESC`
+	sqlString += fmt.Sprint(` ORDER BY created_at DESC`)
 	var applications []model.GroupApplication
 	if err := global.Database.Select(&applications, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
