@@ -4,7 +4,7 @@ import "time"
 
 type User struct {
 	ID        int       `json:"id" db:"id"`
-	UnionId   *string   `json:"union_id" db:"union_id"`
+	OpenId    *string   `json:"open_id" db:"open_id"`
 	Name      string    `json:"name" db:"name"`
 	Email     string    `json:"email" db:"email"`
 	Phone     *string   `json:"phone" db:"phone"`

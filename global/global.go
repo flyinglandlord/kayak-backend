@@ -13,3 +13,5 @@ var Redis *redis.Client
 var Router *gin.Engine
 var MinioClient *minio.Client
 var SMTPAuth smtp.Auth
+var AppID string
+var AppSecret string

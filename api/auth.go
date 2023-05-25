@@ -1,12 +1,17 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"io"
+	"io/ioutil"
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"kayak-backend/utils"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -55,6 +60,10 @@ func Login(c *gin.Context) {
 	loginRequest := LoginInfo{}
 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
 		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	if loginRequest.UserName == "" || loginRequest.Password == "" {
+		c.String(http.StatusBadRequest, "用户名或密码错误")
 		return
 	}
 	userInfo := model.User{}
@@ -275,4 +284,221 @@ func SendEmail(c *gin.Context) {
 	} else {
 		c.String(http.StatusBadRequest, "发送过于频繁")
 	}
+}
+
+type WeixinLoginInfo struct {
+	Code string `json:"code"`
+}
+
+type WeixinReturnInfo struct {
+	OpenID     string `json:"openid"`
+	SessionKey string `json:"session_key"`
+	UnionID    string `json:"unionid"`
+}
+
+type WeixinLoginResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Token   string `json:"token"`
+}
+
+// WeixinLogin godoc
+// @Schemes http
+// @Description 微信登录
+// @Tags Authentication
+// @Param code query WeixinLoginInfo true "微信登录信息"
+// @Success 200 {object} WeixinLoginResponse "用户登陆反馈"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure 409 {string} string "用户不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /weixin-login [get]
+func WeixinLogin(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	// 获取微信用户信息
+	weixinUserInfo, err := http.Get("https://api.weixin.qq.com/sns/jscode2session?appid=" + global.AppID + "&secret=" + global.AppSecret + "&js_code=" + code + "&grant_type=authorization_code")
+	if err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			c.String(http.StatusBadRequest, "服务器错误")
+		}
+	}(weixinUserInfo.Body)
+	var weixinReturnInfo WeixinReturnInfo
+	body, _ := ioutil.ReadAll(weixinUserInfo.Body)
+	stringBody := string(body)
+	errJson := json.Unmarshal([]byte(stringBody), &weixinReturnInfo)
+	if errJson != nil {
+		c.String(http.StatusBadRequest, "登录失败")
+		return
+	}
+	// 查询用户是否存在
+	userInfo := model.User{}
+	sqlString := `SELECT * FROM "user" WHERE open_id = $1`
+	if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID); err != nil {
+		// 添加一个用户
+		sqlString = `INSERT INTO "user" (open_id, name, email, phone, password, created_at, nick_name) VALUES ($1, '', '', '', '', now(), $2) RETURNING id`
+		if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID, "新注册用户"+strconv.FormatInt(rand.Int63(), 10)); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		token, err := global.CreateSession(c, &global.Session{
+			Role:   global.USER,
+			UserId: userInfo.ID,
+		})
+		if err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		c.Set("Role", global.USER)
+		c.Set("UserId", userInfo.ID)
+		c.JSON(http.StatusOK, WeixinLoginResponse{
+			Code:    201,
+			Message: "待完善信息",
+			Token:   token,
+		})
+		return
+	}
+	token, err := global.CreateSession(c, &global.Session{
+		Role:   global.USER,
+		UserId: userInfo.ID,
+	})
+	if err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.Set("Role", global.USER)
+	c.Set("UserId", userInfo.ID)
+	c.JSON(http.StatusOK, WeixinLoginResponse{
+		Code:    200,
+		Message: "登录成功",
+		Token:   token,
+	})
+}
+
+// WeixinBind godoc
+// @Schemes http
+// @Description 微信绑定
+// @Tags Authentication
+// @Param code query WeixinLoginInfo true "微信登录信息"
+// @Success 200 {string} string "绑定成功"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure default {string} string "服务器错误"
+// @Router /weixin-bind [get]
+// @Security ApiKeyAuth
+func WeixinBind(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	// 获取微信用户信息
+	weixinUserInfo, err := http.Get("https://api.weixin.qq.com/sns/jscode2session?appid=" + global.AppID + "&secret=" + global.AppSecret + "&js_code=" + code + "&grant_type=authorization_code")
+	if err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			c.String(http.StatusBadRequest, "服务器错误")
+		}
+	}(weixinUserInfo.Body)
+	var weixinReturnInfo WeixinReturnInfo
+	body, _ := ioutil.ReadAll(weixinUserInfo.Body)
+	stringBody := string(body)
+	errJson := json.Unmarshal([]byte(stringBody), &weixinReturnInfo)
+	if errJson != nil {
+		c.String(http.StatusBadRequest, "登录失败")
+		return
+	}
+	// 查询微信是否已被绑定
+	userInfo := model.User{}
+	sqlString := `SELECT * FROM "user" WHERE open_id = $1`
+	if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID); err == nil {
+		c.String(http.StatusBadRequest, "该微信已被绑定")
+		return
+	}
+	// 查询用户是否已经绑定微信
+	sqlString = `SELECT * FROM "user" WHERE id = $1`
+	if err := global.Database.Get(&userInfo, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusBadRequest, "用户不存在")
+		return
+	}
+	if userInfo.OpenId != nil && *userInfo.OpenId != "" {
+		c.String(http.StatusBadRequest, "该用户已绑定微信")
+		return
+	}
+	// 绑定用户
+	sqlString = `UPDATE "user" SET open_id = $1 WHERE id = $2`
+	if _, err := global.Database.Exec(sqlString, weixinReturnInfo.OpenID, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "绑定成功")
+}
+
+type WeixinCompleteInfo struct {
+	UserName   string `json:"name" binding:"required"`
+	Email      string `json:"email" binding:"required"`
+	Password   string `json:"password" binding:"required"`
+	VerifyCode string `json:"verify_code" binding:"required"`
+}
+
+// WeixinComplete godoc
+// @Schemes http
+// @Description 微信完善信息
+// @Tags Authentication
+// @Param body WeixinCompleteInfo true "微信完善信息"
+// @Success 200 {string} string "完善成功"
+// @Failure 400 {string} string "请求解析失败"
+// @Failure default {string} string "服务器错误"
+// @Router /weixin-complete [post]
+// @Security ApiKeyAuth
+func WeixinComplete(c *gin.Context) {
+	var weixinCompleteInfo WeixinCompleteInfo
+	if err := c.ShouldBindJSON(&weixinCompleteInfo); err != nil {
+		c.String(http.StatusBadRequest, "请求解析失败")
+		return
+	}
+	// 查询用户是否存在
+	userInfo := model.User{}
+	sqlString := `SELECT * FROM "user" WHERE id = $1`
+	if err := global.Database.Get(&userInfo, sqlString, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusBadRequest, "用户不存在")
+		return
+	}
+	if userInfo.Name != "" {
+		c.String(http.StatusBadRequest, "该用户已完善信息")
+		return
+	}
+	// 验证验证码
+	rawCode := global.Redis.Get(c, weixinCompleteInfo.Email)
+	if rawCode.Err() != nil {
+		c.String(http.StatusBadRequest, "验证码已过期")
+		return
+	} else if rawCode.Val() != weixinCompleteInfo.VerifyCode {
+		c.String(http.StatusBadRequest, "验证码错误")
+		return
+	} else {
+		global.Redis.Del(c, weixinCompleteInfo.Email)
+	}
+	// 完善用户信息
+	sqlString = `UPDATE "user" SET name = $1, email = $2, password = $3 WHERE id = $4`
+	encryptedPassword, err := utils.EncryptPassword(weixinCompleteInfo.Password)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if _, err := global.Database.Exec(sqlString, weixinCompleteInfo.UserName, weixinCompleteInfo.Email, encryptedPassword, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "完善成功")
 }
