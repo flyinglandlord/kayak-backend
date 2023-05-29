@@ -742,3 +742,41 @@ func DeleteProblemSet(c *gin.Context) {
 	}
 	c.String(http.StatusOK, "删除成功")
 }
+
+// GetWrongCountOfProblemSet godoc
+// @Schemes http
+// @Description 返回当前用户的该id题库中的错题数量
+// @Tags ProblemSet
+// @Param id query int true "题库ID"
+// @Success 200 {string} string "错题数量"
+// @Failure default {string} string "服务器错误"
+// @Router /problem_set/statistic/wrong_count [get]
+// @Security ApiKeyAuth
+func GetWrongCountOfProblemSet(c *gin.Context) {
+	sqlString := `SELECT count(*) FROM user_wrong_record WHERE user_id = $1 AND problem_id IN (SELECT problem_id FROM problem_in_problem_set WHERE problem_set_id = $2)`
+	var count int
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Query("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, strconv.Itoa(count))
+}
+
+// GetFavoriteCountOfProblemSet godoc
+// @Schemes http
+// @Description 返回当前用户的该id题库中的收藏题目数量
+// @Tags ProblemSet
+// @Param id query int true "题库ID"
+// @Success 200 {string} string "收藏题目数量"
+// @Failure default {string} string "服务器错误"
+// @Router /problem_set/statistic/fav_count [get]
+// @Security ApiKeyAuth
+func GetFavoriteCountOfProblemSet(c *gin.Context) {
+	sqlString := `SELECT count(*) FROM user_favorite_problem WHERE user_id = $1 AND problem_id IN (SELECT problem_id FROM problem_in_problem_set WHERE problem_set_id = $2)`
+	var count int
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Query("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, strconv.Itoa(count))
+}

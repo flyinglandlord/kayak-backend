@@ -93,6 +93,8 @@ func InitRoute() {
 	problemSet.DELETE("/remove/:id", RemoveProblemFromProblemSet)
 	problemSet.POST("/favorite/:id", AddProblemSetToFavorite)
 	problemSet.DELETE("/unfavorite/:id", RemoveProblemSetFromFavorite)
+	problemSet.GET("/statistic/wrong_count", GetWrongCountOfProblemSet)
+	problemSet.GET("/statistic/fav_count", GetFavoriteCountOfProblemSet)
 
 	noteReview := global.Router.Group("/note_review")
 	noteReview.Use(global.CheckAuth)
@@ -125,6 +127,8 @@ func InitRoute() {
 	discussion.DELETE("/delete/:id", DeleteDiscussion)
 	discussion.POST("/like/:id", LikeDiscussion)
 	discussion.POST("/unlike/:id", UnlikeDiscussion)
+	discussion.POST("/favorite/:id", FavoriteDiscussion)
+	discussion.POST("/unfavorite/:id", UnfavoriteDiscussion)
 
 	discussionReview := global.Router.Group("/discussion_review")
 	discussionReview.Use(global.CheckAuth)
@@ -136,9 +140,9 @@ func InitRoute() {
 
 	search := global.Router.Group("/search")
 	search.Use(global.CheckAuth)
-	search.GET("/problem_set", SearchProblemSets)
-	search.GET("/group", SearchGroups)
-	search.GET("/note", SearchNotes)
+	search.POST("/problem_set", SearchProblemSets)
+	search.POST("/group", SearchGroups)
+	search.POST("/note", SearchNotes)
 
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)

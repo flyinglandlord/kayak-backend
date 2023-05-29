@@ -19,16 +19,17 @@ type DiscussionFilter struct {
 	SortByLike *bool `json:"sort_by_like" form:"sort_by_like"`
 }
 type DiscussionResponse struct {
-	ID        int              `json:"id" db:"id"`
-	Title     string           `json:"title" db:"title"`
-	Content   string           `json:"content" db:"content"`
-	UserInfo  UserInfoResponse `json:"user_info" db:"user_info"`
-	GroupId   int              `json:"group_id" db:"group_id"`
-	CreatedAt string           `json:"created_at" db:"created_at"`
-	UpdatedAt string           `json:"updated_at" db:"updated_at"`
-	IsPublic  bool             `json:"is_public" db:"is_public"`
-	IsLiked   bool             `json:"is_liked" db:"is_liked"`
-	LikeCount int              `json:"like_count" db:"like_count"`
+	ID            int              `json:"id" db:"id"`
+	Title         string           `json:"title" db:"title"`
+	Content       string           `json:"content" db:"content"`
+	UserInfo      UserInfoResponse `json:"user_info" db:"user_info"`
+	GroupId       int              `json:"group_id" db:"group_id"`
+	CreatedAt     string           `json:"created_at" db:"created_at"`
+	UpdatedAt     string           `json:"updated_at" db:"updated_at"`
+	IsPublic      bool             `json:"is_public" db:"is_public"`
+	IsLiked       bool             `json:"is_liked" db:"is_liked"`
+	LikeCount     int              `json:"like_count" db:"like_count"`
+	FavoriteCount int              `json:"favorite_count" db:"favorite_count"`
 }
 type AllDiscussionResponse struct {
 	TotalCount  int                  `json:"total_count"`
@@ -121,16 +122,17 @@ func GetDiscussions(c *gin.Context) {
 			NickName:   user.NickName,
 		}
 		discussionResponses = append(discussionResponses, DiscussionResponse{
-			ID:        discussion.ID,
-			Title:     discussion.Title,
-			Content:   discussion.Content,
-			UserInfo:  userInfo,
-			GroupId:   discussion.GroupId,
-			CreatedAt: discussion.CreatedAt,
-			UpdatedAt: discussion.UpdatedAt,
-			IsPublic:  discussion.IsPublic,
-			IsLiked:   isLiked > 0,
-			LikeCount: discussion.LikeCount,
+			ID:            discussion.ID,
+			Title:         discussion.Title,
+			Content:       discussion.Content,
+			UserInfo:      userInfo,
+			GroupId:       discussion.GroupId,
+			CreatedAt:     discussion.CreatedAt,
+			UpdatedAt:     discussion.UpdatedAt,
+			IsPublic:      discussion.IsPublic,
+			IsLiked:       isLiked > 0,
+			LikeCount:     discussion.LikeCount,
+			FavoriteCount: discussion.FavoriteCount,
 		})
 	}
 	c.JSON(http.StatusOK, AllDiscussionResponse{
@@ -190,16 +192,17 @@ func CreateDiscussion(c *gin.Context) {
 		NickName:   user.NickName,
 	}
 	c.JSON(http.StatusOK, DiscussionResponse{
-		ID:        discussion.ID,
-		Title:     discussion.Title,
-		Content:   discussion.Content,
-		UserInfo:  userInfo,
-		GroupId:   discussion.GroupId,
-		CreatedAt: discussion.CreatedAt,
-		UpdatedAt: discussion.UpdatedAt,
-		IsPublic:  discussion.IsPublic,
-		IsLiked:   false,
-		LikeCount: discussion.LikeCount,
+		ID:            discussion.ID,
+		Title:         discussion.Title,
+		Content:       discussion.Content,
+		UserInfo:      userInfo,
+		GroupId:       discussion.GroupId,
+		CreatedAt:     discussion.CreatedAt,
+		UpdatedAt:     discussion.UpdatedAt,
+		IsPublic:      discussion.IsPublic,
+		IsLiked:       false,
+		LikeCount:     discussion.LikeCount,
+		FavoriteCount: discussion.FavoriteCount,
 	})
 }
 
@@ -317,6 +320,15 @@ func LikeDiscussion(c *gin.Context) {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
+	sqlString = `SELECT count(*) FROM user_like_discussion WHERE user_id = $1 AND discussion_id = $2`
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count != 0 {
+		c.String(http.StatusOK, "点赞成功")
+		return
+	}
 	tx := global.Database.MustBegin()
 	sqlString = `INSERT INTO user_like_discussion (user_id, discussion_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, discussion_id) do update set created_at = $3`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
@@ -348,14 +360,24 @@ func LikeDiscussion(c *gin.Context) {
 // @Router /discussion/unlike/{id} [post]
 // @Security ApiKeyAuth
 func UnlikeDiscussion(c *gin.Context) {
-	sqlString := `SELECT * FROM note WHERE id = $1`
-	var note model.Note
-	if err := global.Database.Get(&note, sqlString, c.Param("id")); err != nil {
-		c.String(http.StatusNotFound, "笔记不存在")
+	sqlString := `SELECT * FROM discussion WHERE id = $1`
+	var discussion model.Discussion
+	if err := global.Database.Get(&discussion, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "讨论不存在")
+		return
+	}
+	sqlString = `SELECT count(*) FROM user_like_discussion WHERE user_id = $1 AND discussion_id = $2`
+	var count int
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count == 0 {
+		c.String(http.StatusOK, "取消点赞成功")
 		return
 	}
 	tx := global.Database.MustBegin()
-	sqlString = `DELETE FROM user_like_note WHERE user_id = $1 AND note_id = $2`
+	sqlString = `DELETE FROM user_like_discussion WHERE user_id = $1 AND discussion_id = $2`
 	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
 		_ = tx.Rollback()
 		c.String(http.StatusInternalServerError, "服务器错误")
