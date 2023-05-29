@@ -181,3 +181,111 @@ func UnfavoriteNote(c *gin.Context) {
 	}
 	c.String(http.StatusOK, "取消收藏成功")
 }
+
+// FavoriteDiscussion godoc
+// @Schemes http
+// @Description 收藏讨论
+// @Tags Discussion
+// @Param id path int true "讨论ID"
+// @Success 200 {string} string "收藏成功"
+// @Failure 403 {string} string "没有权限"
+// @Failure 404 {string} string "讨论不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /discussion/favorite/{id} [post]
+// @Security ApiKeyAuth
+func FavoriteDiscussion(c *gin.Context) {
+	sqlString := `SELECT * FROM discussion WHERE id = $1`
+	var discussion model.Discussion
+	if err := global.Database.Get(&discussion, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "讨论不存在")
+		return
+	}
+	if role, _ := c.Get("Role"); role != global.ADMIN && discussion.UserId != c.GetInt("UserId") && !discussion.IsPublic {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	var count int
+	sqlString = `SELECT count(*) FROM group_member WHERE user_id = $1 AND group_id = $2`
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), discussion.GroupId); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count == 0 {
+		c.String(http.StatusForbidden, "没有权限")
+		return
+	}
+	sqlString = `SELECT count(*) FROM user_favorite_discussion WHERE user_id = $1 AND discussion_id = $2`
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count != 0 {
+		c.String(http.StatusOK, "收藏成功")
+		return
+	}
+	tx := global.Database.MustBegin()
+	sqlString = `INSERT INTO user_favorite_discussion (user_id, discussion_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, discussion_id) do update set created_at = $3`
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id"), time.Now().Local()); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `UPDATE discussion SET favorite_count = favorite_count + 1 WHERE id = $1`
+	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "收藏成功")
+}
+
+// UnfavoriteDiscussion godoc
+// @Schemes http
+// @Description 取消收藏讨论
+// @Tags Discussion
+// @Param id path int true "讨论ID"
+// @Success 200 {string} string "取消收藏成功"
+// @Failure 404 {string} string "讨论不存在"
+// @Failure default {string} string "服务器错误"
+// @Router /discussion/unfavorite/{id} [post]
+// @Security ApiKeyAuth
+func UnfavoriteDiscussion(c *gin.Context) {
+	sqlString := `SELECT * FROM discussion WHERE id = $1`
+	var discussion model.Discussion
+	if err := global.Database.Get(&discussion, sqlString, c.Param("id")); err != nil {
+		c.String(http.StatusNotFound, "讨论不存在")
+		return
+	}
+	sqlString = `SELECT count(*) FROM user_favorite_discussion WHERE user_id = $1 AND discussion_id = $2`
+	var count int
+	if err := global.Database.Get(&count, sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if count == 0 {
+		c.String(http.StatusOK, "取消收藏成功")
+		return
+	}
+	tx := global.Database.MustBegin()
+	sqlString = `DELETE FROM user_favorite_discussion WHERE user_id = $1 AND discussion_id = $2`
+	if _, err := global.Database.Exec(sqlString, c.GetInt("UserId"), c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	sqlString = `UPDATE discussion SET favorite_count = favorite_count - 1 WHERE id = $1`
+	if _, err := global.Database.Exec(sqlString, c.Param("id")); err != nil {
+		_ = tx.Rollback()
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+	c.String(http.StatusOK, "取消收藏成功")
+}

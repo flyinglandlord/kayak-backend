@@ -127,6 +127,8 @@ func InitRoute() {
 	discussion.DELETE("/delete/:id", DeleteDiscussion)
 	discussion.POST("/like/:id", LikeDiscussion)
 	discussion.POST("/unlike/:id", UnlikeDiscussion)
+	discussion.POST("/favorite/:id", FavoriteDiscussion)
+	discussion.POST("/unfavorite/:id", UnfavoriteDiscussion)
 
 	discussionReview := global.Router.Group("/discussion_review")
 	discussionReview.Use(global.CheckAuth)
