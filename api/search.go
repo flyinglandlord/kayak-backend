@@ -9,24 +9,24 @@ import (
 )
 
 type SearchRequest struct {
-	Keyword string `json:"keyword" form:"keyword"`
-	Limit   int    `json:"limit" form:"limit"`
-	Offset  int    `json:"offset" form:"offset"`
+	Keyword string `json:"keyword" json:"keyword"`
+	Limit   int    `json:"limit" json:"limit"`
+	Offset  int    `json:"offset" json:"offset"`
 }
 
 // SearchProblemSets godoc
 // @Schemes http
 // @Description 搜索题集
 // @Tags Search
-// @Param search query SearchRequest true "搜索信息"
+// @Param search body SearchRequest true "搜索信息"
 // @Success 200 {object} AllProblemSetResponse "题集列表"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
-// @Router /search/problem_set [get]
+// @Router /search/problem_set [post]
 // @Security ApiKeyAuth
 func SearchProblemSets(c *gin.Context) {
 	var request SearchRequest
-	if err := c.ShouldBindQuery(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return
 	}
@@ -111,15 +111,15 @@ func SearchProblemSets(c *gin.Context) {
 // @Schemes http
 // @Description 搜索小组
 // @Tags Search
-// @Param search query SearchRequest true "搜索信息"
+// @Param search body SearchRequest true "搜索信息"
 // @Success 200 {object} AllGroupResponse "小组列表"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
-// @Router /search/group [get]
+// @Router /search/group [post]
 // @Security ApiKeyAuth
 func SearchGroups(c *gin.Context) {
 	var request SearchRequest
-	if err := c.ShouldBindQuery(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return
 	}
@@ -187,15 +187,16 @@ func SearchGroups(c *gin.Context) {
 // @Schemes http
 // @Description 搜索笔记
 // @Tags Search
-// @Param search query SearchRequest true "搜索信息"
+// @Param search body SearchRequest true "搜索信息"
 // @Success 200 {object} AllNoteResponse "笔记列表"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure default {string} string "服务器错误"
-// @Router /search/note [get]
+// @Router /search/note [post]
 // @Security ApiKeyAuth
 func SearchNotes(c *gin.Context) {
 	var request SearchRequest
-	if err := c.ShouldBindQuery(&request); err != nil {
+
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return
 	}

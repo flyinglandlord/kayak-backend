@@ -140,9 +140,9 @@ func InitRoute() {
 
 	search := global.Router.Group("/search")
 	search.Use(global.CheckAuth)
-	search.GET("/problem_set", SearchProblemSets)
-	search.GET("/group", SearchGroups)
-	search.GET("/note", SearchNotes)
+	search.POST("/problem_set", SearchProblemSets)
+	search.POST("/group", SearchGroups)
+	search.POST("/note", SearchNotes)
 
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
