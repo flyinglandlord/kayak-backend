@@ -93,6 +93,8 @@ func InitRoute() {
 	problemSet.DELETE("/remove/:id", RemoveProblemFromProblemSet)
 	problemSet.POST("/favorite/:id", AddProblemSetToFavorite)
 	problemSet.DELETE("/unfavorite/:id", RemoveProblemSetFromFavorite)
+	problemSet.GET("/statistic/wrong_count", GetWrongCountOfProblemSet)
+	problemSet.GET("/statistic/fav_count", GetFavoriteCountOfProblemSet)
 
 	noteReview := global.Router.Group("/note_review")
 	noteReview.Use(global.CheckAuth)
