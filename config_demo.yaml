@@ -19,5 +19,8 @@ SMTPPort: # SMTP端口
 SMTPUsername: # SMTP用户名
 SMTPPassword: # SMTP密码
 
+TencentCloudSecretID: # 腾讯云SecretId
+TencentCloudSecretKey: # 腾讯云SecretKey
+
 LogPath: # 日志路径
 DocsPath: # Swagger Base URL
