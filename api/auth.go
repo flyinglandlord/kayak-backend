@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"kayak-backend/utils"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -340,9 +339,10 @@ func WeixinLogin(c *gin.Context) {
 	userInfo := model.User{}
 	sqlString := `SELECT * FROM "user" WHERE open_id = $1`
 	if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID); err != nil {
+		randomUsername := uuid.New().String()
 		// 添加一个用户
-		sqlString = `INSERT INTO "user" (open_id, name, email, phone, password, created_at, nick_name) VALUES ($1, '', '', '', '', now(), $2) RETURNING id`
-		if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID, "新注册用户"+strconv.FormatInt(rand.Int63(), 10)); err != nil {
+		sqlString = `INSERT INTO "user" (open_id, name, email, phone, password, created_at, nick_name) VALUES ($1, $2, '', '', '', now(), $3)`
+		if _, err := global.Database.Exec(sqlString, weixinReturnInfo.OpenID, randomUsername, weixinReturnInfo.OpenID); err != nil {
 			c.String(http.StatusInternalServerError, "新注册用户添加失败")
 			return
 		}
@@ -373,6 +373,14 @@ func WeixinLogin(c *gin.Context) {
 	}
 	c.Set("Role", global.USER)
 	c.Set("UserId", userInfo.ID)
+	if userInfo.Email == "" || userInfo.Password == "" {
+		c.JSON(http.StatusOK, WeixinLoginResponse{
+			Code:    201,
+			Message: "待完善信息",
+			Token:   token,
+		})
+		return
+	}
 	c.JSON(http.StatusOK, WeixinLoginResponse{
 		Code:    200,
 		Message: "登录成功",
@@ -465,7 +473,13 @@ func WeixinComplete(c *gin.Context) {
 		c.String(http.StatusBadRequest, "用户不存在")
 		return
 	}
-	if userInfo.Name != "" {
+	// 查询用户名是否唯一
+	sqlString = `SELECT * FROM "user" WHERE name = $1`
+	if err := global.Database.Get(&userInfo, sqlString, weixinCompleteInfo.UserName); err == nil {
+		c.String(http.StatusBadRequest, "用户名已存在")
+		return
+	}
+	if userInfo.Password != "" {
 		c.String(http.StatusBadRequest, "该用户已完善信息")
 		return
 	}
@@ -481,13 +495,13 @@ func WeixinComplete(c *gin.Context) {
 		global.Redis.Del(c, weixinCompleteInfo.Email)
 	}
 	// 完善用户信息
-	sqlString = `UPDATE "user" SET name = $1, email = $2, password = $3 WHERE id = $4`
+	sqlString = `UPDATE "user" SET name = $1, email = $2, password = $3, nick_name = $4 WHERE id = $5`
 	encryptedPassword, err := utils.EncryptPassword(weixinCompleteInfo.Password)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
-	if _, err := global.Database.Exec(sqlString, weixinCompleteInfo.UserName, weixinCompleteInfo.Email, encryptedPassword, c.GetInt("UserId")); err != nil {
+	if _, err := global.Database.Exec(sqlString, weixinCompleteInfo.UserName, weixinCompleteInfo.Email, encryptedPassword, weixinCompleteInfo.UserName, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
 		return
 	}
