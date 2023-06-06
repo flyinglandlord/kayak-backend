@@ -99,6 +99,8 @@ func LoadConfig() {
 	docs.SwaggerInfo.BasePath = viper.GetString("DocsPath")
 	global.AppID = viper.GetString("MiniProgramAppID")
 	global.AppSecret = viper.GetString("MiniProgramAppSecret")
+	global.TencentCloudSecretID = viper.GetString("TencentCloudSecretID")
+	global.TencentCloudSecretKey = viper.GetString("TencentCloudSecretKey")
 }
 
 // @title Kayak Backend API

@@ -15,3 +15,5 @@ var MinioClient *minio.Client
 var SMTPAuth smtp.Auth
 var AppID string
 var AppSecret string
+var TencentCloudSecretID string
+var TencentCloudSecretKey string

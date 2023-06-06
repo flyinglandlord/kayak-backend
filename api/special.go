@@ -1,8 +1,15 @@
 package api
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
+	ocr "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ocr/v20181119"
+	"io/ioutil"
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"net/http"
@@ -316,4 +323,135 @@ func GetFeaturedGroup(c *gin.Context) {
 		TotalCount: len(groupResponses),
 		Group:      groupResponses,
 	})
+}
+
+type OCRRequest struct {
+	ImageBase64 string `json:"image_base64" binding:"required"`
+	RawResult   bool   `json:"raw_result"`
+}
+
+// PictureOCR godoc
+// @Schemes http
+// @Description 图片OCR
+// @Tags Special
+// @Param image body OCRRequest true "OCR图片信息"
+// @Success 200 {string} string "识别结果"
+// @Failure default {string} string "服务器错误"
+// @Router /special/picture_ocr [post]
+// @Security ApiKeyAuth
+func PictureOCR(c *gin.Context) {
+	var request OCRRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	credential := common.NewCredential(
+		global.TencentCloudSecretID,
+		global.TencentCloudSecretKey,
+	)
+	// 实例化一个client选项，可选的，没有特殊需求可以跳过
+	cpf := profile.NewClientProfile()
+	cpf.HttpProfile.ReqMethod = "POST"
+	cpf.HttpProfile.Endpoint = "ocr.tencentcloudapi.com"
+	cpf.SignMethod = "TC3-HMAC-SHA256"
+
+	// 实例化要请求产品的client对象,clientProfile是可选的
+	client, _ := ocr.NewClient(credential, "ap-beijing", cpf)
+
+	// 实例化一个请求对象,每个接口都会对应一个request对象
+	OCRRequest := ocr.NewGeneralAccurateOCRRequest()
+	OCRRequest.ImageBase64 = common.StringPtr(request.ImageBase64)
+	OCRRequest.EnableDetectSplit = common.BoolPtr(true)
+	OCRRequest.IsPdf = common.BoolPtr(false)
+
+	// 返回的resp是一个GeneralAccurateOCRResponse的实例，与请求对象对应
+	response, err := client.GeneralAccurateOCR(OCRRequest)
+	if _, ok := err.(*errors.TencentCloudSDKError); ok {
+		c.String(http.StatusBadRequest, fmt.Sprintf("An API error has returned: %s", err))
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+	// 输出json格式的字符串回包
+	if request.RawResult {
+		c.JSON(http.StatusOK, response)
+		return
+	} else {
+		var result string
+		for _, item := range response.Response.TextDetections {
+			result += *item.DetectedText
+			result += "\n"
+		}
+		c.String(http.StatusOK, result)
+	}
+}
+
+// PDFFileOCR godoc
+// @Schemes http
+// @Description PDF文件OCR，仅支持PDF单页识别
+// @Tags Special
+// @Param file formData file true "PDF文件"
+// @Param raw_result query bool false "是否返回原始结果"
+// @Param page query int false "需要识别的页数，从1开始"
+// @Success 200 {string} string "识别结果"
+// @Failure default {string} string "服务器错误"
+// @Router /special/pdf_ocr [post]
+// @Security ApiKeyAuth
+func PDFFileOCR(c *gin.Context) {
+	file, _, err := c.Request.FormFile("file")
+	rawResult := c.Query("raw_result")
+	page := c.Query("page")
+	if err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		c.String(http.StatusBadRequest, "参数错误")
+		return
+	}
+	base64string := base64.StdEncoding.EncodeToString(fileBytes)
+	credential := common.NewCredential(
+		global.TencentCloudSecretID,
+		global.TencentCloudSecretKey,
+	)
+
+	// 实例化一个client选项，可选的，没有特殊需求可以跳过
+	cpf := profile.NewClientProfile()
+	cpf.HttpProfile.ReqMethod = "POST"
+	cpf.HttpProfile.Endpoint = "ocr.tencentcloudapi.com"
+	cpf.SignMethod = "TC3-HMAC-SHA256"
+
+	// 实例化要请求产品的client对象,clientProfile是可选的
+	client, _ := ocr.NewClient(credential, "ap-beijing", cpf)
+
+	// 实例化一个请求对象,每个接口都会对应一个request对象
+	OCRRequest := ocr.NewGeneralAccurateOCRRequest()
+	OCRRequest.ImageBase64 = common.StringPtr(base64string)
+	OCRRequest.EnableDetectSplit = common.BoolPtr(true)
+	OCRRequest.IsPdf = common.BoolPtr(true)
+	OCRRequest.PdfPageNumber = common.Uint64Ptr(uint64(cast.ToInt(page)))
+
+	// 返回的resp是一个GeneralAccurateOCRResponse的实例，与请求对象对应
+	response, err := client.GeneralAccurateOCR(OCRRequest)
+	if _, ok := err.(*errors.TencentCloudSDKError); ok {
+		c.String(http.StatusBadRequest, fmt.Sprintf("An API error has returned: %s", err))
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+	// 输出json格式的字符串回包
+	if rawResult == "true" {
+		c.JSON(http.StatusOK, response)
+		return
+	} else {
+		var result string
+		for _, item := range response.Response.TextDetections {
+			result += *item.DetectedText
+			result += "\n"
+		}
+		c.String(http.StatusOK, result)
+	}
 }
