@@ -1,11 +1,14 @@
 package api
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -1201,4 +1204,220 @@ func GetJudgeProblemAnswer(c *gin.Context) {
 		IsCorrect: isCorrect,
 		Analysis:  *problem.Analysis,
 	})
+}
+
+type BatchProblemRequest struct {
+	Text string `json:"text" binding:"required"`
+}
+
+type BatchProblemResponse struct {
+	ProblemId []int `json:"problem_id"`
+}
+
+// AddBatchProblem godoc
+// @Schemes http
+// @Description 批量添加题目
+// @Tags Problem
+// @Param text body string true "题目文本"
+// @Success 200 {object} BatchProblemResponse "添加成功，返回添加题目的编号列表"
+// @Failure 400 {string} string "添加失败"
+// @Failure 403 {string} string "没有权限"
+// @Failure default {string} string "服务器错误"
+// @Router /problem/batch [post]
+// @Security ApiKeyAuth
+func AddBatchProblem(c *gin.Context) {
+	buf := new(bytes.Buffer)
+	_, _ = buf.ReadFrom(c.Request.Body)
+	Text := buf.String()
+	// fmt.Println(Text)
+	var problemIdList []int
+	rest := strings.Split(Text, "选择题")[1]
+	choiceProblemText := strings.Split(rest, "判断题")[0]
+	rest = strings.Split(Text, "判断题")[1]
+	judgeProblemText := strings.Split(rest, "填空题")[0]
+	blankProblemText := strings.Split(Text, "填空题")[1]
+
+	choiceProblemText = strings.TrimSpace(choiceProblemText)
+	judgeProblemText = strings.TrimSpace(judgeProblemText)
+	blankProblemText = strings.TrimSpace(blankProblemText)
+
+	choiceProblemText = strings.ReplaceAll(choiceProblemText, "\r\n", "\n")
+	judgeProblemText = strings.ReplaceAll(judgeProblemText, "\r\n", "\n")
+	blankProblemText = strings.ReplaceAll(blankProblemText, "\r\n", "\n")
+
+	digital_dot := regexp.MustCompile("[0-9]+\\.")
+	alphabet_dot := regexp.MustCompile("[A-Z]+\\.")
+	answer_split := regexp.MustCompile("\\[答案]")
+
+	tx := global.Database.MustBegin()
+
+	// 处理选择题部分
+	choiceProblemList := digital_dot.Split(choiceProblemText, -1)
+	for _, problem := range choiceProblemList {
+		problemText := strings.TrimSpace(problem)
+		if problemText == "" {
+			continue
+		}
+		beforeAnswer := answer_split.Split(problemText, -1)[0]
+		afterAnswer := answer_split.Split(problemText, -1)[1]
+		tempList := alphabet_dot.Split(beforeAnswer, -1)
+
+		Analyse := ""
+		Answer := ""
+		if strings.Contains(afterAnswer, "[解析]") {
+			Analyse = strings.Split(afterAnswer, "[解析]")[1]
+			Analyse = strings.TrimSpace(Analyse)
+			Answer = strings.Split(afterAnswer, "[解析]")[0]
+			Answer = strings.TrimSpace(Answer)
+		} else {
+			Answer = afterAnswer
+			Answer = strings.TrimSpace(Answer)
+		}
+
+		Description := tempList[0]
+		Description = strings.TrimSpace(Description)
+
+		var choices []Choice
+		for i := 1; i < len(tempList); i++ {
+			tempList[i] = strings.TrimSpace(tempList[i])
+			choices = append(choices, Choice{
+				Choice:      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i-1 : i],
+				Description: tempList[i],
+			})
+		}
+
+		sqlString := `INSERT INTO problem_type (description, created_at, updated_at, user_id, problem_type_id, is_public, analysis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+		var problemId int
+		if err := tx.Get(&problemId, sqlString, Description, time.Now(), time.Now(), c.GetInt("UserId"), ChoiceProblemType, true, Analyse); err != nil {
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemIdList = append(problemIdList, problemId)
+
+		for _, choice := range choices {
+			sqlString = `INSERT INTO problem_choice (id, choice, description, is_correct) VALUES ($1, $2, $3, $4)`
+			if _, err := tx.Exec(sqlString, problemId, choice.Choice, choice.Description, strings.Contains(Answer, choice.Choice)); err != nil {
+				err := tx.Rollback()
+				if err != nil {
+					return
+				}
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+		}
+
+		//fmt.Println(Analyse, Answer, Description, choices)
+		//fmt.Println()
+	}
+
+	// 处理填空题部分
+	blankProblemList := digital_dot.Split(blankProblemText, -1)
+	for _, problem := range blankProblemList {
+		problemText := strings.TrimSpace(problem)
+		if problemText == "" {
+			continue
+		}
+		beforeAnswer := answer_split.Split(problemText, -1)[0]
+		afterAnswer := answer_split.Split(problemText, -1)[1]
+
+		Description := beforeAnswer
+		Description = strings.TrimSpace(Description)
+		Answer := ""
+		Analyse := ""
+		if strings.Contains(afterAnswer, "[解析]") {
+			Answer = strings.Split(afterAnswer, "[解析]")[0]
+			Answer = strings.TrimSpace(Answer)
+			Analyse = strings.Split(afterAnswer, "[解析]")[1]
+			Analyse = strings.TrimSpace(Analyse)
+		} else {
+			Answer = afterAnswer
+			Answer = strings.TrimSpace(Answer)
+		}
+
+		sqlString := `INSERT INTO problem_type (description, created_at, updated_at, user_id, problem_type_id, is_public, analysis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+		var problemId int
+		if err := tx.Get(&problemId, sqlString, Description, time.Now(), time.Now(), c.GetInt("UserId"), BlankProblemType, true, Analyse); err != nil {
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemIdList = append(problemIdList, problemId)
+
+		sqlString = `INSERT INTO problem_answer (id, answer) VALUES ($1, $2)`
+		if _, err := tx.Exec(sqlString, problemId, Answer); err != nil {
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+
+		//fmt.Println(Analyse, Answer, Description)
+		//fmt.Println()
+	}
+
+	// 处理判断题部分
+	judgeProblemList := digital_dot.Split(judgeProblemText, -1)
+	for _, problem := range judgeProblemList {
+		problemText := strings.TrimSpace(problem)
+		if problemText == "" {
+			continue
+		}
+		beforeAnswer := answer_split.Split(problemText, -1)[0]
+		afterAnswer := answer_split.Split(problemText, -1)[1]
+
+		Description := beforeAnswer
+		Description = strings.TrimSpace(Description)
+		Answer := ""
+		Analyse := ""
+		if strings.Contains(afterAnswer, "[解析]") {
+			Answer = strings.Split(afterAnswer, "[解析]")[0]
+			Answer = strings.TrimSpace(Answer)
+			Analyse = strings.Split(afterAnswer, "[解析]")[1]
+			Analyse = strings.TrimSpace(Analyse)
+		} else {
+			Answer = afterAnswer
+			Answer = strings.TrimSpace(Answer)
+		}
+
+		sqlString := `INSERT INTO problem_type (description, created_at, updated_at, user_id, problem_type_id, is_public, analysis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+		var problemId int
+		if err := tx.Get(&problemId, sqlString, Description, time.Now(), time.Now(), c.GetInt("UserId"), JudgeProblemType, true, Analyse); err != nil {
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+		problemIdList = append(problemIdList, problemId)
+
+		sqlString = `INSERT INTO problem_judge (id, is_correct) VALUES ($1, $2)`
+		if _, err := tx.Exec(sqlString, problemId, Answer == "正确"); err != nil {
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
+
+		//fmt.Println(Analyse, Answer, Description)
+		//fmt.Println()
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.String(http.StatusInternalServerError, "服务器错误")
+		return
+	}
+
+	c.JSON(http.StatusOK, problemIdList)
 }

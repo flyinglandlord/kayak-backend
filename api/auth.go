@@ -2,10 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"io"
-	"io/ioutil"
 	"kayak-backend/global"
 	"kayak-backend/model"
 	"kayak-backend/utils"
@@ -294,6 +293,8 @@ type WeixinReturnInfo struct {
 	OpenID     string `json:"openid"`
 	SessionKey string `json:"session_key"`
 	UnionID    string `json:"unionid"`
+	ErrCode    int    `json:"errcode"`
+	ErrMsg     string `json:"errmsg"`
 }
 
 type WeixinLoginResponse struct {
@@ -301,6 +302,10 @@ type WeixinLoginResponse struct {
 	Message string `json:"message"`
 	Token   string `json:"token"`
 }
+
+var (
+	url = "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
+)
 
 // WeixinLogin godoc
 // @Schemes http
@@ -319,28 +324,18 @@ func WeixinLogin(c *gin.Context) {
 		return
 	}
 	// 获取微信用户信息
-	weixinUserInfo, err := http.Get("https://api.weixin.qq.com/sns/jscode2session?appid=" + global.AppID +
-		"&secret=" + global.AppSecret +
-		"&js_code=" + weixinLoginInfo.Code +
-		"&grant_type=authorization_code")
-	if err != nil {
-		c.String(http.StatusBadRequest, "请求解析失败")
-		return
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			c.String(http.StatusBadRequest, "服务器错误")
-		}
-	}(weixinUserInfo.Body)
 	var weixinReturnInfo WeixinReturnInfo
-	body, _ := ioutil.ReadAll(weixinUserInfo.Body)
-	stringBody := string(body)
-	errJson := json.Unmarshal([]byte(stringBody), &weixinReturnInfo)
-	if errJson != nil {
-		c.String(http.StatusBadRequest, "登录失败")
-		return
+	httpState, bytes := utils.Get(fmt.Sprintf(url, global.AppID, global.AppSecret, weixinLoginInfo.Code))
+	if httpState != 200 {
+		_ = fmt.Errorf("获取SessionKey失败, Http状态码: %d", httpState)
+		c.String(http.StatusBadRequest, weixinReturnInfo.ErrMsg+" 获取SessionKey失败")
 	}
+	e := json.Unmarshal(bytes, &weixinReturnInfo)
+	if e != nil {
+		_ = fmt.Errorf("json解析失败")
+		c.String(http.StatusBadRequest, weixinReturnInfo.ErrMsg+" json解析失败")
+	}
+
 	// 查询用户是否存在
 	userInfo := model.User{}
 	sqlString := `SELECT * FROM "user" WHERE open_id = $1`
@@ -348,7 +343,7 @@ func WeixinLogin(c *gin.Context) {
 		// 添加一个用户
 		sqlString = `INSERT INTO "user" (open_id, name, email, phone, password, created_at, nick_name) VALUES ($1, '', '', '', '', now(), $2) RETURNING id`
 		if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID, "新注册用户"+strconv.FormatInt(rand.Int63(), 10)); err != nil {
-			c.String(http.StatusInternalServerError, "服务器错误")
+			c.String(http.StatusInternalServerError, "新注册用户添加失败")
 			return
 		}
 		token, err := global.CreateSession(c, &global.Session{
@@ -356,7 +351,7 @@ func WeixinLogin(c *gin.Context) {
 			UserId: userInfo.ID,
 		})
 		if err != nil {
-			c.String(http.StatusInternalServerError, "服务器错误")
+			c.String(http.StatusInternalServerError, "新注册用户Token生成失败")
 			return
 		}
 		c.Set("Role", global.USER)
@@ -373,7 +368,7 @@ func WeixinLogin(c *gin.Context) {
 		UserId: userInfo.ID,
 	})
 	if err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
+		c.String(http.StatusInternalServerError, "已注册用户Token生成失败")
 		return
 	}
 	c.Set("Role", global.USER)
@@ -402,28 +397,18 @@ func WeixinBind(c *gin.Context) {
 		return
 	}
 	// 获取微信用户信息
-	weixinUserInfo, err := http.Get("https://api.weixin.qq.com/sns/jscode2session?appid=" + global.AppID +
-		"&secret=" + global.AppSecret +
-		"&js_code=" + weixinLoginInfo.Code +
-		"&grant_type=authorization_code")
-	if err != nil {
-		c.String(http.StatusBadRequest, "请求解析失败")
-		return
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			c.String(http.StatusBadRequest, "服务器错误")
-		}
-	}(weixinUserInfo.Body)
 	var weixinReturnInfo WeixinReturnInfo
-	body, _ := ioutil.ReadAll(weixinUserInfo.Body)
-	stringBody := string(body)
-	errJson := json.Unmarshal([]byte(stringBody), &weixinReturnInfo)
-	if errJson != nil {
-		c.String(http.StatusBadRequest, "登录失败")
-		return
+	httpState, bytes := utils.Get(fmt.Sprintf(url, global.AppID, global.AppSecret, weixinLoginInfo.Code))
+	if httpState != 200 {
+		_ = fmt.Errorf("获取SessionKey失败, Http状态码: %d", httpState)
+		c.String(http.StatusBadRequest, weixinReturnInfo.ErrMsg+" 获取SessionKey失败")
 	}
+	e := json.Unmarshal(bytes, &weixinReturnInfo)
+	if e != nil {
+		_ = fmt.Errorf("json解析失败")
+		c.String(http.StatusBadRequest, weixinReturnInfo.ErrMsg+" json解析失败")
+	}
+
 	// 查询微信是否已被绑定
 	userInfo := model.User{}
 	sqlString := `SELECT * FROM "user" WHERE open_id = $1`

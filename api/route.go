@@ -61,6 +61,7 @@ func InitRoute() {
 	problem.Use(global.CheckAuth)
 	problem.DELETE("/unfavorite/:id", RemoveProblemFromFavorite)
 	problem.POST("/favorite/:id", AddProblemToFavorite)
+	problem.POST("/batch", AddBatchProblem)
 
 	choiceProblem := problem.Group("/choice")
 	global.Router.GET("/problem/choice/all", GetChoiceProblems)
