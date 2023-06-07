@@ -14,6 +14,7 @@ type DiscussionFilter struct {
 	ID         *int  `json:"id" form:"id"`
 	UserId     *int  `json:"user_id" form:"user_id"`
 	IsLiked    *bool `json:"is_liked" form:"is_liked"`
+	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
 	Offset     *int  `json:"offset" form:"offset"`
 	Limit      *int  `json:"limit" form:"limit"`
 	SortByLike *bool `json:"sort_by_like" form:"sort_by_like"`
@@ -28,6 +29,7 @@ type DiscussionResponse struct {
 	UpdatedAt     string           `json:"updated_at" db:"updated_at"`
 	IsPublic      bool             `json:"is_public" db:"is_public"`
 	IsLiked       bool             `json:"is_liked" db:"is_liked"`
+	IsFavorite    bool             `json:"is_favorite" db:"is_favorite"`
 	LikeCount     int              `json:"like_count" db:"like_count"`
 	FavoriteCount int              `json:"favorite_count" db:"favorite_count"`
 }
@@ -84,6 +86,13 @@ func GetDiscussions(c *gin.Context) {
 			sqlString += fmt.Sprint(" AND id NOT IN (SELECT discussion_id FROM user_like_discussion WHERE user_id = ", c.GetInt("UserId"), ")")
 		}
 	}
+	if filter.IsFavorite != nil {
+		if *filter.IsFavorite {
+			sqlString += fmt.Sprint(" AND id IN (SELECT discussion_id FROM user_favorite_discussion WHERE user_id = ", c.GetInt("UserId"), ")")
+		} else {
+			sqlString += fmt.Sprint(" AND id NOT IN (SELECT discussion_id FROM user_favorite_discussion WHERE user_id = ", c.GetInt("UserId"), ")")
+		}
+	}
 	if filter.SortByLike != nil {
 		if *filter.SortByLike {
 			sqlString += " ORDER BY like_count DESC"
@@ -110,6 +119,12 @@ func GetDiscussions(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
+		var isFavorite int
+		sqlString = `SELECT count(*) FROM user_favorite_discussion WHERE user_id = $1 AND discussion_id = $2`
+		if err := global.Database.Get(&isFavorite, sqlString, c.GetInt("UserId"), discussion.ID); err != nil {
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 		user := model.User{}
 		sqlString = `SELECT id, avatar_url, nick_name FROM "user" WHERE id = $1`
 		if err := global.Database.Get(&user, sqlString, discussion.UserId); err != nil {
@@ -131,6 +146,7 @@ func GetDiscussions(c *gin.Context) {
 			UpdatedAt:     discussion.UpdatedAt,
 			IsPublic:      discussion.IsPublic,
 			IsLiked:       isLiked > 0,
+			IsFavorite:    isFavorite > 0,
 			LikeCount:     discussion.LikeCount,
 			FavoriteCount: discussion.FavoriteCount,
 		})
@@ -201,6 +217,7 @@ func CreateDiscussion(c *gin.Context) {
 		UpdatedAt:     discussion.UpdatedAt,
 		IsPublic:      discussion.IsPublic,
 		IsLiked:       false,
+		IsFavorite:    false,
 		LikeCount:     discussion.LikeCount,
 		FavoriteCount: discussion.FavoriteCount,
 	})

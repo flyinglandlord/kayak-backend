@@ -1229,6 +1229,19 @@ func AddBatchProblem(c *gin.Context) {
 	buf := new(bytes.Buffer)
 	_, _ = buf.ReadFrom(c.Request.Body)
 	Text := buf.String()
+
+	tx := global.Database.MustBegin()
+
+	defer func() {
+		if err := recover(); err != nil {
+			if err := tx.Rollback(); err != nil {
+				c.String(http.StatusInternalServerError, "服务器错误")
+				return
+			}
+			c.String(http.StatusBadRequest, "添加失败")
+		}
+	}()
+
 	// fmt.Println(Text)
 	var problemIdList []int
 	rest := strings.Split(Text, "选择题")[1]
@@ -1248,8 +1261,6 @@ func AddBatchProblem(c *gin.Context) {
 	digital_dot := regexp.MustCompile("[0-9]+\\.")
 	alphabet_dot := regexp.MustCompile("[A-Z]+\\.")
 	answer_split := regexp.MustCompile("\\[答案]")
-
-	tx := global.Database.MustBegin()
 
 	// 处理选择题部分
 	choiceProblemList := digital_dot.Split(choiceProblemText, -1)
