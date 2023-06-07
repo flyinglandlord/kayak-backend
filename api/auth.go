@@ -341,14 +341,15 @@ func WeixinLogin(c *gin.Context) {
 	if err := global.Database.Get(&userInfo, sqlString, weixinReturnInfo.OpenID); err != nil {
 		randomUsername := uuid.New().String()
 		// 添加一个用户
-		sqlString = `INSERT INTO "user" (open_id, name, email, phone, password, created_at, nick_name) VALUES ($1, $2, '', '', '', now(), $3)`
-		if _, err := global.Database.Exec(sqlString, weixinReturnInfo.OpenID, randomUsername, weixinReturnInfo.OpenID); err != nil {
+		sqlString = `INSERT INTO "user" (open_id, name, email, phone, password, created_at, nick_name) VALUES ($1, $2, '', '', '', now(), $3) RETURNING id`
+		var newUserId int
+		if err := global.Database.Get(&newUserId, sqlString, weixinReturnInfo.OpenID, randomUsername, randomUsername); err != nil {
 			c.String(http.StatusInternalServerError, "新注册用户添加失败")
 			return
 		}
 		token, err := global.CreateSession(c, &global.Session{
 			Role:   global.USER,
-			UserId: userInfo.ID,
+			UserId: newUserId,
 		})
 		if err != nil {
 			c.String(http.StatusInternalServerError, "新注册用户Token生成失败")
