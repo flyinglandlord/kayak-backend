@@ -59,7 +59,7 @@ type NoteUpdateRequest struct {
 // @Router /note/all [get]
 // @Security ApiKeyAuth
 func GetNotes(c *gin.Context) {
-	sqlString := `SELECT note_table.id as id, title, content, user_id, created_at, updated_at, COALESCE(like_count,0) as like_count
+	sqlString := `SELECT distinct note_table.id as id, title, content, user_id, created_at, updated_at, COALESCE(like_count,0) as like_count
 		FROM (
 			(SELECT * FROM note) as note_table
 			LEFT JOIN
