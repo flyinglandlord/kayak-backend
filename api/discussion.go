@@ -67,6 +67,10 @@ func GetDiscussions(c *gin.Context) {
 	sqlString := `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 	var count int
 	if err := global.Database.Get(&count, sqlString, filter.GroupId, c.GetInt("UserId")); err != nil {
+		c.String(http.StatusBadRequest, "服务器错误")
+		return
+	}
+	if count == 0 {
 		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
@@ -210,7 +214,7 @@ func CreateDiscussion(c *gin.Context) {
 // @Schemes http
 // @Description 更新讨论（只有创建者可以修改）
 // @Tags Discussion
-// @Param note body NoteUpdateRequest true "讨论信息"
+// @Param discussion body DiscussionUpdateRequest true "讨论信息"
 // @Success 200 {string} string "更新成功"
 // @Failure 400 {string} string "请求解析失败"
 // @Failure 403 {string} string "没有权限"

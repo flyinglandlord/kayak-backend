@@ -116,7 +116,6 @@ func InitRoute() {
 	group.GET("/invitation/:id", GetGroupInvitation)
 	group.DELETE("/delete/:id", DeleteGroup)
 	group.GET("/all_user/:id", GetUsersInGroup)
-	group.POST("/add/:id", AddUserToGroup)
 	group.DELETE("/remove/:id", RemoveUserFromGroup)
 	group.DELETE("/quit/:id", QuitGroup)
 	group.PUT("/update/:id", UpdateGroupInfo)
@@ -148,16 +147,4 @@ func InitRoute() {
 	search.POST("/problem_set", SearchProblemSets)
 	search.POST("/group", SearchGroups)
 	search.POST("/note", SearchNotes)
-
-	// Deprecated
-	global.Router.GET("/problem/blank/:id", GetBlankProblem)
-	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
-	problem.GET("/:id/problem_set", GetProblemSetContainsProblem)
-	user.GET("/favorite/problem", GetUserFavoriteProblems)
-	user.GET("/favorite/problem_set", GetUserFavoriteProblemSets)
-	user.GET("/favorite/note", GetUserFavoriteNotes)
-	user.GET("/problem/choice", GetUserChoiceProblems)
-	user.GET("/problem/blank", GetUserBlankProblems)
-	user.GET("/problem_set", GetUserProblemSets)
-	user.GET("/note", GetUserNotes)
 }

@@ -274,7 +274,7 @@ func testMigrateProblemToProblemSet(t *testing.T) {
 	code = Post("/problem_set/create", loginRes.Token, &api.ProblemSetCreateRequest{
 		Name:        "test",
 		Description: "test",
-		IsPublic:    true,
+		IsPublic:    false,
 	}, &problemSetRes)
 	assert.Equal(t, code, http.StatusOK)
 
@@ -330,6 +330,30 @@ func testMigrateProblemToProblemSet(t *testing.T) {
 	assert.Equal(t, code, http.StatusOK)
 
 	code = Post(fmt.Sprintf("/problem_set/add/%d?problem_id=%d", _problemSetRes.ID, _choiceRes.ID), loginRes.Token, &struct{}{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Post(fmt.Sprintf("/problem/favorite/100"), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusNotFound)
+
+	code = Post(fmt.Sprintf("/problem/favorite/%d", choiceRes.ID), _loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusForbidden)
+
+	code = Post(fmt.Sprintf("/problem/favorite/%d", choiceRes.ID), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Delete(fmt.Sprintf("/problem/unfavorite/%d", choiceRes.ID), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Post(fmt.Sprintf("/problem_set/favorite/100"), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusNotFound)
+
+	code = Post(fmt.Sprintf("/problem_set/favorite/%d", problemSetRes.ID), _loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusForbidden)
+
+	code = Post(fmt.Sprintf("/problem_set/favorite/%d", problemSetRes.ID), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Delete(fmt.Sprintf("/problem_set/unfavorite/%d", problemSetRes.ID), loginRes.Token, struct{}{}, &res)
 	assert.Equal(t, code, http.StatusOK)
 
 	code = Put(fmt.Sprintf("/problem/choice/update"), loginRes.Token, &api.ChoiceProblemUpdateRequest{

@@ -132,6 +132,21 @@ func testCreateNote(t *testing.T) {
 	code = Post(fmt.Sprintf("/note/unlike/%d", noteRes.ID), loginRes.Token, struct{}{}, &res)
 	assert.Equal(t, code, http.StatusOK)
 
+	code = Post(fmt.Sprintf("/note/favorite/%d", 100), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusNotFound)
+
+	code = Post(fmt.Sprintf("/note/favorite/%d", noteRes.ID), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Post(fmt.Sprintf("/note/favorite/%d", noteRes.ID), _loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusForbidden)
+
+	code = Delete(fmt.Sprintf("/note/unfavorite/%d", 100), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusNotFound)
+
+	code = Delete(fmt.Sprintf("/note/unfavorite/%d", noteRes.ID), loginRes.Token, struct{}{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
 	code = Post(fmt.Sprintf("/note/add_problem/%d?problem_id=%d", 100, 100), loginRes.Token, struct{}{}, &res)
 	assert.Equal(t, code, http.StatusNotFound)
 

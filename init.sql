@@ -279,20 +279,21 @@ alter table group_member
 
 create table if not exists discussion
 (
-    id         serial
+    id             serial
         primary key,
-    title      varchar(255) not null,
-    content    text         not null,
-    created_at timestamp    not null,
-    updated_at timestamp    not null,
-    user_id    integer      not null
+    title          varchar(255) not null,
+    content        text         not null,
+    created_at     timestamp    not null,
+    updated_at     timestamp    not null,
+    user_id        integer      not null
         references "user"
             on delete cascade,
-    group_id   integer      not null
+    group_id       integer      not null
         references "group"
             on delete cascade,
-    is_public  boolean      not null,
-    like_count integer default 0
+    is_public      boolean      not null,
+    like_count     integer default 0,
+    favorite_count integer default 0
 );
 
 alter table discussion

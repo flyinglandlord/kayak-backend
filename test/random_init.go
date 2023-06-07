@@ -49,7 +49,7 @@ func randomInitGroup(tx *sqlx.Tx) error {
 			Description: fmt.Sprintf("group%d", i),
 			Invitation:  "0",
 			UserId:      user.ID,
-			AreaId:      r.Intn(21),
+			AreaId:      r.Intn(20) + 1,
 		}
 		randomGroups = append(randomGroups, group)
 		if _, err := tx.Exec(sqlString, group.Name, group.Description, group.Invitation, group.UserId, group.AreaId); err != nil {
@@ -120,7 +120,7 @@ func randomInitProblemSet(tx *sqlx.Tx) error {
 			Description: fmt.Sprintf("problemSet%d", i),
 			UserId:      user.ID,
 			IsPublic:    r.Intn(2) == 0,
-			AreaId:      r.Intn(21),
+			AreaId:      r.Intn(20) + 1,
 			GroupId:     0,
 		}
 		randomProblemSets = append(randomProblemSets, problemSet)
@@ -137,7 +137,7 @@ func randomInitProblemSet(tx *sqlx.Tx) error {
 			Description: fmt.Sprintf("problemSet%d", i),
 			UserId:      group.UserId,
 			IsPublic:    r.Intn(2) == 0,
-			AreaId:      r.Intn(21),
+			AreaId:      r.Intn(20) + 1,
 			GroupId:     group.Id,
 		}
 		randomProblemSets = append(randomProblemSets, problemSet)
