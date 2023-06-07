@@ -1211,7 +1211,14 @@ type BatchProblemRequest struct {
 }
 
 type BatchProblemResponse struct {
-	ProblemId []int `json:"problem_id"`
+	Problems []ProblemBatch `json:"problems"`
+}
+
+type ProblemBatch struct {
+	ProblemId   int    `db:"problem_id"`
+	ProblemType int    `db:"problem_type"`
+	Description string `db:"description"`
+	Analysis    string `db:"analysis"`
 }
 
 // AddBatchProblem godoc
@@ -1243,7 +1250,7 @@ func AddBatchProblem(c *gin.Context) {
 	}()
 
 	// fmt.Println(Text)
-	var problemIdList []int
+	var problemList []ProblemBatch
 	rest := strings.Split(Text, "选择题")[1]
 	choiceProblemText := strings.Split(rest, "判断题")[0]
 	rest = strings.Split(Text, "判断题")[1]
@@ -1307,7 +1314,12 @@ func AddBatchProblem(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		problemIdList = append(problemIdList, problemId)
+		problemList = append(problemList, ProblemBatch{
+			ProblemId:   problemId,
+			ProblemType: ChoiceProblemType,
+			Description: Description,
+			Analysis:    Analyse,
+		})
 
 		for _, choice := range choices {
 			sqlString = `INSERT INTO problem_choice (id, choice, description, is_correct) VALUES ($1, $2, $3, $4)`
@@ -1359,7 +1371,12 @@ func AddBatchProblem(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		problemIdList = append(problemIdList, problemId)
+		problemList = append(problemList, ProblemBatch{
+			ProblemId:   problemId,
+			ProblemType: BlankProblemType,
+			Description: Description,
+			Analysis:    Analyse,
+		})
 
 		sqlString = `INSERT INTO problem_answer (id, answer) VALUES ($1, $2)`
 		if _, err := tx.Exec(sqlString, problemId, Answer); err != nil {
@@ -1409,7 +1426,12 @@ func AddBatchProblem(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		problemIdList = append(problemIdList, problemId)
+		problemList = append(problemList, ProblemBatch{
+			ProblemId:   problemId,
+			ProblemType: JudgeProblemType,
+			Description: Description,
+			Analysis:    Analyse,
+		})
 
 		sqlString = `INSERT INTO problem_judge (id, is_correct) VALUES ($1, $2)`
 		if _, err := tx.Exec(sqlString, problemId, Answer == "正确"); err != nil {
@@ -1430,5 +1452,7 @@ func AddBatchProblem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, problemIdList)
+	c.JSON(http.StatusOK, BatchProblemResponse{
+		Problems: problemList,
+	})
 }
