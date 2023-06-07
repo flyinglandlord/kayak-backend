@@ -1,4 +1,4 @@
-package old_api
+package api
 
 import (
 	"fmt"

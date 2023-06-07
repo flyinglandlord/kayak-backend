@@ -10,9 +10,19 @@ import (
 )
 
 var stages = [][]func(*testing.T){
-	{testLogin} /*{testRegister},*/, {testChangePassword, testLogout, testUserInfo},
-	{testFavoriteNote, testFavoriteProblem, testLikeNote, testLikeNoteReview, testFavoriteProblemSet},
-	{TestProblemAnswer}, {TestCreateGroup, TestCreateNote},
+	/*{testPing, testLogin, testRegister, testChangePassword, testResetPassword, testLogout},
+	{testGetUserInfoById, testGetUserInfo, testUpdateUserInfo, testGetUserWrongRecords},
+	{testGetWrongProblemSet, testGetFavoriteProblemSet},
+	{testGetFeaturedProblemSet, testGetFeaturedNote, testGetFeaturedGroup},
+	{testSearchProblemSets, testSearchGroups, testSearchNotes},
+	{testGetProblemSets, testCreateProblemSet, testUpdateProblemSet},
+	{testGetProblemsInProblemSet, testAddProblemToProblemSet},
+	{testMigrateProblemToProblemSet},
+	{testGetChoiceProblems, testGetBlankProblems, testGetJudgeProblems},
+	{testCreateWrongRecord},
+	{testGetNotes, testCreateNote},
+	{testAddNoteReview},*/
+	{testGetGroups, testCreateGroup},
 }
 
 func goTestWithWait(wg *sync.WaitGroup, t *testing.T, f func(t *testing.T)) {

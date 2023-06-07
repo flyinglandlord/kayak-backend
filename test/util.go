@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"kayak-backend/global"
+	"kayak-backend/model"
 	"net/http"
 	"net/http/httptest"
 )
@@ -66,4 +67,28 @@ func Put(url string, token string, src interface{}, dest interface{}) int {
 	global.Router.ServeHTTP(w, req)
 	_ = json.Unmarshal(w.Body.Bytes(), dest)
 	return w.Code
+}
+
+func randomUser() model.User {
+	return randomUsers[r.Intn(len(randomUsers))]
+}
+
+func randomGroup() model.Group {
+	return randomGroups[r.Intn(len(randomGroups))]
+}
+
+func randomProblemSet() model.ProblemSet {
+	return randomProblemSets[r.Intn(len(randomProblemSets))]
+}
+
+func randomProblem() model.ProblemType {
+	return randomProblems[r.Intn(len(randomProblems))]
+}
+
+func randomNote() model.Note {
+	return randomNotes[r.Intn(len(randomNotes))]
+}
+
+func randomDiscussion() model.Discussion {
+	return randomDiscussions[r.Intn(len(randomDiscussions))]
 }

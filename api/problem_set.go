@@ -188,14 +188,12 @@ func CreateProblemSet(c *gin.Context) {
 		return
 	}
 	tx := global.Database.MustBegin()
-	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id, area_id) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	var problemSetId int
 	if request.GroupId == nil {
 		request.GroupId = new(int)
 		*request.GroupId = 0
 	} else {
-		sqlString = `SELECT COUNT(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		sqlString := `SELECT COUNT(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 		var count int
 		if err := global.Database.Get(&count, sqlString, request.GroupId, c.GetInt("UserId")); err != nil {
 			_ = tx.Rollback()
@@ -212,6 +210,8 @@ func CreateProblemSet(c *gin.Context) {
 		request.AreaId = new(int)
 		*request.AreaId = 100
 	}
+	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id, area_id) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description, time.Now().Local(),
 		time.Now().Local(), c.GetInt("UserId"), request.IsPublic, request.GroupId, request.AreaId); err != nil {
 		_ = tx.Rollback()
@@ -685,10 +685,6 @@ func RemoveProblemFromProblemSet(c *gin.Context) {
 	var problemUserId int
 	if err := global.Database.Get(&problemUserId, sqlString, c.Query("problem_id")); err != nil {
 		c.String(http.StatusNotFound, "题目不存在")
-		return
-	}
-	if c.GetInt("UserId") != problemUserId && role != global.ADMIN {
-		c.String(http.StatusForbidden, "没有权限")
 		return
 	}
 	sqlString = `DELETE FROM problem_in_problem_set WHERE problem_set_id = $1 AND problem_id = $2`

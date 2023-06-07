@@ -546,13 +546,13 @@ func GetGroupApplication(c *gin.Context) {
 	if status != "" {
 		sqlString += ` AND status = ` + status
 	}
+	sqlString += fmt.Sprintf(` ORDER BY created_at DESC`)
 	if offset != "" {
 		sqlString += ` OFFSET ` + offset
 	}
 	if limit != "" {
 		sqlString += ` LIMIT ` + limit
 	}
-	sqlString += fmt.Sprintf(` ORDER BY created_at DESC`)
 	var applications []model.GroupApplication
 	if err := global.Database.Select(&applications, sqlString, c.Param("id")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")

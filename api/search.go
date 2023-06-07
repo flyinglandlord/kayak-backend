@@ -195,7 +195,6 @@ func SearchGroups(c *gin.Context) {
 // @Security ApiKeyAuth
 func SearchNotes(c *gin.Context) {
 	var request SearchRequest
-
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.String(http.StatusBadRequest, "请求错误")
 		return

@@ -13,7 +13,7 @@ create table if not exists "user"
 (
     id         serial
         primary key,
-    union_id   varchar(255),
+    open_id    varchar(255),
     name       varchar(255)                                         not null
         unique,
     email      varchar(255)                                         not null,
@@ -405,6 +405,8 @@ alter table area
     owner to postgres;
 
 INSERT INTO area (id, name)
+VALUES (1, '综合');
+INSERT INTO area (id, name)
 VALUES (2, '计算机');
 INSERT INTO area (id, name)
 VALUES (3, '经济金融');
@@ -444,3 +446,8 @@ INSERT INTO area (id, name)
 VALUES (20, '政治');
 INSERT INTO area (id, name)
 VALUES (100, '其他');
+CREATE EXTENSION pg_trgm;
+alter function to_tsvector(text) immutable;
+CREATE INDEX problem_set_search_idx ON problem_set USING GIN (to_tsvector(problem_set.name || problem_set.description));
+CREATE INDEX group_search_idx ON "group" USING GIN (to_tsvector("group".name || "group".description));
+CREATE INDEX note_search_idx ON note USING GIN (to_tsvector(note.title || note.content));

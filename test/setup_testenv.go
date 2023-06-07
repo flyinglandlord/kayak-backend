@@ -268,16 +268,25 @@ func InitWrongRecord(tx *sqlx.Tx) error {
 }
 
 var initFuncList = []func(tx *sqlx.Tx) error{
-	InitUserTable,
-	InitProblemTypeTable,
-	InitProblemChoiceTable,
-	InitProblemAnswerTable,
-	InitProblemSetTable,
-	InitProblemTypeTable,
-	InitProblemInProblemSetTable,
-	InitNoteTable,
-	InitNoteReviewTable,
-	InitWrongRecord,
+	/*
+		InitUserTable,
+		InitProblemTypeTable,
+		InitProblemChoiceTable,
+		InitProblemAnswerTable,
+		InitProblemSetTable,
+		InitProblemTypeTable,
+		InitProblemInProblemSetTable,
+		InitNoteTable,
+		InitNoteReviewTable,
+		InitWrongRecord,*/
+	randomInitUser,
+	randomInitGroup,
+	randomInitNote,
+	randomInitNoteReview,
+	randomInitProblemSet,
+	randomInitProblem,
+	randomInitDiscussion,
+	randomInitDiscussionReview,
 }
 
 func InitDatabase() {

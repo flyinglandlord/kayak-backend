@@ -8,78 +8,99 @@ import (
 )
 
 func testLogin(t *testing.T) {
-	res := api.LoginResponse{}
-	code := Post("/login", "", &api.LoginInfo{
-		UserName: initUser[0].Name,
-		Password: initUser[0].Password + initUser[0].Password,
-	}, &res)
+	var str interface{}
+	var res api.LoginResponse
+	user := randomUser()
+	code := Post("/login", "", &struct{}{}, &str)
 	assert.Equal(t, code, http.StatusBadRequest)
-	assert.Equal(t, res.Token, "")
 	code = Post("/login", "", &api.LoginInfo{
-		UserName: initUser[0].Name,
-		Password: initUser[0].Password,
+		UserName: user.Name,
+		Password: user.Password + user.Password,
+	}, &str)
+	assert.Equal(t, code, http.StatusBadRequest)
+	code = Post("/login", "", &api.LoginInfo{
+		UserName: user.Name,
+		Password: user.Password,
 	}, &res)
 	assert.Equal(t, code, http.StatusOK)
 	assert.NotEqual(t, res.Token, "")
 }
 
 func testRegister(t *testing.T) {
-	var res string
+	var res interface{}
+	user := randomUser()
 	code := Post("/register", "", &api.RegisterInfo{
-		Name:     initUser[1].Name,
-		Password: initUser[1].Password,
+		Name:     user.Name,
+		Password: user.Password,
+		Email:    user.Email,
+		VCode:    "0",
 	}, &res)
 	assert.Equal(t, code, 409)
-	//assert.Equal(t, res, "用户名已存在")
 	code = Post("/register", "", &api.RegisterInfo{
-		Name:     "initUser[1].Name + initUser[1].Name",
-		Password: "initUser[1].Password,",
+		Name:     user.Name + user.Name,
+		Password: user.Password,
+		Email:    user.Email,
+		VCode:    "0",
 	}, &res)
-	assert.Equal(t, code, http.StatusOK)
-	//assert.NotEqual(t, res, "注册成功")
+	assert.Equal(t, code, http.StatusBadRequest)
 }
 
 func testChangePassword(t *testing.T) {
 	// 先登录
 	res := api.LoginResponse{}
+	user := randomUser()
 	code := Post("/login", "", &api.LoginInfo{
-		UserName: initUser[2].Name,
-		Password: initUser[2].Password,
+		UserName: user.Name,
+		Password: user.Password,
 	}, &res)
 	assert.Equal(t, code, http.StatusOK)
 	assert.NotEqual(t, res.Token, "")
 	// 再重置密码
-	var result string
+	var result interface{}
 	code = Post("/change-password", res.Token, &api.RegisterResponse{
-		OldPassword: initUser[2].Password + initUser[2].Password,
-		NewPassword: initUser[2].Password,
+		OldPassword: user.Password + user.Password,
+		NewPassword: user.Password,
 	}, &result)
 	assert.Equal(t, code, http.StatusBadRequest)
-	//assert.Equal(t, result, "旧密码错误")
 	code = Post("/change-password", res.Token, &api.RegisterResponse{
-		OldPassword: initUser[2].Password,
-		NewPassword: initUser[2].Password + initUser[2].Password,
+		OldPassword: user.Password,
+		NewPassword: user.Password + user.Password,
 	}, &result)
 	assert.Equal(t, code, http.StatusOK)
-	//assert.Equal(t, result, "修改成功")
 	code = Post("/change-password", res.Token, &api.RegisterResponse{
-		OldPassword: initUser[2].Password + initUser[2].Password,
-		NewPassword: initUser[2].Password,
+		OldPassword: user.Password + user.Password,
+		NewPassword: user.Password,
 	}, &result)
 	assert.Equal(t, code, http.StatusOK)
-	//assert.Equal(t, result, "修改成功")
+}
+
+func testResetPassword(t *testing.T) {
+	var result interface{}
+	user := randomUser()
+	code := Post("/reset-password", "", &api.ResetPasswordInfo{
+		UserName:    user.Name + user.Name,
+		VerifyCode:  "0",
+		NewPassword: user.Password,
+	}, &result)
+	assert.Equal(t, code, 409)
+	code = Post("/reset-password", "", &api.ResetPasswordInfo{
+		UserName:    user.Name,
+		VerifyCode:  "0",
+		NewPassword: user.Password,
+	}, &result)
+	assert.Equal(t, code, http.StatusBadRequest)
 }
 
 func testLogout(t *testing.T) {
 	res := api.LoginResponse{}
+	user := randomUser()
 	code := Post("/login", "", &api.LoginInfo{
-		UserName: initUser[3].Name,
-		Password: initUser[3].Password,
+		UserName: user.Name,
+		Password: user.Password,
 	}, &res)
 	assert.Equal(t, code, http.StatusOK)
 	assert.NotEqual(t, res.Token, "")
 	var result string
 	code = Get("/logout", res.Token, nil, &result)
 	assert.Equal(t, code, http.StatusOK)
-	//assert.Equal(t, result, "退出成功")
 }

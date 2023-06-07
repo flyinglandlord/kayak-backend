@@ -1,44 +1,114 @@
 package test
 
 import (
+	"fmt"
 	"github.com/go-playground/assert/v2"
 	"kayak-backend/api"
 	"net/http"
-	"strconv"
 	"testing"
 )
 
-func TestProblemAnswer(t *testing.T) {
-	// 先登录
-	res := api.LoginResponse{}
+func testGetChoiceProblems(t *testing.T) {
+	loginRes := api.LoginResponse{}
+	user := randomUser()
 	code := Post("/login", "", &api.LoginInfo{
-		UserName: initUser[2].Name,
-		Password: initUser[2].Password,
+		UserName: user.Name,
+		Password: user.Password,
+	}, &loginRes)
+	assert.Equal(t, code, http.StatusOK)
+	assert.NotEqual(t, loginRes.Token, "")
+
+	var res interface{}
+	code = Get(fmt.Sprintf("/problem/choice/all"), loginRes.Token, map[string][]string{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Get(fmt.Sprintf("/problem/choice/all"), loginRes.Token, map[string][]string{
+		"id":          {"1"},
+		"user_id":     {"1"},
+		"is_favorite": {"true"},
+		"is_wrong":    {"true"},
+		"offset":      {"0"},
+		"limit":       {"1"},
 	}, &res)
 	assert.Equal(t, code, http.StatusOK)
-	assert.NotEqual(t, res.Token, "")
 
-	// 获取选择题
-	var list []api.ChoiceProblemResponse
-	code = Get("/problem/choice/all", res.Token, make(map[string][]string), &list)
+	code = Get(fmt.Sprintf("/problem/choice/all"), loginRes.Token, map[string][]string{
+		"is_wrong": {"true"},
+	}, &res)
 	assert.Equal(t, code, http.StatusOK)
-	assert.NotEqual(t, list, 2)
 
-	// 获取选择题答案
-	var answer api.ChoiceProblemAnswerResponse
-	code = Get("/problem/choice/answer/"+strconv.Itoa(initProblemType[0].ID), res.Token, make(map[string][]string), &answer)
+	code = Get(fmt.Sprintf("/problem/choice/all"), loginRes.Token, map[string][]string{
+		"is_wrong": {"false"},
+	}, &res)
 	assert.Equal(t, code, http.StatusOK)
-	assert.NotEqual(t, answer.ChoiceProblemAnswer[0].IsCorrect, false)
+}
 
-	// 获取判断题
-	var list2 []api.BlankProblemResponse
-	code = Get("/problem/blank/all", res.Token, make(map[string][]string), &list2)
+func testGetBlankProblems(t *testing.T) {
+	loginRes := api.LoginResponse{}
+	user := randomUser()
+	code := Post("/login", "", &api.LoginInfo{
+		UserName: user.Name,
+		Password: user.Password,
+	}, &loginRes)
 	assert.Equal(t, code, http.StatusOK)
-	assert.NotEqual(t, list2, 2)
+	assert.NotEqual(t, loginRes.Token, "")
 
-	// 获取判断题答案
-	var answer2 api.BlankProblemAnswerResponse
-	code = Get("/problem/blank/answer/"+strconv.Itoa(initProblemType[1].ID), res.Token, make(map[string][]string), &answer2)
+	var res interface{}
+	code = Get(fmt.Sprintf("/problem/blank/all"), loginRes.Token, map[string][]string{}, &res)
 	assert.Equal(t, code, http.StatusOK)
-	assert.Equal(t, answer2.Answer, "problem2_answer")
+
+	code = Get(fmt.Sprintf("/problem/blank/all"), loginRes.Token, map[string][]string{
+		"id":          {"1"},
+		"user_id":     {"1"},
+		"is_favorite": {"true"},
+		"is_wrong":    {"true"},
+		"offset":      {"0"},
+		"limit":       {"1"},
+	}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Get(fmt.Sprintf("/problem/blank/all"), loginRes.Token, map[string][]string{
+		"is_wrong": {"true"},
+	}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Get(fmt.Sprintf("/problem/blank/all"), loginRes.Token, map[string][]string{
+		"is_wrong": {"false"},
+	}, &res)
+	assert.Equal(t, code, http.StatusOK)
+}
+
+func testGetJudgeProblems(t *testing.T) {
+	loginRes := api.LoginResponse{}
+	user := randomUser()
+	code := Post("/login", "", &api.LoginInfo{
+		UserName: user.Name,
+		Password: user.Password,
+	}, &loginRes)
+	assert.Equal(t, code, http.StatusOK)
+	assert.NotEqual(t, loginRes.Token, "")
+
+	var res interface{}
+	code = Get(fmt.Sprintf("/problem/judge/all"), loginRes.Token, map[string][]string{}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Get(fmt.Sprintf("/problem/judge/all"), loginRes.Token, map[string][]string{
+		"id":          {"1"},
+		"user_id":     {"1"},
+		"is_favorite": {"true"},
+		"is_wrong":    {"true"},
+		"offset":      {"0"},
+		"limit":       {"1"},
+	}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Get(fmt.Sprintf("/problem/judge/all"), loginRes.Token, map[string][]string{
+		"is_wrong": {"true"},
+	}, &res)
+	assert.Equal(t, code, http.StatusOK)
+
+	code = Get(fmt.Sprintf("/problem/judge/all"), loginRes.Token, map[string][]string{
+		"is_wrong": {"false"},
+	}, &res)
+	assert.Equal(t, code, http.StatusOK)
 }

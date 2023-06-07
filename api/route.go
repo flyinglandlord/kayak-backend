@@ -1,6 +1,8 @@
 package api
 
-import "kayak-backend/global"
+import (
+	"kayak-backend/global"
+)
 
 func InitRoute() {
 	global.Router.GET("/ping", Ping)
