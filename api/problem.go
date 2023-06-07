@@ -1215,10 +1215,11 @@ type BatchProblemResponse struct {
 }
 
 type ProblemBatch struct {
-	ProblemId   int    `db:"problem_id"`
-	ProblemType int    `db:"problem_type"`
-	Description string `db:"description"`
-	Analysis    string `db:"analysis"`
+	ProblemId   int    `json:"problem_id"`
+	ProblemType int    `json:"problem_type"`
+	Description string `json:"description"`
+	Analysis    string `json:"analysis"`
+	Answer      string `json:"answer"`
 }
 
 // AddBatchProblem godoc
@@ -1319,6 +1320,7 @@ func AddBatchProblem(c *gin.Context) {
 			ProblemType: ChoiceProblemType,
 			Description: Description,
 			Analysis:    Analyse,
+			Answer:      Answer,
 		})
 
 		for _, choice := range choices {
@@ -1376,6 +1378,7 @@ func AddBatchProblem(c *gin.Context) {
 			ProblemType: BlankProblemType,
 			Description: Description,
 			Analysis:    Analyse,
+			Answer:      Answer,
 		})
 
 		sqlString = `INSERT INTO problem_answer (id, answer) VALUES ($1, $2)`
@@ -1431,6 +1434,7 @@ func AddBatchProblem(c *gin.Context) {
 			ProblemType: JudgeProblemType,
 			Description: Description,
 			Analysis:    Analyse,
+			Answer:      Answer,
 		})
 
 		sqlString = `INSERT INTO problem_judge (id, is_correct) VALUES ($1, $2)`
