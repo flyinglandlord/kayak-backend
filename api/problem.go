@@ -1226,6 +1226,7 @@ type ProblemBatch struct {
 // @Schemes http
 // @Description 批量添加题目
 // @Tags Problem
+// @Param problem_set_id query int true "题目集ID"
 // @Param text body string true "题目文本"
 // @Success 200 {object} BatchProblemResponse "添加成功，返回添加题目的编号列表"
 // @Failure 400 {string} string "添加失败"
@@ -1449,6 +1450,20 @@ func AddBatchProblem(c *gin.Context) {
 
 		//fmt.Println(Analyse, Answer, Description)
 		//fmt.Println()
+	}
+
+	// 把题目添加到题库里
+	problemSetId := c.Query("problem_set_id")
+	sqlString := `INSERT INTO problem_in_problem_set (problem_set_id, problem_id) VALUES ($1, $2)`
+	for _, problem := range problemList {
+		if _, err := tx.Exec(sqlString, problemSetId, problem.ProblemId); err != nil {
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
+			c.String(http.StatusInternalServerError, "服务器错误")
+			return
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
