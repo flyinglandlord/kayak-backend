@@ -14,6 +14,7 @@ type ProblemSetFilter struct {
 	ID         *int  `json:"id" form:"id"`
 	UserId     *int  `json:"user_id" form:"user_id"`
 	GroupId    *int  `json:"group_id" form:"group_id"`
+	IsPublic   *bool `json:"is_public" form:"is_public"`
 	IsFavorite *bool `json:"is_favorite" form:"is_favorite"`
 	Contain    *int  `json:"contain" form:"contain"`
 	AreaId     *int  `json:"area_id" form:"area_id"`
@@ -108,6 +109,9 @@ func GetProblemSets(c *gin.Context) {
 		} else {
 			sqlString += ` AND id NOT IN (SELECT problem_set_id FROM user_favorite_problem_set WHERE user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
 		}
+	}
+	if filter.IsPublic != nil {
+		sqlString += fmt.Sprintf(` AND is_public = %t`, *filter.IsPublic)
 	}
 	if filter.Contain != nil {
 		sqlString += ` AND id IN (SELECT problem_set_id FROM problem_in_problem_set WHERE problem_id = ` + fmt.Sprintf("%d", *filter.Contain) + `)`
