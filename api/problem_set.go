@@ -382,7 +382,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		if role != global.ADMIN && count == 0 {
+		if role != global.ADMIN && count == 0 && !problemSet.IsPublic {
 			c.String(http.StatusForbidden, "没有权限")
 			return
 		}
