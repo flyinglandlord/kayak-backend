@@ -198,7 +198,7 @@ func CreateProblemSet(c *gin.Context) {
 	if request.GroupId == nil {
 		request.GroupId = new(int)
 		*request.GroupId = 0
-	} else {
+	} else if *request.GroupId != 0 {
 		sqlString = `SELECT COUNT(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 		var count int
 		if err := global.Database.Get(&count, sqlString, request.GroupId, c.GetInt("UserId")); err != nil {
@@ -382,7 +382,7 @@ func GetProblemsInProblemSet(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "服务器错误")
 			return
 		}
-		if role != global.ADMIN && count == 0 {
+		if role != global.ADMIN && count == 0 && !problemSet.IsPublic {
 			c.String(http.StatusForbidden, "没有权限")
 			return
 		}
