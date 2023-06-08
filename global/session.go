@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
+	"time"
 )
 
 type Role int
@@ -38,7 +39,7 @@ func CreateSession(c context.Context, session *Session) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = Redis.Set(c, token, bytes, 0).Err()
+	err = Redis.Set(c, token, bytes, time.Hour*12).Err()
 	if err != nil {
 		return "", err
 	}
