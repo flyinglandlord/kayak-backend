@@ -147,6 +147,10 @@ func InitRoute() {
 	search.POST("/group", SearchGroups)
 	search.POST("/note", SearchNotes)
 
+	check := global.Router.Group("/check")
+	check.Use(global.CheckAuth)
+	check.GET("/problem_set/:id", CheckProblemSetWriteAuth)
+
 	// Deprecated
 	global.Router.GET("/problem/blank/:id", GetBlankProblem)
 	global.Router.GET("/problem/choice/:id", GetChoiceProblem)
