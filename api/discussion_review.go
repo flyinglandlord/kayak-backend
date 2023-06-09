@@ -169,15 +169,9 @@ func GetDiscussionReviews(c *gin.Context) {
 		c.String(http.StatusNotFound, "讨论不存在")
 		return
 	}
-	sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
-	var count int
-	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("UserId")); err != nil {
-		c.String(http.StatusInternalServerError, "服务器错误")
-		return
-	}
-	if role, _ := c.Get("Role"); role != global.ADMIN && (count == 0 ||
-		discussion.UserId != c.GetInt("UserId") && !discussion.IsPublic) {
+	if role, _ := c.Get("Role"); role != global.ADMIN && !discussion.IsPublic {
 		c.String(http.StatusForbidden, "没有权限")
+		return
 	}
 	sqlString = `SELECT * FROM discussion_review WHERE discussion_id = $1`
 	var reviews []model.DiscussionReview
