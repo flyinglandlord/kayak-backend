@@ -77,7 +77,7 @@ func GetProblemSets(c *gin.Context) {
 		if role == global.GUEST {
 			sqlString += ` WHERE is_public = true`
 		} else if role == global.USER {
-			sqlString += ` WHERE (is_public = true OR user_id = ` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
+			sqlString += ` WHERE (is_public = true OR user_id IN (SELECT user_id FROM group_member WHERE group_id = problem_set.group_id) OR user_id =` + fmt.Sprintf("%d", c.GetInt("UserId")) + `)`
 		} else {
 			sqlString += ` WHERE 1 = 1`
 		}
@@ -192,14 +192,12 @@ func CreateProblemSet(c *gin.Context) {
 		return
 	}
 	tx := global.Database.MustBegin()
-	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id, area_id) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	var problemSetId int
 	if request.GroupId == nil {
 		request.GroupId = new(int)
 		*request.GroupId = 0
 	} else if *request.GroupId != 0 {
-		sqlString = `SELECT COUNT(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
+		sqlString := `SELECT COUNT(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 		var count int
 		if err := global.Database.Get(&count, sqlString, request.GroupId, c.GetInt("UserId")); err != nil {
 			_ = tx.Rollback()
@@ -216,6 +214,8 @@ func CreateProblemSet(c *gin.Context) {
 		request.AreaId = new(int)
 		*request.AreaId = 100
 	}
+	sqlString := `INSERT INTO problem_set (name, description, created_at, updated_at, user_id, is_public, group_id, area_id) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	if err := global.Database.Get(&problemSetId, sqlString, request.Name, request.Description, time.Now().Local(),
 		time.Now().Local(), c.GetInt("UserId"), request.IsPublic, request.GroupId, request.AreaId); err != nil {
 		_ = tx.Rollback()
