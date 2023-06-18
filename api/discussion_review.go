@@ -240,7 +240,7 @@ func LikeDiscussionReview(c *gin.Context) {
 		c.String(http.StatusNotFound, "讨论不存在")
 		return
 	}
-	sqlString = `SELECT count(*) FROM "group" WHERE id = $1 AND user_id = $2`
+	sqlString = `SELECT count(*) FROM group_member WHERE group_id = $1 AND user_id = $2`
 	var count int
 	if err := global.Database.Get(&count, sqlString, discussion.GroupId, c.GetInt("UserId")); err != nil {
 		c.String(http.StatusInternalServerError, "服务器错误")
